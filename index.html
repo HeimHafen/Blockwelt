@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Blockwelt: eine kleine kreative 3D-Klötzchenwelt zum Bauen und Entdecken.">
-  <title>Blockwelt · Kleine Baumeister</title>
+  <title>Blockwelt V2 · Kleine Baumeister</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister · V2</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -29,6 +29,7 @@
     </div>
     <div class="actions">
       <button id="jumpBtn" class="action jump" type="button" aria-label="Springen">↑<small>SPRINGEN</small></button>
+      <button id="descendBtn" class="action descend" type="button" aria-label="Beim Fliegen sinken">↓<small>RUNTER</small></button>
       <div class="build-actions">
         <button id="breakBtn" class="action break" type="button" aria-label="Block abbauen"><span class="action-symbol">−</span><small>ABBAUEN</small></button>
         <button id="placeBtn" class="action place" type="button" aria-label="Block setzen"><span class="action-symbol">+</span><small>SETZEN</small></button>
@@ -42,8 +43,10 @@
     <button class="slot" data-block="stone" type="button" aria-label="Stein auswählen" aria-pressed="false"><span class="cube cube-stone"></span><small>Stein</small></button>
     <button class="slot" data-block="wood" type="button" aria-label="Holz auswählen" aria-pressed="false"><span class="cube cube-wood"></span><small>Holz</small></button>
     <button class="slot" data-block="leaves" type="button" aria-label="Blätter auswählen" aria-pressed="false"><span class="cube cube-leaves"></span><small>Blätter</small></button>
+    <button class="slot" data-block="sand" type="button" aria-label="Sand auswählen" aria-pressed="false"><span class="cube cube-sand"></span><small>Sand</small></button>
+    <button class="slot" data-block="planks" type="button" aria-label="Bretter auswählen" aria-pressed="false"><span class="cube cube-planks"></span><small>Bretter</small></button>
   </nav>
-  <div class="hint">Links bewegen · Rechts umsehen</div>
+  <div class="hint">Links bewegen · Rechts umsehen · Knöpfe halten zum Weiterbauen</div>
 
   <div id="overlay" class="overlay">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
@@ -53,6 +56,12 @@
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
         <p>Eine kleine Welt nur für dich. Entdecke sie, baue ein Haus oder erfinde etwas ganz Neues!</p>
         <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span></div>
+        <div class="menu-options" aria-label="Spieloptionen">
+          <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
+          <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
+          <div class="backup-row"><button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button><button id="importBtn" class="option-btn" type="button">↑ Welt laden</button></div>
+          <input id="importFile" class="file-input" type="file" accept=".json,application/json" aria-label="Gesicherte Blockwelt-Datei auswählen">
+        </div>
         <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
         <button id="resetBtn" class="reset-btn" type="button">Welt neu anfangen</button>
       </div>

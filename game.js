@@ -1,12 +1,12 @@
-// BLOCKWELT V1 — eigens entwickeltes Creative-Mode-Prototype.
+// BLOCKWELT V2 — selbst entwickeltes kreatives Blockabenteuer.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
-const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves'];
-const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter'};
-const HALF = 13;
+const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks'];
+const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter'};
+const HALF = 18; // Größere Welt; bestehende V1-Spielstände bleiben erhalten.
 const KEY = 'blockwelt-kleine-baumeister-v1';
 const blocks = new Map();
 const edits = new Map();
@@ -14,6 +14,10 @@ const meshes = [];
 let selectedType = 'grass';
 let gameRunning = false;
 let toastTimer = null;
+const undoStack = [];
+let flying = false;
+let jumpHeld = false;
+let descendHeld = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#a9d8ee');
@@ -41,7 +45,9 @@ function texture(type,face){
     dirt:['#9a7252','#a6805c','#886549','#b08a63','#94704f'],
     stone:['#99a4a3','#adb7b4','#8b9795','#bec7bf','#929c99'],
     wood:['#a97c50','#bf8b54','#90653f','#c99a66','#9c7147'],
-    leaves:['#508e57','#5f9f60','#427a4c','#75a86b','#4c8654']
+    leaves:['#508e57','#5f9f60','#427a4c','#75a86b','#4c8654'],
+    sand:['#dec993','#e7d39d','#d5bd86','#f0dba8','#cbb481'],
+    planks:['#c49358','#d0a36a','#b5824d','#e2b277','#ac7848']
   };
   let baseType=(type==='grass'&&face==='bottom')?'dirt':type;
   for(let y=0;y<32;y+=4) for(let x=0;x<32;x+=4){
@@ -50,6 +56,8 @@ function texture(type,face){
     let index=Math.floor(random()*colors.length);
     if(type==='wood'&&face==='side'&&x%12<4) index=2;
     if(type==='wood'&&face==='top') {const r=Math.max(Math.abs(x-14),Math.abs(y-14)); index=r%12<4?2:1;}
+    if(type==='planks'&&face==='side'&&y%16<4)index=2;
+    if(type==='planks'&&face==='top'&&x%16<3)index=2;
     ctx.fillStyle=colors[index];ctx.fillRect(x,y,4,4);
   }
   if(type==='grass'&&face==='side'){
@@ -78,8 +86,8 @@ function baseWorld(){
     const h=terrainHeight(x,z);
     for(let y=0;y<h;y++)put(x,y,z,y===h-1?'grass':y>=h-3?'dirt':'stone');
   }
-  // Friendly trees, with a safe open spawn area.
-  const trees=[[-9,-9],[-5,-4],[4,-8],[9,-7],[-10,5],[-4,10],[7,7],[10,2],[-10,-1],[3,11]];
+  // Kinderfreundliche Bäume, rund um die Startposition bleibt Raum zum Bauen.
+  const trees=[[-9,-9],[-5,-4],[4,-8],[9,-7],[-10,5],[-4,10],[7,7],[10,2],[-10,-1],[3,11],[-15,-13],[-12,15],[14,-12],[15,9],[-16,3],[5,15]];
   for(const [x,z] of trees){
     const h=terrainHeight(x,z);
     for(let y=h;y<h+4;y++)put(x,y,z,'wood');
@@ -178,6 +186,17 @@ function updateMovement(dt){
   const dz=(-Math.sin(yaw)*x-Math.cos(yaw)*f)*speed;
   const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.12));
   for(let i=0;i<steps;i++){horizontal('x',dx/steps);horizontal('z',dz/steps);}
+  if(flying){
+    const ascend=jumpHeld||keys.has('Space')||keys.has('KeyE');
+    const descend=descendHeld||keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('KeyQ');
+    const direction=Number(ascend)-Number(descend);
+    if(direction){
+      const goal=Math.max(.5,Math.min(24,player.y+direction*5.1*dt));
+      if(!blocked(player.x,goal,player.z))player.y=goal;
+    }
+    player.vy=0;player.grounded=false;
+    return;
+  }
   player.vy-=GRAVITY*dt;
   const dy=player.vy*dt;
   const vsteps=Math.max(1,Math.ceil(Math.abs(dy)/.09));
@@ -191,7 +210,7 @@ function updateMovement(dt){
   if(player.y< -5){respawn();toast('Wieder sicher auf der Wiese!');}
 }
 function respawn(){player.x=.5;player.z=6.5;player.y=terrainHeight(0,6)+.08;player.vy=0;}
-function jump(){if(!gameRunning)return;if(player.grounded){player.vy=JUMP;player.grounded=false;}}
+function jump(){if(!gameRunning||flying)return;if(player.grounded){player.vy=JUMP;player.grounded=false;}}
 function updateCamera(){
   camera.position.set(player.x,player.y+1.57,player.z);
   camera.rotation.set(pitch,yaw,0);
@@ -217,7 +236,7 @@ function updateTarget(){
 function intersectsPlayer(x,y,z){
   return Math.abs((x+.5)-player.x)<PLAYER_R+.5&&Math.abs((z+.5)-player.z)<PLAYER_R+.5&&y<player.y+PLAYER_H&&y+1>player.y;
 }
-function modifyWorld(place){
+function modifyWorld(place,quiet=false){
   if(!gameRunning)return;
   if(!pointed){toast('Schau zuerst einen Block an');return;}
   let {x,y,z}=pointed;
@@ -226,10 +245,67 @@ function modifyWorld(place){
   if(place&&(get(x,y,z)||intersectsPlayer(x,y,z))){toast('Hier ist schon etwas');return;}
   if(!place&&y===0){toast('Der Boden bleibt sicher stehen');return;}
   const type=place?selectedType:null;
+  const k=key(x,y,z);
+  const oldType=get(x,y,z)||null;
+  const oldEdit=edits.get(k);
+  undoStack.push({x,y,z,oldType,oldEdit:oldEdit ? [...oldEdit]:null});
+  if(undoStack.length>40)undoStack.shift();
+  syncUndo();
   put(x,y,z,type);
   edits.set(key(x,y,z),[x,y,z,type]);
   saveEdits();rebuild();updateTarget();
-  toast(place?`${LABELS[selectedType]} gesetzt!`:'Block abgebaut!');
+  if(!quiet)toast(place?`${LABELS[selectedType]} gesetzt!`:'Block abgebaut!');
+}
+function syncUndo(){
+  const button=$('undoBtn');
+  button.disabled=undoStack.length===0;
+}
+function undo(){
+  if(!undoStack.length){toast('Noch nichts zum Rückgängigmachen');return;}
+  const {x,y,z,oldType,oldEdit}=undoStack.pop();
+  const k=key(x,y,z);
+  put(x,y,z,oldType);
+  if(oldEdit)edits.set(k,oldEdit);else edits.delete(k);
+  saveEdits();rebuild();updateTarget();syncUndo();
+  toast('Letzten Baustein rückgängig gemacht');
+}
+function setFlying(next){
+  flying=next;player.vy=0;
+  jumpHeld=false;descendHeld=false;
+  document.body.classList.toggle('flying',flying);
+  $('flightBtn').setAttribute('aria-pressed',String(flying));
+  $('flightBtn').textContent=flying?'✓ Flugmodus eingeschaltet':'✦ Flugmodus einschalten';
+  $('jumpBtn').querySelector('small').textContent=flying?'HOCH':'SPRINGEN';
+  toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
+}
+function exportWorld(){
+  const data={format:'blockwelt',version:2,savedAt:new Date().toISOString(),edits:[...edits.values()]};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+  toast('Deine Welt wurde als Datei gesichert');
+}
+async function importWorld(file){
+  if(!file)return;
+  if(file.size>2_000_000){toast('Diese Datei ist zu groß');return;}
+  try{
+    const data=JSON.parse(await file.text());
+    if(data?.format!=='blockwelt'||data.version!==2||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    const incoming=new Map();
+    for(const edit of data.edits){
+      if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
+      const [x,y,z,type]=edit;
+      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>25||(type!==null&&!BLOCK_TYPES.includes(type)))throw new Error('entry');
+      incoming.set(key(x,y,z),[x,y,z,type]);
+    }
+    if(!confirm('Die bisherige Welt durch diese Sicherung ersetzen?'))return;
+    baseWorld();edits.clear();undoStack.length=0;
+    for(const [k,edit] of incoming){const [x,y,z,type]=edit;put(x,y,z,type);edits.set(k,edit);}
+    saveEdits();rebuild();respawn();syncUndo();
+    toast('Deine gesicherte Welt wurde geladen!');
+  }catch(e){console.warn('Ungültige Blockwelt-Sicherung',e);toast('Diese Sicherung kann nicht geladen werden');}
 }
 function toast(message){
   $('toast').textContent=message;$('toast').classList.add('visible');
@@ -241,7 +317,8 @@ window.addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   keys.add(e.code);
   if(e.code==='Space'&&!e.repeat)jump();
-  if(/^Digit[1-5]$/.test(e.code))selectBlock(BLOCK_TYPES[Number(e.code.slice(-1))-1]);
+  if(/^Digit[1-7]$/.test(e.code))selectBlock(BLOCK_TYPES[Number(e.code.slice(-1))-1]);
+  if(e.code==='KeyZ'&&e.ctrlKey){e.preventDefault();undo();}
   if(e.code==='Escape'&&gameRunning)openMenu();
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
@@ -284,24 +361,54 @@ renderer.domElement.addEventListener('pointerup',e=>{
   mouseDown=null;
 });
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-function bindAction(id,fn){$(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();fn();});}
-bindAction('jumpBtn',jump);bindAction('breakBtn',()=>modifyWorld(false));bindAction('placeBtn',()=>modifyWorld(true));
+function bindHold(id,onStart,onEnd){
+  const element=$(id);
+  element.addEventListener('pointerdown',e=>{
+    if(!gameRunning)return;
+    e.preventDefault();e.stopPropagation();
+    try{element.setPointerCapture(e.pointerId);}catch(_){}
+    onStart();
+  });
+  for(const name of ['pointerup','pointercancel','lostpointercapture'])element.addEventListener(name,onEnd);
+}
+bindHold('jumpBtn',()=>{jumpHeld=true;jump();},()=>{jumpHeld=false;});
+bindHold('descendBtn',()=>{descendHeld=true;},()=>{descendHeld=false;});
+// Kurzes Tippen: ein Block. Gedrückt halten: mehrere Blöcke nacheinander.
+function bindBuild(id,place){
+  const element=$(id);let startDelay=null,repeat=null,activeId=null;
+  const stop=()=>{clearTimeout(startDelay);clearInterval(repeat);startDelay=null;repeat=null;activeId=null;};
+  element.addEventListener('pointerdown',e=>{
+    if(!gameRunning)return;
+    e.preventDefault();e.stopPropagation();stop();activeId=e.pointerId;
+    try{element.setPointerCapture(e.pointerId);}catch(_){}
+    modifyWorld(place);
+    startDelay=setTimeout(()=>{repeat=setInterval(()=>{if(gameRunning)modifyWorld(place,true);else stop();},230);},410);
+  });
+  for(const name of ['pointerup','pointercancel','lostpointercapture'])element.addEventListener(name,e=>{if(activeId===null||e.pointerId===activeId)stop();});
+  window.addEventListener('blur',stop);
+}
+bindBuild('breakBtn',false);bindBuild('placeBtn',true);
 function selectBlock(type){
   selectedType=type;
   document.querySelectorAll('.slot').forEach(el=>{
     const active=el.dataset.block===type;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
   });
 }
-document.querySelectorAll('.slot').forEach(el=>el.addEventListener('pointerdown',e=>{e.preventDefault();selectBlock(el.dataset.block);}));
-function openMenu(){gameRunning=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
+document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
+function openMenu(){gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
 $('menuBtn').addEventListener('click',openMenu);
+$('undoBtn').addEventListener('click',undo);
+$('flightBtn').addEventListener('click',()=>setFlying(!flying));
+$('exportBtn').addEventListener('click',exportWorld);
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async e=>{const f=e.target.files?.[0];e.target.value='';await importWorld(f);});
 $('startBtn').addEventListener('click',()=>{
   $('overlay').classList.add('hidden');gameRunning=true;toast('Viel Spaß beim Bauen!');
 });
 $('resetBtn').addEventListener('click',()=>{
   if(!confirm('Soll deine gebaute Welt wirklich gelöscht und neu begonnen werden?'))return;
   try{localStorage.removeItem(KEY);}catch(e){console.warn(e);}
-  edits.clear();baseWorld();rebuild();respawn();toast('Deine Welt ist wieder neu!');
+  edits.clear();undoStack.length=0;syncUndo();baseWorld();rebuild();respawn();toast('Deine Welt ist wieder neu!');
 });
 
 function resize(){
@@ -310,7 +417,7 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-baseWorld();loadEdits();rebuild();updateCamera();resize();
+baseWorld();loadEdits();rebuild();syncUndo();updateCamera();resize();
 $('loading').remove();
 let lastTime=performance.now();
 function animate(now){
