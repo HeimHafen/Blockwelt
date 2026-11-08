@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#98cde8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Blockwelt: eine kleine kreative 3D-Klötzchenwelt zum Bauen und Entdecken.">
+  <title>Blockwelt · Kleine Baumeister</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="game" aria-label="3D-Spielwelt"></div>
+  <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
+
+  <header class="topbar">
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister</small></div></div>
+    <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
+  </header>
+
+  <div id="crosshair" class="crosshair" aria-hidden="true"><span></span><span></span></div>
+  <div id="targetLabel" class="target-label" aria-live="off">Schau einen Block an</div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="controls" class="controls" aria-label="Spielsteuerung">
+    <div id="joystick" class="joystick" aria-label="Bewegungssteuerung">
+      <div class="joystick-ring"></div><div id="joystickKnob" class="joystick-knob"></div>
+    </div>
+    <div class="actions">
+      <button id="jumpBtn" class="action jump" type="button" aria-label="Springen">↑<small>SPRINGEN</small></button>
+      <div class="build-actions">
+        <button id="breakBtn" class="action break" type="button" aria-label="Block abbauen"><span class="action-symbol">−</span><small>ABBAUEN</small></button>
+        <button id="placeBtn" class="action place" type="button" aria-label="Block setzen"><span class="action-symbol">+</span><small>SETZEN</small></button>
+      </div>
+    </div>
+  </section>
+
+  <nav id="hotbar" class="hotbar" aria-label="Baumaterial auswählen">
+    <button class="slot active" data-block="grass" type="button" aria-label="Gras auswählen" aria-pressed="true"><span class="cube cube-grass"></span><small>Gras</small></button>
+    <button class="slot" data-block="dirt" type="button" aria-label="Erde auswählen" aria-pressed="false"><span class="cube cube-dirt"></span><small>Erde</small></button>
+    <button class="slot" data-block="stone" type="button" aria-label="Stein auswählen" aria-pressed="false"><span class="cube cube-stone"></span><small>Stein</small></button>
+    <button class="slot" data-block="wood" type="button" aria-label="Holz auswählen" aria-pressed="false"><span class="cube cube-wood"></span><small>Holz</small></button>
+    <button class="slot" data-block="leaves" type="button" aria-label="Blätter auswählen" aria-pressed="false"><span class="cube cube-leaves"></span><small>Blätter</small></button>
+  </nav>
+  <div class="hint">Links bewegen · Rechts umsehen</div>
+
+  <div id="overlay" class="overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <div class="dialog-art" aria-hidden="true"><span>☀</span><div class="art-trees">🌳 <span class="art-house">⌂</span> 🌳</div><div class="art-grass"></div></div>
+      <div class="dialog-main">
+        <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
+        <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
+        <p>Eine kleine Welt nur für dich. Entdecke sie, baue ein Haus oder erfinde etwas ganz Neues!</p>
+        <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span></div>
+        <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
+        <button id="resetBtn" class="reset-btn" type="button">Welt neu anfangen</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
