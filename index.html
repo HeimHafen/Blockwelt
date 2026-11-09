@@ -6,16 +6,16 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V8: eine lebendige 3D-Abenteuerwelt mit Dörfern, Tieren, Bergen und Bauideen.">
-  <title>Blockwelt V8 · Lebendige Welt</title>
-  <link rel="stylesheet" href="styles.css?v=8">
+  <meta name="description" content="Blockwelt V9: frei erkundbare 3D-Abenteuerwelt mit schöneren Dörfern, Burg, Wasserfall und großen Landschaften.">
+  <title>Blockwelt V9 · Weltenzauber</title>
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Lebendige Welt · V8</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Weltenzauber · V9</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -65,28 +65,47 @@
       <div class="dialog-main">
         <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
-        <p>Entdecke schönere Dörfer, lebendige Wälder und den neuen Kristallfall. Deine Bauwerke bleiben erhalten!</p>
+        <p>Entdecke Burgtürme, Wasserfälle, Dörfer und bunte Wälder. Baue deine eigenen Abenteuer!</p>
         <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span><span>🏘️ Dörfer</span></div>
+        <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
         <div class="menu-options" aria-label="Spieloptionen">
-          <button id="homeBtn" class="option-btn" type="button">⌂ Zur Startwiese</button>
-          <button id="villageBtn" class="option-btn" type="button">🏘️ Zum Sonnen-Dorf</button>
-          <button id="lookoutBtn" class="option-btn" type="button">🏰 Zur Himmelswarte</button>
-          <button id="birchVillageBtn" class="option-btn" type="button">🏡 Zum Birken-Dorf</button>
-          <button id="waterfallBtn" class="option-btn" type="button">💦 Zum Kristallfall</button>
-          <button id="mobsBtn" class="option-btn" type="button">✓ Tiere und Bewohner: an</button>
-          <button id="viewBtn" class="option-btn" type="button" aria-pressed="true">🏔️ Sichtweite: Weit</button>
-          <button id="dayBtn" class="option-btn" type="button">☀ Morgensonne</button>
-          <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
-          <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
-          <div class="backup-row"><button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button><button id="importBtn" class="option-btn" type="button">↑ Welt laden</button></div>
+          <details class="menu-panel" open>
+            <summary>🧭 Orte entdecken <span>5 Ziele</span></summary>
+            <div class="option-grid">
+              <button id="homeBtn" class="option-btn" type="button">⌂ Startwiese</button>
+              <button id="villageBtn" class="option-btn" type="button">🏘️ Sonnen-Dorf</button>
+              <button id="lookoutBtn" class="option-btn" type="button">🏰 Himmelswarte</button>
+              <button id="birchVillageBtn" class="option-btn" type="button">🏡 Birken-Dorf</button>
+              <button id="waterfallBtn" class="option-btn" type="button">💦 Kristallfall</button>
+            </div>
+          </details>
+          <details class="menu-panel">
+            <summary>✨ Welt &amp; Grafik <span>Spieloptionen</span></summary>
+            <div class="option-grid">
+              <button id="mobsBtn" class="option-btn" type="button">✓ Tiere und Bewohner: an</button>
+              <button id="viewBtn" class="option-btn" type="button" aria-pressed="true">🏔️ Sichtweite: Weit</button>
+              <button id="graphicsBtn" class="option-btn" type="button" aria-pressed="true">✨ Grafik: Schön</button>
+              <button id="dayBtn" class="option-btn" type="button">☀ Morgensonne</button>
+              <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
+            </div>
+          </details>
+          <details class="menu-panel">
+            <summary>💾 Meine Bauwerke <span>Sichern &amp; Laden</span></summary>
+            <div class="option-grid">
+              <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
+              <div class="backup-row">
+                <button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button>
+                <button id="importBtn" class="option-btn" type="button">↑ Welt laden</button>
+              </div>
+              <button id="resetBtn" class="reset-btn" type="button">Welt neu anfangen</button>
+            </div>
+          </details>
           <input id="importFile" class="file-input" type="file" accept=".json,application/json" aria-label="Gesicherte Blockwelt-Datei auswählen">
         </div>
-        <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
-        <button id="resetBtn" class="reset-btn" type="button">Welt neu anfangen</button>
       </div>
     </div>
   </div>
 
-  <script type="module" src="game.js?v=8"></script>
+  <script type="module" src="game.js?v=9"></script>
 </body>
 </html>

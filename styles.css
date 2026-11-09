@@ -100,3 +100,37 @@ html,body{touch-action:auto}
 .region-label{border-radius:12px;box-shadow:0 3px 14px rgba(30,65,44,.18)}
 .target-label{background:rgba(21,53,43,.14);padding:2px 10px;border-radius:8px}
 @media(max-width:390px){.target-label{font-size:11px}}
+
+/* V9: feinere HUD-Hierarchie, größere Lesbarkeit, keine Änderung der Touch-Zonen. */
+.identity{background:rgba(255,252,242,.95);border:1px solid rgba(255,255,251,.92);box-shadow:0 8px 27px rgba(21,52,46,.20)}
+.region-label{font-weight:850;background:rgba(255,253,242,.95);box-shadow:0 3px 14px rgba(22,58,44,.17)}
+.hotbar{background:rgba(255,252,239,.88);border-color:rgba(255,255,255,.89);box-shadow:0 6px 21px #143a3a36}
+.slot{background:rgba(255,255,255,.69)}
+.slot.active{box-shadow:0 2px 12px #2268444d}
+#graphicsBtn[aria-pressed="true"]{background:#e3f2e8;border-color:#77b69c}
+/* Pixel cubes get a quiet isometric impression without replacing the existing inventory UI. */
+.slot .cube{position:relative;border-radius:2px;box-shadow:inset -5px -3px 0 #173a2b21,1px 2px 3px #0e372b24;transform:rotate(-6deg) skewY(-2deg)}
+.slot .cube:after{content:"";position:absolute;bottom:-2px;right:-3px;width:5px;height:94%;background:#193c3440;transform:skewY(38deg);border-radius:0 1px 2px 0}
+@media(max-width:390px){.identity small{font-size:10px}}
+
+/* V9: kindgerechtes, aufgeräumtes Hauptmenü – Spielstart sofort sichtbar. */
+.dialog-main{padding:17px 20px 18px}
+.dialog-art{height:104px}
+.dialog h1{font-size:clamp(23px,5vw,27px);margin-bottom:7px}
+.dialog p{font-size:13px}
+.explain{margin:12px 0 15px}
+.start-btn{height:51px;margin-bottom:12px}
+.menu-options{display:flex;flex-direction:column;gap:7px;margin:0}
+.menu-panel{border:1px solid #d0e0cd;border-radius:13px;background:#f4f8ee;overflow:hidden}
+.menu-panel>summary{min-height:43px;display:flex;align-items:center;gap:8px;padding:10px 12px;list-style:none;cursor:pointer;font-size:13px;font-weight:900;color:#315b45;touch-action:manipulation;user-select:none}
+.menu-panel>summary::-webkit-details-marker{display:none}
+.menu-panel>summary:before{content:'▸';color:#668b70;font-size:15px;transition:transform .15s}
+.menu-panel[open]>summary:before{transform:rotate(90deg)}
+.menu-panel>summary span{font-size:11px;font-weight:700;color:#809588;margin-left:auto}
+.option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:0 9px 10px}
+.option-grid .option-btn{min-height:42px;padding:8px 7px;border-radius:11px;font-size:12px;line-height:1.2}
+.option-grid #undoBtn,.option-grid .backup-row,.option-grid #resetBtn{grid-column:1/-1}
+.option-grid #resetBtn{min-height:35px;padding:9px 10px;color:#98665e}
+.option-grid .backup-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+@media(max-height:740px){.dialog-art{height:65px}.dialog-main{padding:10px 14px}.explain{margin:8px 0}.start-btn{height:44px;margin-bottom:8px}.option-grid .option-btn{min-height:39px}.menu-panel>summary{min-height:39px}}
+@media(max-height:410px){.dialog-art{display:none}.dialog-main{padding:11px 15px}.dialog h1{font-size:19px}.dialog p{font-size:11px}.start-btn{height:39px}.menu-panel>summary{min-height:34px}.option-grid .option-btn{min-height:36px}}

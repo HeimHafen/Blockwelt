@@ -1,4 +1,4 @@
-// BLOCKWELT V8 — Dorfarchitektur, Felsen, Wasser und Licht. V3–V7-Spielstände bleiben kompatibel.
+// BLOCKWELT V9 — grafischer Welt-Feinschliff, bessere Fernsicht, lebendigere Orte, Performanceprofil. V3–V8-Spielstände bleiben kompatibel.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -10,6 +10,9 @@ const HALF = 96; // 192 × 192 Felder; Chunk-Streaming hält den iPhone-Speicher
 const LEGACY_HALF = 32; // Der komplette alte V3-Weltausschnitt bleibt erhalten.
 const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 740;
 const STORAGE_VIEW = 'blockwelt-view-v7';
+const STORAGE_DETAIL = 'blockwelt-grafik-v9';
+let graphicMode='schoen';
+try { graphicMode=localStorage.getItem(STORAGE_DETAIL)==='flüssig'?'flüssig':'schoen'; }catch(_){}
 let farView = true; // Fernlandschaft ist ein leichtes LOD-Modell, KEIN zusätzlicher vollständiger Chunk.
 try { farView = localStorage.getItem(STORAGE_VIEW) !== 'normal'; } catch (_) {}
 const STREAM_RADIUS = MOBILE ? 2 : 3; // iPhone: maximal 5×5 aktive Chunks.
@@ -40,11 +43,11 @@ let descendHeld = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#a5daf8');
-scene.fog = new THREE.Fog('#a5daf8', MOBILE ? 42 : 58, MOBILE ? 125 : 155);
+scene.fog = new THREE.Fog('#b1d9ed', MOBILE ? 62 : 70, MOBILE ? 170 : 190);
 const camera = new THREE.PerspectiveCamera(74, 1, .06, MOBILE ? 165 : 195);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({antialias:!MOBILE, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.35 : 1.65));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? (graphicMode==='schoen'?1.35:1.0) : (graphicMode==='schoen'?1.65:1.3)));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
@@ -55,67 +58,107 @@ scene.add(ambientSky);
 const sunlight = new THREE.DirectionalLight('#fff4d6',1.78);
 sunlight.position.set(-44,68,-28);
 scene.add(sunlight);
+// Warm side fill provides inexpensive depth on mobile without costly shadow maps.
+const rimLight=new THREE.DirectionalLight('#c3d8ff',.31);
+rimLight.position.set(29,36,41);scene.add(rimLight);
 
 // Make tiny pixel textures procedurally. Their palette and patterns are original.
 function texture(type,face){
-  // Originale 32px-Pixeltexturen. Feineres, aber weiterhin klar blockiges Material.
-  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
+  // Handgezeichnete, deterministische Pixelmaterialien. Keine externen Spielgrafiken.
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
   const ctx=canvas.getContext('2d');
-  let seed=type.split('').reduce((a,c)=>a*31+c.charCodeAt(0),17)+(face==='top'?14:face==='bottom'?78:47);
+  let seed=type.split('').reduce((a,c)=>Math.imul(a,31)+c.charCodeAt(0),17)+
+    (face==='top'?14:face==='bottom'?78:47);
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  const palette={
-    grass:['#77bd59','#6fb150','#83c967','#68a64c','#96d178'],
-    dirt:['#936c4b','#a47b56','#816044','#b18b64','#8a684a'],
-    stone:['#939b97','#aab2ad','#818e87','#c0c4b9','#8d9a93'],
-    wood:['#ae7945','#c28e53','#93653d','#d3a268','#a87746'],
-    leaves:['#4c8a46','#5d9e53','#427940','#70ae5b','#85ba69'],
-    sand:['#dcca92','#ebd5a1','#cbb47e','#f1dfad','#d9be87'],
-    planks:['#c5975e','#d6a76d','#ab7848','#e0b47a','#b88752'],
-    bricks:['#ad6349','#ba7050','#9e503e','#cf8061','#c47958'],
-    cobble:['#84918a','#a0a9a0','#73857d','#b6bdb1','#929c92'],
-    glass:['#a7e5ed','#bdf2f2','#78c4d3','#d4f7f8','#8ad6dd'],
-    gold:['#f2cd5b','#e8b548','#cfa03a','#ffe49b','#edc65c'],
-    water:['#57accf','#74c5e0','#4198ba','#96d8e8','#65bad4'],
-    path:['#c4a178','#d6b58a','#b49168','#e0c19b','#c9a984'],
-    snow:['#eaf3f4','#f8fbfa','#d7e4e7','#f2fafb','#d3e3ec'],
-    blossom:['#ebabc8','#ffd2df','#d98cb4','#ffe4ec','#df9dc4'],
-    lantern:['#f6c556','#ffde86','#edab3d','#fff0aa','#db9434']
+  const palettes={
+    grass:['#5d9e42','#78b955','#82c160','#6cae49','#98cf70','#69a248'],
+    dirt:['#79543a','#98704b','#ae8157','#876044','#be9565','#a17a57'],
+    stone:['#77827f','#9ba8a2','#b2bab3','#88958f','#a8b1a8','#687772'],
+    wood:['#875932','#a4703e','#d09958','#bd8349','#976132','#d5a86e'],
+    leaves:['#306e39','#438a45','#599e50','#6ba75c','#478246','#82b668'],
+    sand:['#d5bd81','#eed79b','#f4e3b2','#dfc890','#cdb37b','#edd7a6'],
+    planks:['#996331','#b77c43','#d19b5d','#c68b4c','#d9a96a','#a56c36'],
+    bricks:['#9b543e','#b36b50','#d0845f','#ba7357','#cd8b65','#a75e46'],
+    cobble:['#637771','#85948b','#a4ada4','#71827a','#b5bdb2','#919f95'],
+    glass:['#79c5da','#a3e5f0','#d8f8f4','#82d0d8','#c2edf4','#65b4cb'],
+    gold:['#c68f2b','#e9ba49','#ffe18b','#f7d46a','#e0a938','#fff1a7'],
+    water:['#297da8','#419ec6','#6dbcd8','#8dd6e7','#53afcf','#3b8fb6'],
+    path:['#987b55','#baa079','#d1b58c','#ac8c65','#e1c59b','#c6aa80'],
+    snow:['#e3eff2','#f8ffff','#c5dce6','#e5f5f8','#f0faff','#d4e5ed'],
+    blossom:['#e49bbc','#f3b5d0','#ffe0e7','#d98eae','#f8c8da','#efafd0'],
+    lantern:['#f4b642','#ffdc72','#ffe7a1','#df8f2f','#ffd66a','#fff0b0']
   };
-  const base=(type==='grass'&&face==='bottom')?'dirt':type;
-  const pick=(arr)=>arr[Math.floor(random()*arr.length)];
-  for(let y=0;y<32;y+=2)for(let x=0;x<32;x+=2){
-    let pal=palette[base];
-    if(type==='grass'&&face==='side')pal=y<6?palette.grass:palette.dirt;
-    if(type==='wood'&&face==='side')pal=x%11<2?[palette.wood[2],palette.wood[0]]:palette.wood;
-    if(type==='planks'&&face!=='bottom')pal=y%10<2?[palette.planks[2],palette.planks[2],palette.planks[0]]:palette.planks;
-    if(type==='bricks'){
-      const offset=Math.floor(y/9)%2===0?0:8;
-      if(y%9===0 || (x+offset)%16<2){ctx.fillStyle='#e2b298';ctx.fillRect(x,y,2,2);continue;}
-    }
-    if(type==='cobble' && ((y+Math.floor(x/9)*3)%11<2||(x+Math.floor(y/11)*5)%13<2))pal=[palette.cobble[2],palette.cobble[0]];
-    if(type==='wood'&&face==='top'){
-      const r=Math.max(Math.abs(x-15),Math.abs(y-15));
-      pal=r%7<2?[palette.wood[2],palette.wood[0]]:palette.wood;
-    }
-    if(type==='stone'&&random()>.91)pal=[palette.stone[3],palette.stone[2]];
-    ctx.fillStyle=pick(pal);ctx.fillRect(x,y,2,2);
+  const pal=palettes[(type==='grass'&&face==='bottom')?'dirt':type];
+  const pick=(a=pal)=>a[Math.floor(random()*a.length)];
+  // 4-px-Tesserae statt grober, flacher Kacheln; echte Blockstruktur bleibt lesbar.
+  for(let y=0;y<64;y+=4)for(let x=0;x<64;x+=4){
+    let pp=pal;
+    if(type==='grass'&&face==='side')pp=y<13?palettes.grass:palettes.dirt;
+    if(type==='wood'&&face==='side')pp=x%13<3?[pal[0],pal[1],pal[2]]:pal;
+    ctx.fillStyle=pick(pp);ctx.fillRect(x,y,4,4);
+    if(random()>.79){ctx.fillStyle=pick(pp);ctx.fillRect(x+(random()>.5?2:0),y,2,2);}
   }
+  function line(color,x,y,w,h){ctx.fillStyle=color;ctx.fillRect(x,y,w,h);}
   if(type==='grass'&&face==='side'){
-    ctx.fillStyle='#528e42';for(let x=0;x<32;x+=2)ctx.fillRect(x,5,2,1+Math.floor(random()*4));
+    for(let x=0;x<64;x+=4){line('#568c38',x,10,4,2+Math.floor(random()*10));if(random()>.6)line('#8ac76c',x,10,2,2);}
+    for(let i=0;i<45;i++){const x=Math.floor(random()*64/2)*2,y=22+Math.floor(random()*42/2)*2;line(random()>.5?'#65492e':'#b48a61',x,y,2,2);}
+  }
+  if(type==='grass'&&face==='top'){
+    for(let i=0;i<42;i++){const x=Math.floor(random()*62/2)*2,y=Math.floor(random()*62/2)*2;
+      line(random()>.5?'#4b903d':'#b1d974',x,y,2,4);}
+  }
+  if(type==='stone'||type==='cobble'){
+    for(let i=0;i<10;i++){
+      const x=Math.floor(random()*58/2)*2,y=Math.floor(random()*58/2)*2;
+      line(random()>.5?'#586b69':'#d2d2c5',x,y,4+Math.floor(random()*4)*2,2);
+      if(random()>.67)line('#697a76',x+2,y+2,2,4);
+    }
+  }
+  if(type==='wood'&&face==='top'){
+    for(let r=26;r>=6;r-=7){ctx.strokeStyle=r%2?'#845b30':'#6f4b2f';ctx.lineWidth=2;
+      ctx.strokeRect(32-r,32-r,r*2,r*2);}
+    line('#6c4b31',30,30,5,5);
+  }
+  if(type==='wood'&&face==='side'){
+    for(let x=7;x<64;x+=13){line('#76502d',x,0,2,64);line('#d7a76f',x+3,0,2,64);}
+  }
+  if(type==='planks'){
+    for(let y=0;y<64;y+=16){line('#684724',0,y,64,2);line('#e1b77d',0,y+2,64,2);
+      const seam=(Math.floor(y/16)%2)*27+17;line('#80542d',seam,y+3,2,12);}
+    for(let i=0;i<7;i++){const x=Math.floor(random()*60),y=5+Math.floor(random()*56);
+      line('#986b38',x,y,4,2);}
+  }
+  if(type==='bricks'){
+    for(let y=0;y<64;y+=13){line('#e2b79b',0,y,64,3);
+      const offset=(Math.floor(y/13)%2)*13;
+      for(let x=offset;x<64;x+=26)line('#e2b79b',x,y+3,3,10);
+    }
+  }
+  if(type==='path'){
+    for(let i=0;i<23;i++){const x=Math.floor(random()*60),y=Math.floor(random()*60);
+      line(random()>.5?'#e9d5b2':'#877457',x,y,2+Math.floor(random()*3)*2,2);}
+  }
+  if(type==='sand')for(let i=0;i<35;i++){line(random()>.5?'#fff1c8':'#c9ad79',Math.floor(random()*32)*2,Math.floor(random()*32)*2,2,2);}
+  if(type==='leaves'||type==='blossom'){
+    for(let i=0;i<32;i++){
+      const x=Math.floor(random()*15)*4,y=Math.floor(random()*15)*4;
+      line(random()>.47?pal[2]:pal[0],x,y,4,4);
+    }
   }
   if(type==='water'){
-    ctx.fillStyle='rgba(225,251,255,.45)';
-    for(let i=0;i<7;i++){
-      const x=Math.floor(random()*27),y=Math.floor(random()*30);
-      ctx.fillRect(x,y,3+Math.floor(random()*4),1);
+    for(let i=0;i<20;i++){
+      const x=Math.floor(random()*29)*2,y=Math.floor(random()*30)*2;
+      line(random()>.5?'#b6edee':'#317dab',x,y,4+Math.floor(random()*4)*2,2);
     }
   }
   if(type==='glass'){
-    ctx.fillStyle='rgba(234,255,255,.65)';ctx.fillRect(3,2,3,24);ctx.fillRect(8,4,2,14);
+    line('#e9ffff',4,5,4,46);line('#e9ffff',10,10,2,23);line('#4c9cbe',0,58,64,3);
   }
-  const t=new THREE.CanvasTexture(canvas);
-  t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;
-  return t;
+  const map=new THREE.CanvasTexture(canvas);
+  map.colorSpace=THREE.SRGBColorSpace;map.magFilter=THREE.NearestFilter;
+  map.minFilter=THREE.NearestMipmapNearestFilter;
+  map.anisotropy=2;
+  return map;
 }
 const materialByType={};
 for(const type of BLOCK_TYPES){
@@ -137,12 +180,14 @@ for(const type of BLOCK_TYPES){
 // Beim Wasserfall werden nur tatsächlich freiliegende Seiten gerendert,
 // statt die transparenten Wände jeder einzelnen Wasser-Zelle zu zeichnen.
 const waterSurfaceMap=materialByType.water[0].map;
+// No edge-antialiasing gaps on water tiles; fixed depth sorting on opaque ground.
+waterSurfaceMap.generateMipmaps=true;
 waterSurfaceMap.wrapS=THREE.RepeatWrapping;
 waterSurfaceMap.wrapT=THREE.RepeatWrapping;
 const waterTopGeometry=new THREE.BoxGeometry(1.012,.065,1.012);
 const waterWallXGeometry=new THREE.BoxGeometry(.062,1.015,1.012);
 const waterWallZGeometry=new THREE.BoxGeometry(1.012,1.015,.062);
-const waterTopMaterial=new THREE.MeshPhongMaterial({map:waterSurfaceMap,color:'#e4faff',transparent:true,opacity:.86,depthWrite:false,shininess:74,specular:'#a9dfea'});
+const waterTopMaterial=new THREE.MeshPhongMaterial({map:waterSurfaceMap,color:'#e4faff',transparent:true,opacity:.86,depthWrite:false,shininess:95,specular:'#d7f7fa'});
 const waterWallMaterial=new THREE.MeshLambertMaterial({map:waterSurfaceMap,color:'#c5ecf8',transparent:true,opacity:.73,depthWrite:false,side:THREE.DoubleSide});
 
 const blockGeo=new THREE.BoxGeometry(1,1,1);
@@ -247,20 +292,25 @@ function villageBlocks(x,z,y,chunkPut){
           chunkPut(x,y,z,block);
         }
       }
-      // Erkennbares Satteldach: durchgehender First statt flacher, roter Blockplatte.
+      // Individuelle Giebeldächer statt vier identischer Kubus-Häuser.
+      const roofBlock=['bricks','planks','cobble','bricks'][i];
       if(az<=4&&ax<=4){
-        const roofY=floor+4+(4-ax); // von 9 an der Traufe bis 13 am First
-        if(y===roofY)chunkPut(x,y,z,'bricks');
-        // Sichtbarer Unterbau an den vorderen und hinteren Giebelseiten.
+        const roofY=floor+4+(4-ax);
+        if(y===roofY)chunkPut(x,y,z,roofBlock);
         if(az===3&&ax<=2&&y>=floor+4&&y<roofY)chunkPut(x,y,z,'planks');
         if(az===4&&ax<=3&&y===floor+3)chunkPut(x,y,z,'wood');
+        // Eaves project beyond the walls, but never close the front door.
+        if(az===4&&ax<=4&&y===roofY)chunkPut(x,y,z,roofBlock);
+        if(az===4&&ax===4&&y===floor+3)chunkPut(x,y,z,'wood');
       }
       // Kleine Eingangsstufe und hölzerner Vorbau.
       if(rz===4&&rx===0&&y===floor)chunkPut(x,y,z,'path');
       if(rz===4&&ax===2&&y>=floor+1&&y<=floor+3)chunkPut(x,y,z,'wood');
       if(rz===4&&ax<=2&&y===floor+4)chunkPut(x,y,z,'planks');
       // Blumenfenster und eine Laterne, ohne den Weg zuzustellen.
-      if(rz===-4&&rx===0&&y===floor+2)chunkPut(x,y,z,'blossom');
+      if(rz===-4&&rx===0&&y===floor+2)chunkPut(x,y,z,i===2?'leaves':'blossom');
+      // Simple illuminated frames and short window sills, not giant block awnings.
+      if((ax===3&&az===1||az===3&&ax===1)&&y===floor+2)chunkPut(x,y,z,'glass');
       if(rz===4&&rx===0&&y===floor+4)chunkPut(x,y,z,'lantern');
       // Ein schmaler dekorativer Schornstein über dem Dachrand.
       if(i%2===0&&rx===2&&rz===-2&&y>=floor+6&&y<=floor+8)chunkPut(x,y,z,'cobble');
@@ -287,63 +337,100 @@ const lookoutTop=(()=>{
   return Math.min(44,top+1);
 })();
 function addAdventureLandmarks(xmin,xmax,zmin,zmax){
-  // A climbable, windowed stone watchtower with a glowing golden top.
-  for(let x=Math.max(xmin,LOOKOUT.x-6);x<=Math.min(xmax,LOOKOUT.x+6);x++)
-  for(let z=Math.max(zmin,LOOKOUT.z-6);z<=Math.min(zmax,LOOKOUT.z+6);z++){
-    const ax=Math.abs(x-LOOKOUT.x),az=Math.abs(z-LOOKOUT.z);
+  // Himmelswarte V9: Burgwarte mit Zinnen, Seitentürmen und Torbogen.
+  // Alle Bauteile bleiben chunkübergreifend deterministisch.
+  for(let x=Math.max(xmin,LOOKOUT.x-10);x<=Math.min(xmax,LOOKOUT.x+10);x++)
+  for(let z=Math.max(zmin,LOOKOUT.z-9);z<=Math.min(zmax,LOOKOUT.z+9);z++){
+    const dx=x-LOOKOUT.x,dz=z-LOOKOUT.z,ax=Math.abs(dx),az=Math.abs(dz);
     const ground=terrainHeight(x,z);
-    if(ax<=3&&az<=3){
-      for(let y=ground;y<=lookoutTop;y++)put(x,y,z,'cobble');
+    if(ax<=4&&az<=4){
+      for(let y=ground;y<=lookoutTop;y++)put(x,y,z,y===lookoutTop?'cobble':'stone');
     }
-    if(ax<=2&&az<=2){
-      for(let y=lookoutTop+1;y<=lookoutTop+13;y++){
-        if(ax===2||az===2){
-          const type=(y===lookoutTop+8&&(ax===2&&az===0||az===2&&ax===0))?'glass':'stone';
-          if(z===LOOKOUT.z+2&&x===LOOKOUT.x&&(y===lookoutTop+1||y===lookoutTop+2))continue;
-          put(x,y,z,type);
+    // Main tower with a 2-block-high entrance, upper windows and battlements.
+    if(ax<=3&&az<=3){
+      for(let y=lookoutTop+1;y<=lookoutTop+12;y++){
+        if(ax===3||az===3){
+          if(dz===3&&dx===0&&y<=lookoutTop+3)continue;
+          const window=(y===lookoutTop+7||y===lookoutTop+8)&&
+            ((ax===3&&az===0)||(az===3&&ax===0));
+          put(x,y,z,window?'glass':y%5===0?'cobble':'stone');
         }
       }
-      if((ax===2||az===2)&&lookoutTop+15<=MAX_Y)put(x,lookoutTop+15,z,'cobble');
+      if(lookoutTop+13<=MAX_Y)put(x,lookoutTop+13,z,'planks');
+      if((ax===3||az===3)&&(ax+az)%2===1&&lookoutTop+14<=MAX_Y)put(x,lookoutTop+14,z,'cobble');
     }
-    if(ax<=3&&az<=3&&lookoutTop+14<=MAX_Y)put(x,lookoutTop+14,z,'planks');
-    if(ax===0&&az===0){
-      put(x,lookoutTop+16,z,'gold');
-      put(x,lookoutTop+17,z,'lantern');
-    }
-  }
-  // Kristallfall V8: natürlich abgestufter Felsrücken statt rechteckigem Turm.
-  // Nur oberhalb des bestehenden Geländes, keine Eingriffe in Spieler-Edits.
-  for(let x=Math.max(xmin,FALL.x-2);x<=Math.min(xmax,FALL.x+10);x++)
-  for(let z=Math.max(zmin,FALL.z-8);z<=Math.min(zmax,FALL.z+8);z++){
-    const dx=x-FALL.x,dz=z-FALL.z,dist=Math.abs(dz);
-    const taper=Math.max(0,1-Math.abs(dx-3.3)/9);
-    const jagged=pixelHash(x,z,417)*3.4-1.7;
-    const peak=Math.round(terrainHeight(x,z)+Math.max(0,13.7*taper-1.28*dist+jagged));
-    const slope=x<=FALL.x-1?Math.max(0,2+dx*2):100;
-    const cap=Math.min(peak,terrainHeight(x,z)+slope);
-    if(cap>terrainHeight(x,z)+1){
-      for(let y=terrainHeight(x,z);y<=Math.min(36,cap);y++){
-        if(x===FALL.x && dist<=1 && y>=WATER_LEVEL+1)continue;
-        put(x,y,z,y>=cap-1&&dist>4?'grass':'stone');
+    // Two asymmetric smaller defensive turrets, linked by a low stone wall.
+    for(const [tx,tz,levels] of [[-8,-4,8],[8,-4,10]]){
+      const ux=Math.abs(dx-tx),uz=Math.abs(dz-tz);
+      if(ux<=2&&uz<=2){
+        const base=lookoutTop;
+        for(let y=ground;y<=Math.min(MAX_Y,base+levels);y++){
+          if(y<=base||ux===2||uz===2){
+            const isWindow=y===base+levels-3&&((ux===2&&uz===0)||(uz===2&&ux===0));
+            put(x,y,z,isWindow?'glass':'cobble');
+          }
+        }
+        if(ux<=2&&uz<=2&&base+levels+1<=MAX_Y)put(x,base+levels+1,z,'planks');
+        if((ux===2||uz===2)&&((dx+dz)&1)&&base+levels+2<=MAX_Y)put(x,base+levels+2,z,'stone');
       }
     }
-    // Wasser sickert über Felsstufen hinab, auf der sichtbaren Vorderseite.
-    if(x===FALL.x&&dist<=1){
-      const top=Math.min(26,Math.round(terrainHeight(FALL.x+2,FALL.z)+11));
-      for(let y=Math.max(5,terrainHeight(x,z));y<=top;y++)put(x,y,z,'water');
+    // Low walls and simple crenellations create the silhouette of a hilltop castle.
+    if(dz===-4&&ax<=8&&lookoutTop-1>=ground){
+      for(let y=lookoutTop-1;y<=lookoutTop+1;y++)put(x,y,z,'cobble');
+      if(dx%3===0)put(x,lookoutTop+2,z,'stone');
     }
-    if(x>=FALL.x+1&&x<=FALL.x+3&&dist<=1){
-      const top=Math.min(26,Math.round(terrainHeight(FALL.x+2,FALL.z)+11));
-      if(top>=terrainHeight(x,z))put(x,top,z,'water');
+    if(dx===0&&dz===-5&&lookoutTop+4<=MAX_Y)put(x,lookoutTop+4,z,'lantern');
+  }
+  // Kristallfall V9: breiter, unregelmäßiger Felsbogen statt schlankem Quader.
+  // Der Fall liegt außerhalb der ursprünglichen 64×64-Bauwelt.
+  const wx=FALL.x,wz=FALL.z;
+  const fallX0=wx-6,fallX1=wx+11,fallZ0=wz-9,fallZ1=wz+9;
+  const topFall=Math.min(30,terrainHeight(wx+5,wz)+12);
+  for(let x=Math.max(xmin,fallX0);x<=Math.min(xmax,fallX1);x++)
+  for(let z=Math.max(zmin,fallZ0);z<=Math.min(zmax,fallZ1);z++){
+    const dx=x-wx,dz=z-wz;
+    const centered=Math.abs(dz),behind=dx>=0;
+    const raised=13.2-Math.abs(dx-4)*1.25-centered*1.1+
+      (pixelHash(x,z,219)-.5)*3.1;
+    const base=terrainHeight(x,z);
+    const rockyTop=Math.min(37,Math.round(base+Math.max(0,raised)));
+    // Front face is terraced stone rather than a solid rectangular wall.
+    if(rockyTop>base+1){
+      for(let y=base;y<=rockyTop;y++){
+        const rocky= y>=rockyTop-1&&centered>5?'grass':y>=27&&centered>5?'snow':'stone';
+        put(x,y,z,rocky);
+      }
+    }
+    // Uneven stepped shelves at the foot of the rock face.
+    if(dx<=-1&&dx>=-5&&centered<7&&base<=WATER_LEVEL+3){
+      const stepHeight=Math.max(base,Math.round(6+(dx+5)*.65-(centered>4?1:0)));
+      for(let y=base;y<=Math.min(12,stepHeight);y++)put(x,y,z,y===stepHeight?'cobble':'stone');
+    }
+    // A visible, two-block-wide waterfall follows the front rock edge.
+    // From above it descends along staggered steps into the lower pool.
+    if(centered<=1){
+      if(dx===-1){
+        for(let y=Math.max(WATER_LEVEL,base);y<=topFall;y++)put(x,y,z,'water');
+      }
+      if(dx===0){
+        for(let y=Math.max(9,base);y<=topFall;y++)put(x,y,z,'water');
+      }
+      if(dx>=1&&dx<=3&&topFall>=base){
+        const ledge=topFall-Math.max(0,3-dx);
+        if(ledge>=base)put(x,ledge,z,'water');
+      }
     }
   }
-  // Ein flaches, unregelmäßiges Felsbecken am Fuß des Wasserfalls.
-  for(let x=Math.max(xmin,FALL.x-4);x<=Math.min(xmax,FALL.x);x++)
-  for(let z=Math.max(zmin,FALL.z-5);z<=Math.min(zmax,FALL.z+5);z++){
-    const d=((x-(FALL.x-2))/3.4)**2+((z-FALL.z)/4.7)**2;
-    if(d>1.14)continue;
-    const h=terrainHeight(x,z);
-    if(d>.80&&h<=WATER_LEVEL+1)put(x,h,z,'cobble');
+  // Shallow irregular lagoon, edges and river outlet make the waterfall feel connected.
+  for(let x=Math.max(xmin,wx-9);x<=Math.min(xmax,wx-2);x++)
+  for(let z=Math.max(zmin,wz-7);z<=Math.min(zmax,wz+7);z++){
+    const d=((x-(wx-5))/5)**2+((z-wz)/6.2)**2;
+    if(d>1.15)continue;
+    const floor=terrainHeight(x,z);
+    if(d<.90){
+      if(floor<=WATER_LEVEL+1)for(let y=floor;y<=WATER_LEVEL+1;y++)put(x,y,z,'water');
+      else if(floor<=WATER_LEVEL+3)put(x,floor,z,'water');
+    }else if(floor<=WATER_LEVEL+2)put(x,floor,z,'cobble');
   }
 }
 function generatedTreeAt(ax,az){
@@ -501,48 +588,60 @@ function rebuildDistantLandscape(cx,cz){
   clearDistantLandscape();
   const ring=farView?(MOBILE?6:7):4;
   const positions=[],colors=[];
-  // 2-m-Landschaftsraster: aus der Ferne kantig, aber wesentlich leichter als volle Voxelblöcke.
-  const step=2;
-  const trees=[];
+  const step=2,trees=[];
   const addTri=(a,b,c,col,shade=1)=>{
     positions.push(...a,...b,...c);
     for(let i=0;i<3;i++)colors.push(col.r*shade,col.g*shade,col.b*shade);
   };
   const quad=(a,b,c,d,col,shade=1)=>{addTri(a,b,c,col,shade);addTri(a,c,d,col,shade);};
+  const elevation=(x,z)=>{
+    if(x<-HALF||x>=HALF||z<-HALF||z>=HALF)return 0;
+    const h=terrainHeight(x,z);
+    return lakeDistance(x,z)<0&&h<=WATER_LEVEL ? WATER_LEVEL+.07 : h-.035;
+  };
   for(let ox=-ring;ox<=ring;ox++)for(let oz=-ring;oz<=ring;oz++){
-    // Bereits real gerenderte Chunks nicht doppelt zeichnen.
     if(Math.max(Math.abs(ox),Math.abs(oz))<=STREAM_RADIUS)continue;
     const ccx=cx+ox,ccz=cz+oz;
     if(ccx<-chunksPerSide||ccx>=chunksPerSide||ccz<-chunksPerSide||ccz>=chunksPerSide)continue;
     const xmin=ccx*CHUNK,zmin=ccz*CHUNK;
     for(let x=xmin;x<xmin+CHUNK;x+=step)for(let z=zmin;z<zmin+CHUNK;z+=step){
-      const h=terrainHeight(x+1,z+1),biome=biomeAt(x+1,z+1);
-      const water=lakeDistance(x+1,z+1)<0&&h<=WATER_LEVEL;
-      const y=water?WATER_LEVEL+.10:h-.045;
+      const midX=x+1,midZ=z+1;
+      const h=terrainHeight(midX,midZ),biome=biomeAt(midX,midZ);
+      const water=lakeDistance(midX,midZ)<0&&h<=WATER_LEVEL;
+      const y=water?WATER_LEVEL+.07:h-.035;
       const col=water?lodPalette.water:h>=27&&biome==='berge'?lodPalette.snow:
         biome==='berge'||biome==='fels'?lodPalette.stone:
         biome==='wueste'||biome==='sand'||biome==='see'?lodPalette.sand:
         biome==='dorf'?lodPalette.village:
         biome==='nadelwald'?lodPalette.forest:
         (pixelHash(x,z,77)>.54?lodPalette.grass:lodPalette.grass2);
-      quad([x,y,z],[x,y,z+step],[x+step,y,z+step],[x+step,y,z],col,0.92+pixelHash(x,z,91)*.13);
-      // Visible 1-5 m cliff faces prevent distant floating grass carpets.
-      const east=terrainHeight(Math.min(HALF-1,x+step+1),z+1);
-      const south=terrainHeight(x+1,Math.min(HALF-1,z+step+1));
-      if(y-east>.9){const bottom=Math.max(east-.08,y-6);
-        quad([x+step,y,z],[x+step,y,z+step],[x+step,bottom,z+step],[x+step,bottom,z],lodPalette.stone,.72);
-      }
-      if(y-south>.9){const bottom=Math.max(south-.08,y-6);
-        quad([x,y,z+step],[x,bottom,z+step],[x+step,bottom,z+step],[x+step,y,z+step],lodPalette.stone,.78);
+      const shade=.94+pixelHash(x,z,91)*.10;
+      quad([x,y,z],[x,y,z+step],[x+step,y,z+step],[x+step,y,z],col,shade);
+      // Four closed sides avoid the thin hovering wireframe appearance of V7/V8.
+      // Subtract a tiny overlap to prevent cracks caused by different height samples.
+      const neighbors=[
+        {nx:x-1,nz:midZ,side:'w'}, {nx:x+step+1,nz:midZ,side:'e'},
+        {nx:midX,nz:z-1,side:'n'}, {nx:midX,nz:z+step+1,side:'s'}
+      ];
+      for(const n of neighbors){
+        const outside=n.nx<-HALF||n.nx>=HALF||n.nz<-HALF||n.nz>=HALF;
+        // At the world boundary, close the ground down toward the beach horizon.
+        const other=outside?Math.max(0,y-6):elevation(n.nx,n.nz);
+        if(y-other<.48)continue;
+        const down=Math.max(other-.09,y-36);
+        const rock=water?lodPalette.water:col===lodPalette.snow?lodPalette.stone:lodPalette.stone;
+        if(n.side==='w')quad([x,y,z],[x,down,z],[x,down,z+step],[x,y,z+step],rock,.72);
+        if(n.side==='e')quad([x+step,y,z+step],[x+step,down,z+step],[x+step,down,z],[x+step,y,z],rock,.80);
+        if(n.side==='n')quad([x+step,y,z],[x+step,down,z],[x,down,z],[x,y,z],rock,.70);
+        if(n.side==='s')quad([x,y,z+step],[x,down,z+step],[x+step,down,z+step],[x+step,y,z+step],rock,.80);
       }
     }
-    // Voxel-Baumkronen am Horizont: 2 instanzierte Geometrien, keine individuellen Draw Calls.
     for(let gx=Math.floor((xmin-6)/8)*8;gx<xmin+CHUNK+6;gx+=8)
     for(let gz=Math.floor((zmin-6)/8)*8;gz<zmin+CHUNK+6;gz+=8){
       const ax=gx+Math.floor(pixelHash(gx,gz,51)*3)-1;
       const az=gz+Math.floor(pixelHash(gx,gz,52)*3)-1;
       if(Math.floor(ax/CHUNK)!==ccx||Math.floor(az/CHUNK)!==ccz)continue;
-      if(generatedTreeAt(ax,az)&&trees.length<380){trees.push([ax,terrainHeight(ax,az),az]);}
+      if(generatedTreeAt(ax,az)&&trees.length<320)trees.push([ax,terrainHeight(ax,az),az]);
     }
   }
   if(positions.length){
@@ -551,29 +650,28 @@ function rebuildDistantLandscape(cx,cz){
     geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
     geo.computeVertexNormals();geo.computeBoundingSphere();
     distantTerrain=new THREE.Mesh(geo,lodMaterial);
-    distantTerrain.frustumCulled=true;
-    distantTerrain.renderOrder=-2;
+    distantTerrain.frustumCulled=true;distantTerrain.renderOrder=-2;
     scene.add(distantTerrain);
   }
   if(trees.length){
     distantTreeTrunks=new THREE.InstancedMesh(lodTreeTrunkGeo,lodTreeTrunkMat,trees.length);
     distantTreeCrowns=new THREE.InstancedMesh(lodTreeLeafGeo,lodTreeLeafMat,trees.length);
     for(let i=0;i<trees.length;i++){
-      const [x,y,z]=trees[i];
-      dummy.position.set(x+.5,y+1.7,z+.5);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
-      distantTreeTrunks.setMatrixAt(i,dummy.matrix);
-      dummy.position.set(x+.5,y+4.6,z+.5);dummy.updateMatrix();
-      distantTreeCrowns.setMatrixAt(i,dummy.matrix);
-      distantTreeCrowns.setColorAt(i,new THREE.Color(pixelHash(x,z,88)>.5?'#5c995b':'#82b46b'));
+      const [x,y,z]=trees[i], conifer=biomeAt(x,z)==='nadelwald';
+      const tall=conifer?1.14:.95;
+      dummy.position.set(x+.5,y+1.7*tall,z+.5);dummy.rotation.set(0,0,0);
+      dummy.scale.set(1,tall,1);dummy.updateMatrix();distantTreeTrunks.setMatrixAt(i,dummy.matrix);
+      dummy.position.set(x+.5,y+4.65*tall,z+.5);
+      dummy.scale.set(conifer?.78:1,conifer?1.36:.93,conifer?.78:1);
+      dummy.updateMatrix();distantTreeCrowns.setMatrixAt(i,dummy.matrix);
+      distantTreeCrowns.setColorAt(i,new THREE.Color(pixelHash(x,z,88)>.5?'#568c50':'#7bad62'));
     }
-    distantTreeTrunks.instanceMatrix.needsUpdate=true;
-    distantTreeCrowns.instanceMatrix.needsUpdate=true;
+    distantTreeTrunks.instanceMatrix.needsUpdate=true;distantTreeCrowns.instanceMatrix.needsUpdate=true;
     distantTreeCrowns.instanceColor.needsUpdate=true;
     distantTreeTrunks.computeBoundingSphere();distantTreeCrowns.computeBoundingSphere();
     scene.add(distantTreeTrunks,distantTreeCrowns);
   }
 }
-
 function tree(x,z,tall=false){
   const h=terrainHeight(x,z);
   const trunk=tall?5:4;
@@ -734,6 +832,12 @@ const floralGreenMaterial=new THREE.MeshLambertMaterial({color:'#70a957'});
 const floralPetalMaterial=new THREE.MeshLambertMaterial({color:'#ffffff'});
 const floralLeafMaterial=new THREE.MeshLambertMaterial({color:'#80b95b'});
 const floralPalette=['#f6df56','#f37c85','#f0a4d3','#e6f4fd','#e8bb72'];
+const trimMaterial=new THREE.MeshLambertMaterial({color:'#926039'});
+const shutterMaterial=new THREE.MeshLambertMaterial({color:'#568a77'});
+const flowerBoxMaterial=new THREE.MeshLambertMaterial({color:'#cf8f51'});
+const roofAccentMaterial=new THREE.MeshLambertMaterial({color:'#e0b376'});
+const sparkleMaterial=new THREE.MeshBasicMaterial({color:'#e1fbff',transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
+const sparkleGeometry=new THREE.PlaneGeometry(.64,.09);
 function farmPatch(x,z){
   return VILLAGES.some(v=>x>=v.x+12&&x<=v.x+17&&z>=v.z-6&&z<=v.z-1);
 }
@@ -741,8 +845,12 @@ function rebuildDecoration(cx,cz){
   const id=chunkKey(cx,cz);
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
   const stems=[],blooms=[],tufts=[],crops=[],fencePosts=[],fenceRails=[];
+  const trimBlocks=[],shutters=[],flowerBoxes=[],roofBands=[],sparkles=[];
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
+    // A few reflected highlights along the shores. No particles across the whole lake.
+    if(get(x,h,z)==='water'&&lakeDistance(x+.5,z+.5)<-2&&
+       pixelHash(x,z,712)>.985){sparkles.push([x+.5,WATER_LEVEL+1.03,z+.5]);}
     if(get(x,h-1,z)!=='grass'||get(x,h,z)||isInsideHouse(x+.5,z+.5))continue;
     if(farmPatch(x,z)){
       // Erntefeld mit drei goldenen Getreidehalmen je Feld, plus niedriger Holzeinfassung.
@@ -769,6 +877,28 @@ function rebuildDecoration(cx,cz){
       blooms.push([px,h+.42,pz,pixelHash(x,z,176)]);
     }else if(r>.68){
       tufts.push([x+.5,h+.19,z+.5]);
+    }
+  }
+  // Wooden details are cheap instanced meshes; houses do not become bulky new blocks.
+  const belongs=(x,z)=>Math.floor(x/CHUNK)===cx&&Math.floor(z/CHUNK)===cz;
+  for(const v of VILLAGES)for(const [i,[ox,oz]] of HOUSE_OFFSETS.entries()){
+    const hx=v.x+ox,hz=v.z+oz;
+    if(belongs(hx,hz+3.51)){
+      // Door lintel, tiny lantern and flower box on the front facade.
+      trimBlocks.push([hx,8.52,hz+3.62,1.15,.16,.13]);
+      flowerBoxes.push([hx+1.55,7.0,hz+3.62,.87,.21,.35]);
+      roofBands.push([hx,10.05,hz+4.55,7.25,.12,.18]);
+    }
+    if(belongs(hx-3.62,hz)){
+      shutters.push([hx-3.62,7.5,hz-.85,.15,1.02,.22]);
+      shutters.push([hx-3.62,7.5,hz+.85,.15,1.02,.22]);
+    }
+    if(belongs(hx+3.62,hz)){
+      shutters.push([hx+3.62,7.5,hz-.85,.15,1.02,.22]);
+      shutters.push([hx+3.62,7.5,hz+.85,.15,1.02,.22]);
+    }
+    if(belongs(hx,hz-3.62)){
+      flowerBoxes.push([hx,7.10,hz-3.62,1.0,.21,.31]);
     }
   }
   const meshes=[];
@@ -802,6 +932,26 @@ function rebuildDecoration(cx,cz){
     mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
   }
   addScaled(fencePosts);addScaled(fenceRails);
+  function addTrim(items,material){
+    if(!items.length)return;
+    const mesh=new THREE.InstancedMesh(farmFenceGeometry,material,items.length);
+    for(let i=0;i<items.length;i++){
+      const [x,y,z,w,h,d]=items[i];dummy.position.set(x,y,z);
+      dummy.rotation.set(0,0,0);dummy.scale.set(w,h,d);dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+  }
+  addTrim(trimBlocks,trimMaterial);addTrim(shutters,shutterMaterial);
+  addTrim(flowerBoxes,flowerBoxMaterial);addTrim(roofBands,roofAccentMaterial);
+  if(sparkles.length){
+    const mesh=new THREE.InstancedMesh(sparkleGeometry,sparkleMaterial,sparkles.length);
+    for(let i=0;i<sparkles.length;i++){
+      dummy.position.set(...sparkles[i]);dummy.rotation.set(-Math.PI/2,0,0);
+      dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+  }
   decorativeMeshes.set(id,meshes);
 }
 function rebuild(){
@@ -1197,7 +1347,9 @@ function applyLighting(){
     {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
-  const p=options[lightMode];scene.background.set(p.sky);scene.fog.color.set(p.sky);
+  const p=options[lightMode];scene.background.set(p.sky);
+  scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
+  rimLight.intensity=lightMode===2?.16:.31;
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
   skyDome.material.map=skyTextures[lightMode];
@@ -1208,12 +1360,26 @@ function applyLighting(){
   applyView();
 }
 function applyView(){
-  const fogFar=farView?(MOBILE?155:190):(MOBILE?96:122);
-  scene.fog.near=farView?59:38;scene.fog.far=lightMode===2?fogFar*.84:fogFar;
+  const fogFar=farView?(MOBILE?178:220):(MOBILE?114:145);
+  scene.fog.near=farView?76:51;scene.fog.far=lightMode===2?fogFar*.83:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));
 }
+function applyGraphicMode(notify=false){
+  const ratio=Math.min(window.devicePixelRatio||1, MOBILE?
+    (graphicMode==='schoen'?1.35:1.0):(graphicMode==='schoen'?1.65:1.25));
+  renderer.setPixelRatio(ratio);
+  resize();
+  $('graphicsBtn').textContent=graphicMode==='schoen'?'✨ Grafik: Schön':'⚡ Grafik: Flüssig';
+  $('graphicsBtn').setAttribute('aria-pressed',String(graphicMode==='schoen'));
+  if(notify)toast(graphicMode==='schoen'?'Schönere Grafik aktiviert':'Flüssigere Grafik aktiviert');
+}
+$('graphicsBtn').addEventListener('click',()=>{
+  graphicMode=graphicMode==='schoen'?'flüssig':'schoen';
+  try{localStorage.setItem(STORAGE_DETAIL,graphicMode);}catch(_){}
+  applyGraphicMode(true);
+});
 $('viewBtn').addEventListener('click',()=>{
   farView=!farView;
   try{localStorage.setItem(STORAGE_VIEW,farView?'weit':'normal');}catch(_){}
@@ -1362,7 +1528,7 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();resize();
+baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0;
 function animate(now){
