@@ -1,4 +1,4 @@
-// BLOCKWELT V6 — selbst entwickeltes kreatives Blockabenteuer.
+// BLOCKWELT V7 — Landschafts- und Sichtweiten-Upgrade, V6-kompatibel.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -9,6 +9,9 @@ const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blät
 const HALF = 96; // 192 × 192 Felder; Chunk-Streaming hält den iPhone-Speicher klein.
 const LEGACY_HALF = 32; // Der komplette alte V3-Weltausschnitt bleibt erhalten.
 const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 740;
+const STORAGE_VIEW = 'blockwelt-view-v7';
+let farView = true; // Fernlandschaft ist ein leichtes LOD-Modell, KEIN zusätzlicher vollständiger Chunk.
+try { farView = localStorage.getItem(STORAGE_VIEW) !== 'normal'; } catch (_) {}
 const STREAM_RADIUS = MOBILE ? 2 : 3; // iPhone: maximal 5×5 aktive Chunks.
 const WATER_LEVEL = 5;
 const VILLAGES = [
@@ -37,19 +40,19 @@ let descendHeld = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#a5daf8');
-scene.fog = new THREE.Fog('#a5daf8', MOBILE ? 26 : 40, MOBILE ? 58 : 84);
-const camera = new THREE.PerspectiveCamera(74, 1, .06, MOBILE ? 76 : 100);
+scene.fog = new THREE.Fog('#a5daf8', MOBILE ? 42 : 58, MOBILE ? 125 : 155);
+const camera = new THREE.PerspectiveCamera(74, 1, .06, MOBILE ? 165 : 195);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({antialias:!MOBILE, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.35 : 1.65));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.26;
+renderer.toneMappingExposure = 1.16;
 renderer.setSize(window.innerWidth,window.innerHeight);
 gameEl.appendChild(renderer.domElement);
-const ambientSky = new THREE.HemisphereLight('#fff3df','#536b59',2.1);
+const ambientSky = new THREE.HemisphereLight('#fff2dd','#567455',1.83);
 scene.add(ambientSky);
-const sunlight = new THREE.DirectionalLight('#fff0c6',2.5);
+const sunlight = new THREE.DirectionalLight('#fff3d5',2.26);
 sunlight.position.set(-34,53,-23);
 scene.add(sunlight);
 
@@ -88,6 +91,9 @@ function texture(type,face){
     if(type==='planks'&&face==='top'&&x%16<3)index=2;
     if(type==='bricks'&&((y%16<2)||((x+(Math.floor(y/16)%2)*8)%16<2)))index=2;
     if(type==='cobble'&&((x%12<2)||(y%12<2)))index=2;
+    if(type==='stone'&&random()>.94)index=3;
+    if(type==='leaves'&&random()>.965)index=3;
+    if(type==='path'&&y%16<2&&random()>.35)index=2;
     ctx.fillStyle=colors[index];ctx.fillRect(x,y,4,4);
   }
   if(type==='grass'&&face==='side'){
@@ -112,6 +118,9 @@ for(const type of BLOCK_TYPES){
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else materialByType[type]=[side,side,top,bottom,side,side];
 }
+// Gentle water shimmer: one repeating procedural texture, not a heavy shader.
+const waterSurfaceMap=materialByType.water[0].map;
+waterSurfaceMap.wrapS=THREE.RepeatWrapping;waterSurfaceMap.wrapT=THREE.RepeatWrapping;
 const blockGeo=new THREE.BoxGeometry(1,1,1);
 const key=(x,y,z)=>`${x},${y},${z}`;
 const get=(x,y,z)=>blocks.get(key(x,y,z));
@@ -383,7 +392,105 @@ function updateWorldStream(force=false){
     const [x,z]=id.split(',').map(Number);
     if(Math.max(Math.abs(cx-x),Math.abs(cz-z))>STREAM_RADIUS+1)unloadChunkData(x,z);
   }
+  // Vereinfachte Berg-, Wald- und See-Silhouetten weit hinter den echten Baublöcken.
+  rebuildDistantLandscape(cx,cz);
 }
+// V7 FERNLANDSCHAFT: Ein zusammengefasstes Geometrieobjekt statt hunderter echter Chunks.
+// Diese Meshes sind KEINE Baublöcke, keine Kollisionskörper und nicht anvisierbar.
+const lodMaterial = new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
+const lodTreeTrunkMat = new THREE.MeshLambertMaterial({color:'#896e4d',fog:true});
+const lodTreeLeafMat = new THREE.MeshLambertMaterial({color:'#699c62',fog:true});
+const lodTreeTrunkGeo = new THREE.BoxGeometry(.7,3.4,.7);
+const lodTreeLeafGeo = new THREE.BoxGeometry(3.3,3.3,3.3);
+const lodPalette={
+  grass:new THREE.Color('#78b95c'),grass2:new THREE.Color('#6cae61'),
+  sand:new THREE.Color('#dbc68f'),stone:new THREE.Color('#8e9c9a'),
+  snow:new THREE.Color('#e6f1f3'),water:new THREE.Color('#64b8d3'),
+  forest:new THREE.Color('#649f57'),village:new THREE.Color('#93b975')
+};
+let distantTerrain=null,distantTreeTrunks=null,distantTreeCrowns=null;
+function clearDistantLandscape(){
+  if(distantTerrain){scene.remove(distantTerrain);distantTerrain.geometry.dispose();distantTerrain=null;}
+  if(distantTreeTrunks){scene.remove(distantTreeTrunks);distantTreeTrunks.dispose();distantTreeTrunks=null;}
+  if(distantTreeCrowns){scene.remove(distantTreeCrowns);distantTreeCrowns.dispose();distantTreeCrowns=null;}
+}
+function rebuildDistantLandscape(cx,cz){
+  clearDistantLandscape();
+  const ring=farView?(MOBILE?6:7):4;
+  const positions=[],colors=[];
+  // 2-m-Landschaftsraster: aus der Ferne kantig, aber wesentlich leichter als volle Voxelblöcke.
+  const step=2;
+  const trees=[];
+  const addTri=(a,b,c,col,shade=1)=>{
+    positions.push(...a,...b,...c);
+    for(let i=0;i<3;i++)colors.push(col.r*shade,col.g*shade,col.b*shade);
+  };
+  const quad=(a,b,c,d,col,shade=1)=>{addTri(a,b,c,col,shade);addTri(a,c,d,col,shade);};
+  for(let ox=-ring;ox<=ring;ox++)for(let oz=-ring;oz<=ring;oz++){
+    // Bereits real gerenderte Chunks nicht doppelt zeichnen.
+    if(Math.max(Math.abs(ox),Math.abs(oz))<=STREAM_RADIUS)continue;
+    const ccx=cx+ox,ccz=cz+oz;
+    if(ccx<-chunksPerSide||ccx>=chunksPerSide||ccz<-chunksPerSide||ccz>=chunksPerSide)continue;
+    const xmin=ccx*CHUNK,zmin=ccz*CHUNK;
+    for(let x=xmin;x<xmin+CHUNK;x+=step)for(let z=zmin;z<zmin+CHUNK;z+=step){
+      const h=terrainHeight(x+1,z+1),biome=biomeAt(x+1,z+1);
+      const water=lakeDistance(x+1,z+1)<0&&h<=WATER_LEVEL;
+      const y=water?WATER_LEVEL+.10:h-.045;
+      const col=water?lodPalette.water:h>=27&&biome==='berge'?lodPalette.snow:
+        biome==='berge'||biome==='fels'?lodPalette.stone:
+        biome==='wueste'||biome==='sand'||biome==='see'?lodPalette.sand:
+        biome==='dorf'?lodPalette.village:
+        biome==='nadelwald'?lodPalette.forest:
+        (pixelHash(x,z,77)>.54?lodPalette.grass:lodPalette.grass2);
+      quad([x,y,z],[x,y,z+step],[x+step,y,z+step],[x+step,y,z],col,0.92+pixelHash(x,z,91)*.13);
+      // Visible 1-5 m cliff faces prevent distant floating grass carpets.
+      const east=terrainHeight(Math.min(HALF-1,x+step+1),z+1);
+      const south=terrainHeight(x+1,Math.min(HALF-1,z+step+1));
+      if(y-east>.9){const bottom=Math.max(east-.08,y-6);
+        quad([x+step,y,z],[x+step,y,z+step],[x+step,bottom,z+step],[x+step,bottom,z],lodPalette.stone,.72);
+      }
+      if(y-south>.9){const bottom=Math.max(south-.08,y-6);
+        quad([x,y,z+step],[x,bottom,z+step],[x+step,bottom,z+step],[x+step,y,z+step],lodPalette.stone,.78);
+      }
+    }
+    // Voxel-Baumkronen am Horizont: 2 instanzierte Geometrien, keine individuellen Draw Calls.
+    for(let gx=Math.floor((xmin-6)/8)*8;gx<xmin+CHUNK+6;gx+=8)
+    for(let gz=Math.floor((zmin-6)/8)*8;gz<zmin+CHUNK+6;gz+=8){
+      const ax=gx+Math.floor(pixelHash(gx,gz,51)*3)-1;
+      const az=gz+Math.floor(pixelHash(gx,gz,52)*3)-1;
+      if(Math.floor(ax/CHUNK)!==ccx||Math.floor(az/CHUNK)!==ccz)continue;
+      if(generatedTreeAt(ax,az)&&trees.length<380){trees.push([ax,terrainHeight(ax,az),az]);}
+    }
+  }
+  if(positions.length){
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+    geo.computeVertexNormals();geo.computeBoundingSphere();
+    distantTerrain=new THREE.Mesh(geo,lodMaterial);
+    distantTerrain.frustumCulled=true;
+    distantTerrain.renderOrder=-2;
+    scene.add(distantTerrain);
+  }
+  if(trees.length){
+    distantTreeTrunks=new THREE.InstancedMesh(lodTreeTrunkGeo,lodTreeTrunkMat,trees.length);
+    distantTreeCrowns=new THREE.InstancedMesh(lodTreeLeafGeo,lodTreeLeafMat,trees.length);
+    for(let i=0;i<trees.length;i++){
+      const [x,y,z]=trees[i];
+      dummy.position.set(x+.5,y+1.7,z+.5);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+      distantTreeTrunks.setMatrixAt(i,dummy.matrix);
+      dummy.position.set(x+.5,y+4.6,z+.5);dummy.updateMatrix();
+      distantTreeCrowns.setMatrixAt(i,dummy.matrix);
+      distantTreeCrowns.setColorAt(i,new THREE.Color(pixelHash(x,z,88)>.5?'#5c995b':'#82b46b'));
+    }
+    distantTreeTrunks.instanceMatrix.needsUpdate=true;
+    distantTreeCrowns.instanceMatrix.needsUpdate=true;
+    distantTreeCrowns.instanceColor.needsUpdate=true;
+    distantTreeTrunks.computeBoundingSphere();distantTreeCrowns.computeBoundingSphere();
+    scene.add(distantTreeTrunks,distantTreeCrowns);
+  }
+}
+
 function tree(x,z,tall=false){
   const h=terrainHeight(x,z);
   const trunk=tall?5:4;
@@ -503,17 +610,27 @@ function rebuildChunk(cx,cz){
 const floralStemGeometry=new THREE.BoxGeometry(.08,.34,.08);
 const floralPetalGeometry=new THREE.BoxGeometry(.26,.20,.26);
 const floralGrassGeometry=new THREE.BoxGeometry(.10,.39,.10);
+const farmCropGeometry=new THREE.BoxGeometry(.12,.68,.12);
+const farmCropMaterial=new THREE.MeshLambertMaterial({color:'#edc65c'});
 const floralGreenMaterial=new THREE.MeshLambertMaterial({color:'#70a957'});
 const floralPetalMaterial=new THREE.MeshLambertMaterial({color:'#ffffff'});
 const floralLeafMaterial=new THREE.MeshLambertMaterial({color:'#80b95b'});
 const floralPalette=['#f6df56','#f37c85','#f0a4d3','#e6f4fd','#e8bb72'];
+function farmPatch(x,z){
+  return VILLAGES.some(v=>x>=v.x+12&&x<=v.x+17&&z>=v.z-6&&z<=v.z-1);
+}
 function rebuildDecoration(cx,cz){
   const id=chunkKey(cx,cz);
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
-  const stems=[],blooms=[],tufts=[];
+  const stems=[],blooms=[],tufts=[],crops=[];
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
     if(get(x,h-1,z)!=='grass'||get(x,h,z)||isInsideHouse(x+.5,z+.5))continue;
+    if(farmPatch(x,z)){
+      // Kleine goldene Felder neben den Dorfhäusern, ohne Baublöcke zu überschreiben.
+      for(let j=0;j<3;j++)crops.push([x+.24+j*.26,h+.30+(pixelHash(x+j,z,209)-.5)*.10,z+.35+(j%2)*.30]);
+      continue;
+    }
     const r=pixelHash(x,z,172);
     // Keep entrances and roads clear.
     if(inVillage(x,z)&&Math.abs(x-inVillage(x,z).x)<=2&&Math.abs(z-inVillage(x,z).z)<=2)continue;
@@ -544,6 +661,9 @@ function rebuildDecoration(cx,cz){
   spawn(floralStemGeometry,floralGreenMaterial,stems,false);
   spawn(floralPetalGeometry,floralPetalMaterial,blooms,true);
   spawn(floralGrassGeometry,floralLeafMaterial,tufts,false);
+  if(crops.length){
+    spawn(farmCropGeometry,farmCropMaterial,crops,false);
+  }
   decorativeMeshes.set(id,meshes);
 }
 function rebuild(){
@@ -579,6 +699,26 @@ for(let i=0;i<12;i++){
   }
   clouds.add(group);
 }
+
+// Procedural three-tone sky: a single inexpensive sphere, no remote image assets.
+function skyGradient(high,mid,low){
+  const c=document.createElement('canvas');c.width=16;c.height=256;
+  const ctx=c.getContext('2d'),g=ctx.createLinearGradient(0,0,0,256);
+  g.addColorStop(0,high);g.addColorStop(.56,mid);g.addColorStop(1,low);
+  ctx.fillStyle=g;ctx.fillRect(0,0,16,256);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+  tex.magFilter=THREE.LinearFilter;return tex;
+}
+const skyTextures=[
+  skyGradient('#65aff0','#b6ddf5','#e5f5e6'),
+  skyGradient('#627bad','#f3bd96','#ffe0ab'),
+  skyGradient('#091e42','#344a6a','#65758d')
+];
+const skyDome=new THREE.Mesh(
+  new THREE.SphereGeometry(80,24,12),
+  new THREE.MeshBasicMaterial({map:skyTextures[0],side:THREE.BackSide,depthWrite:false,fog:false})
+);
+skyDome.frustumCulled=false;skyDome.renderOrder=-1000;scene.add(skyDome);
 
 // Warm sun and moon are lightweight, unlit sprites rather than expensive post-processing.
 function skyDisk(day){
@@ -724,7 +864,7 @@ function setFlying(next){
   toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
 }
 function exportWorld(){
-  const data={format:'blockwelt',version:6,savedAt:new Date().toISOString(),edits:[...edits.values()]};
+  const data={format:'blockwelt',version:7,savedAt:new Date().toISOString(),edits:[...edits.values()]};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
@@ -737,7 +877,7 @@ async function importWorld(file){
   if(file.size>2_000_000){toast('Diese Datei ist zu groß');return;}
   try{
     const data=JSON.parse(await file.text());
-    if(data?.format!=='blockwelt'||![2,3,5,6].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    if(data?.format!=='blockwelt'||![2,3,5,6,7].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
     const incoming=new Map();
     for(const edit of data.edits){
       if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
@@ -911,17 +1051,33 @@ $('mobsBtn').addEventListener('click',()=>{
 });
 function applyLighting(){
   const options=[
-    {sky:'#a5daf8',sun:'#fff4d4',power:2.5,hemi:2.1,exposure:1.26,label:'☀ Morgensonne'},
-    {sky:'#e7ad86',sun:'#ffba78',power:2.35,hemi:1.45,exposure:1.3,label:'🌅 Goldene Stunde'},
-    {sky:'#152943',sun:'#9bb7df',power:.42,hemi:.83,exposure:1.08,label:'☾ Sternennacht'}
+    {sky:'#8cc9f0',sun:'#fff2cb',power:2.28,hemi:1.85,exposure:1.16,label:'☀ Morgensonne'},
+    {sky:'#dfae8c',sun:'#ffd09a',power:2.2,hemi:1.35,exposure:1.17,label:'🌅 Goldene Stunde'},
+    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.87,exposure:1.08,label:'☾ Sternennacht'}
   ];
   const p=options[lightMode];scene.background.set(p.sky);scene.fog.color.set(p.sky);
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
+  skyDome.material.map=skyTextures[lightMode];
+  skyDome.material.needsUpdate=true;
   sunSprite.visible=lightMode!==2;moonSprite.visible=lightMode===2;
   $('nightStars').classList.toggle('visible',lightMode===2);
   $('dayBtn').textContent=p.label;
+  applyView();
 }
+function applyView(){
+  const fogFar=farView?(MOBILE?140:180):(MOBILE?90:115);
+  scene.fog.near=farView?45:31;scene.fog.far=lightMode===2?fogFar*.84:fogFar;
+  camera.far=fogFar+20;camera.updateProjectionMatrix();
+  $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
+  $('viewBtn').setAttribute('aria-pressed',String(farView));
+}
+$('viewBtn').addEventListener('click',()=>{
+  farView=!farView;
+  try{localStorage.setItem(STORAGE_VIEW,farView?'weit':'normal');}catch(_){}
+  applyView();rebuildDistantLandscape(Math.floor(player.x/CHUNK),Math.floor(player.z/CHUNK));
+  toast(farView?'Große Fernsicht aktiviert!':'Kürzere Sichtweite spart Leistung.');
+});
 $('dayBtn').addEventListener('click',()=>{
   lightMode=(lightMode+1)%3;applyLighting();
   toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
@@ -1064,20 +1220,23 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-baseWorld();loadEdits();rebuild();syncUndo();updateCamera();resize();
+baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();resize();
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0;
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);
+  skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
   sunSprite.position.set(player.x-39,player.y+51,player.z-55);
   moonSprite.position.set(player.x+38,player.y+53,player.z-48);
   let near=0;for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
-  clouds.position.x=Math.sin(now*.00007)*1.4;
+  clouds.position.set(player.x*.66+Math.sin(now*.00007)*2,0,player.z*.66);
+  waterSurfaceMap.offset.x=Math.sin(now*.00015)*.065;
+  waterSurfaceMap.offset.y=Math.cos(now*.00011)*.045;
   renderer.render(scene,camera);
 }
 requestAnimationFrame(animate);

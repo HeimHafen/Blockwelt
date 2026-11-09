@@ -1,69 +1,64 @@
-# BLOCKWELT V6 – Abenteuerwelt
+# Blockwelt V7 – Fernweh
 
-Eine eigenständige, im Browser spielbare 3D-Klötzchenwelt für Smartphone und Desktop. Grundlage ist die funktionierende **Blockwelt V5**. Die Welt nutzt selbst generierte Pixeltexturen und eigenständige Figuren, keine Minecraft-Originaldateien. Blockwelt ist **kein offizielles Minecraft-Produkt**.
+**Eigenständiges, kreatives 3D-Blockspiel** für Smartphone und Desktop. Weiterentwicklung der funktionierenden **V6 Abenteuerwelt**. Alle Grafiken und Figuren werden vom Spiel selbst erzeugt; es enthält keine Minecraft-Dateien. Es ist kein offizielles Minecraft-Produkt.
 
-## Was V6 tatsächlich enthält
+## Neu in V7
 
-- **192 × 192 Weltfelder** mit dem Chunk-Streaming aus V5: Auf Mobilgeräten werden maximal 5 × 5 sichtbare 16er-Chunks gerendert, dazu ein kleiner Datenpuffer. Keine unendliche Welt.
-- **Bestehende V5-Welt und Bedienung erhalten:** Startwiese, Dörfer, Wälder, Berge, Seen, Joystick, Umschauen, Springen, Flugmodus, Bauen, Abbauen, Rückgängig, Export/Import.
-- **Landschafts-Upgrade:** Blumen und Grasbüschel als leichte Instanzen, rosafarbene Blütenbäume, Schnee auf hohen Berggipfeln, wärmere Beleuchtung und atmosphärische Sonnen-/Mondscheiben.
-- **Zwei Entdeckerorte:** eine steinerne **Himmelswarte** mit Leuchtblock an der Spitze und ein **Kristallfall** aus Wasserblöcken vor einer Felswand. Die Warte ist ein Aussichtsziel; zum Erreichen des oberen Bereichs eignet sich der Flugmodus.
-- **Lebendigere Welt:** insgesamt 21 einfache eigenständige 3D-Figuren – Dorfbewohner, friedliche grüne Schleicher, Kühe und Schafe. Sie laufen innerhalb ihrer Bereiche umher und lassen sich freundlich ansprechen bzw. streicheln.
-- **Drei Lichtstimmungen:** Morgensonne, Goldene Stunde und Sternennacht, manuell im Menü umschaltbar. Keine automatische Uhr.
-- **15 direkt wählbare Baumaterialien:** die bisherigen 12 plus Schnee, Blüten und Laternen; Wege werden in Dörfern automatisch verwendet.
-- **Schnellreisen** zur Startwiese, zum Sonnen-Dorf, Birken-Dorf, zur Himmelswarte und zum Kristallfall.
-- **iPhone-optimiertes Menü:** kompakte Optionen, scrollbarer Dialog auf kleinen Displays und Landschaftsausrichtung.
+1. **Mehr Fernsicht statt blauer Leere:** Der sichtbare Horizont wird aus einem separaten, stark vereinfachten Landschaftsmodell (Level of Detail, LOD) ergänzt. Hinter den tatsächlich geladenen 16×16-Blöcke-Chunks erscheinen Hügel, Felsen, Sand, Seen und Baum-Silhouetten. Die fernen Flächen sind nur Dekoration – nicht abbaubar, nicht begehbar; beim Annähern werden daraus wieder die echten Baublöcke.
+2. **Weniger, sanfterer Nebel:** Größere Sichtweite, besonders im Hochland. Die Sichtweite kann im Menü zwischen **Weit** (Standard) und **Normal** (leistungsärmer) gewechselt werden.
+3. **Schönerer Himmel:** eigenständig erzeugter Farbverlauf für Tageslicht, Sonnenuntergang und Nacht. Kein heruntergeladenes Bild nötig.
+4. **Mehr Atmosphäre:** dezente Wasserbewegung, abgestimmte Sonneneinstrahlung und kontrastreichere Landschaftsfarben.
+5. **Kleine Dorffelder:** Goldfarbene Feldpflanzen als instanzierte Dekoration neben den Dorfbauten. Sie beeinflussen die Spieler-Bauklötze nicht.
+6. **Erhalten:** die komplette 192×192-V6-Welt, beide Dörfer, Himmelswarte, Kristallfall, Bewohner, Tiere, Schleicher, Flugmodus, Spielmenü, Touch-Steuerung, Bauen/Abbauen, Undo und Export/Import.
 
-## Wichtig: V5 vor dem Update sichern
+## Erst sichern – dann installieren
 
-1. Die bestehende Blockwelt öffnen: https://heimhafen.github.io/Blockwelt/
-2. Im Menü **„Welt sichern“** wählen und die heruntergeladene Datei `Blockwelt-Meine-Welt.json` in der Dateien-App aufbewahren. **GitHub sichert nicht automatisch die lokalen Browser-Spielstände!**
-3. Optional den aktuellen funktionierenden V5-Commit auf GitHub notieren oder das Repository als ZIP herunterladen.
-4. Safari-Website-Daten und lokalen Speicher **nicht löschen**, solange die neue Version noch nicht geprüft wurde.
+1. **Blockwelt V6** unter https://heimhafen.github.io/Blockwelt/ öffnen.
+2. In der App über **☰ → Welt sichern** die Datei `Blockwelt-Meine-Welt.json` herunterladen und sicher in der Dateien-App speichern. Eine GitHub-Sicherung allein **enthält den persönlichen Browser-Spielstand nicht**.
+3. Optional zusätzlich das GitHub-Repository als ZIP sichern oder den letzten funktionierenden V6-Commit notieren.
+4. Safari-Browserdaten und Website-Daten **nicht löschen**.
 
-## Installation auf GitHub (iPhone/Safari)
+## Installation
 
-1. `Blockwelt_V6_Abenteuerwelt.zip` in die Dateien-App laden und entpacken.
-2. In GitHub **HeimHafen/Blockwelt** öffnen (nicht `Family-Spots-Map`).
-3. Genau die **vier Dateien** `index.html`, `styles.css`, `game.js`, `README.md` direkt ins **Hauptverzeichnis** hochladen und die gleichnamigen bisherigen Dateien ersetzen. Nicht das ZIP selbst hochladen, keine zusätzliche Unterordner-Ebene anlegen.
-4. Änderungen auf `main` committen. Bei GitHub Pages muss die Veröffentlichungsquelle `main` und `/(root)` sein.
-5. Nach erfolgreicher Veröffentlichung https://heimhafen.github.io/Blockwelt/ öffnen. Oben muss **„Abenteuerwelt · V6“** stehen. Wenn noch V5 angezeigt wird: Seite neu laden und gegebenenfalls etwas warten, aber keine Browserdaten löschen.
-6. Zuerst Menü und Steuerung testen, danach Dorf, Kristallfall, Himmelswarte, Tag/Nacht und Speicher-/Ladefunktion prüfen. Falls eigene Bauten fehlen, die zuvor gesicherte JSON-Datei über **„Welt laden“** importieren.
+1. Das ZIP `Blockwelt_V7_Fernweh_WebApp.zip` in der iPhone-Dateien-App entpacken.
+2. **Ausschließlich `HeimHafen/Blockwelt`** auf GitHub öffnen. Nicht `Family-Spots-Map`.
+3. Die vier Dateien `index.html`, `styles.css`, `game.js`, `README.md` **direkt im Hauptverzeichnis** hochladen und jeweils die vorhandenen Dateien ersetzen. Kein zusätzliches Unterverzeichnis, keine ZIP-Datei hochladen.
+4. **Commit** direkt auf `main`; GitHub Pages bleibt auf `main` und `/(root)`.
+5. Nach der Veröffentlichung https://heimhafen.github.io/Blockwelt/?v=7 öffnen. Oben muss **„Fernweh · V7“** stehen.
+6. **Testen:** Menü, Blickbewegung, Laufen, Bauen und Abbauen; dann Dorf, Hochland, See, Sichtweiten-Schalter, Tiere und V6-Speicherstand prüfen. Bei Leistungseinbrüchen im Menü **Sichtweite: Normal** wählen.
 
-### Working Copy (Alternative zum Browser-Upload)
+### Commit-Texte
+
+**Zusammenfassung:** `Blockwelt V7 – Fernsicht, Himmel und lebendigere Landschaft`
+
+**Detaillierte Informationen:** `Mobiles Fernlandschafts-LOD statt zusätzlicher Vollblöcke; größere Sichtweite, Farbverlauf-Himmel, Wasserbewegung, Dorffelder und feinere Farben. Alte V6-Welt und Spielstände erhalten.`
+
+### Working Copy
 
 - Repository: `HeimHafen/Blockwelt`
 - Source-Referenz: `refs/heads/main`
 - Vorhandene oder neue Remote-Referenz: `refs/heads/main`
 - Force Push: **Aus**
-- Commit-Zusammenfassung: `Blockwelt V6 – Abenteuerwelt mit Tieren, Entdeckerorten und neuer Atmosphäre`
-- Detaillierte Informationen: `V5-Welt und Steuerung beibehalten; Blumen, Blütenbäume, Schnee, Kühe, Schafe, Himmelswarte, Kristallfall, fünf Schnellreiseziele, drei Lichtstimmungen und neue Baumaterialien ergänzt.`
 
-## Spielstand und Kompatibilität
+## Spielstände und Grenzen
 
-- Der bisherige Browser-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt erhalten.
-- V2-, V3- und V5-Exportdateien können weiterhin importiert werden; V6 exportiert und importiert ebenfalls JSON.
-- Die ursprünglichen V5-Funktionen zur Berechnung der alten Landschaft wurden nicht verändert. Die neue Dekoration und die neuen Bauwerke liegen zusätzlich darüber. Bestehende Bauänderungen werden bei der Chunk-Erzeugung zuletzt aufgebracht.
-- Beim Import wird der aktuelle Spielstand **nach Bestätigung ersetzt**. Vorher unbedingt sichern.
-- Die Welt wird weiterhin **nur lokal im Browser** gespeichert. Ein anderes Gerät sieht nicht automatisch dieselben Bauten.
+- Der alte lokale Speicherschlüssel **`blockwelt-kleine-baumeister-v1`** bleibt unverändert, dadurch werden die früheren Bauten weiter geladen.
+- Exportformat V7 enthält weiterhin nur die vom Spieler geänderten Blöcke; V2-, V3-, V5- und V6-JSON-Dateien lassen sich importieren.
+- Ein **Import überschreibt nach Bestätigung** den aktuellen Spielstand. Vorher exportieren.
+- „Welt neu anfangen“ kann die lokalen Bauänderungen löschen. Nicht zum Testen des Updates drücken.
+- Die Welt ist **192 × 192** Felder groß, nicht unendlich. Die Fernlandschaft ist nur Kulisse, keine zusätzlichen echten Blöcke.
+- Es gibt keine Kampf- oder Explosionsfunktion und keine Multiplayer-Funktion; Schleicher bleiben freundlich.
+- Die grafische KI-Konzeptillustration aus dem Chat ist **nicht** ein echtes Screenshot-Ziel für diese Version. V7 ist ein mobiles WebGL-Blockspiel mit bewusst reduzierter Geometrie, nicht fotorealistisch.
 
-## Technische Hinweise und Grenzen
+## Technische Prüfung und offene Tests
 
-- Three.js **0.187.0** wird als ES-Modul über jsDelivr geladen (MIT-Lizenz). Für den ersten Start wird eine Internetverbindung benötigt.
-- Die spektakuläre KI-Bildvorschau ist **ein Konzeptbild**, kein Screenshot der tatsächlichen WebGL-Grafik. V6 verwendet einfache, mobile-freundliche Voxelgeometrie; keine fotorealistischen Schatten, keine komplexe Burganlage und keine Shader-Pipeline wie in dem Bild.
-- Schleicher sind **friedlich**: keine Kämpfe, Explosionen oder Schadensmechanik. Dorfbewohner und Tiere haben einfache Bewegungsmuster, keine komplexe Wegfindung.
-- Kein Crafting, kein Multiplayer, keine unendliche Welt, keine komplexe Wasserphysik.
-- Die zusätzliche Dekoration kann die Leistung auf älteren Smartphones beeinflussen. V6 nutzt weiterhin Chunk-Streaming, instanzierte Blöcke und eine begrenzte Pixelauflösung auf Mobilgeräten.
+- `node --check game.js` erfolgreich.
+- Browser-Logiktests in 393×852, 375×667 und 844×390 mit **Three.js-Testattrappe** erfolgreich: Initialisierung, Fernlandschaftsaufbau, Sichtweitenwechsel, Tag/Nacht, Schnellreise, Menü und V6-Speicherstandimport.
+- Sämtliche Kernfunktionen der V6-Weltberechnung (`terrainHeight`, `biomeAt`, `baseWorld`, `generateChunkData`, `loadEdits`, `saveEdits`, `modifyWorld`) wurden unverändert übernommen.
+- Die fernsichtige Darstellung verwendet eine einzige zusammengefasste Geometrie sowie zwei instanzierte Baumarten (Stämme und Kronen). Die eigentliche, interaktive Welt bleibt auf die bereits genutzten Chunkbereiche beschränkt.
+- **Nicht geprüft:** reales Three.js-WebGL-Rendering und FPS auf einem echten iPhone / Android-Gerät sowie langfristige Stabilität nach mehreren Stunden Spielen. Diese Tests müssen nach Veröffentlichung erfolgen.
+- Three.js 0.187.0 (MIT) wird wie bisher über jsDelivr geladen. Beim ersten Spielstart ist Internet erforderlich.
 
-## Prüfstand
+## Rückkehr zu V6
 
-- JavaScript-Syntaxprüfung mit `node --check`: bestanden.
-- DOM-Abgleich: alle aus JavaScript verwendeten Elemente vorhanden.
-- Vergleich der zentralen V5-Funktionen für ursprüngliches Terrain: unverändert.
-- Browser-Logiktest mit **Three.js-Testattrappe**: Start, Menüs, Lichtwechsel, Schnellreisen, Chunk-Erzeugung, Tiere, Import einer V5-JSON-Sicherung ohne Skriptfehler durchlaufen.
-- Layout-Screenshots in 393 × 852, 375 × 667 und 844 × 390 erstellt. Die Testattrappe rendert **keine echten 3D-Grafiken**.
-- **Noch offen:** echter WebGL-Grafiktest mit Three.js und praktischer Touch-/Leistungs-Test auf einem iPhone. Daher keine 1:1-Grafik- oder Performance-Garantie.
-
-## Zurück zur V5
-
-Wenn V6 auf deinem iPhone Probleme verursacht, den letzten funktionierenden V5-Commit auf GitHub wiederherstellen. Anschließend ggf. den gesicherten V5-Spielstand laden. Vor jedem Wechsel den aktuellen Spielstand exportieren, da V6-Bauten aus neuen Materialien in V5 nicht vollständig darstellbar sind.
+Bei Problemen: auf GitHub den zuletzt funktionierenden V6-Commit durch einen neuen Wiederherstellungs-Commit herstellen (nicht per Force Push) und den gesicherten Spielstand über **Welt laden** importieren, falls erforderlich.

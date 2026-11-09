@@ -87,3 +87,10 @@ html,body{touch-action:auto}
 .option-btn:active{transform:scale(.985)}
 .night-stars{background-image:radial-gradient(1px 1px at 8% 20%,#fff 100%,transparent),radial-gradient(1.5px 1.5px at 72% 12%,#fff 100%,transparent),radial-gradient(1px 1px at 47% 9%,#fff 100%,transparent),radial-gradient(1px 1px at 84% 34%,#fff 100%,transparent),radial-gradient(1px 1px at 21% 44%,#fff 100%,transparent);}
 @media(max-height:740px){.dialog-main{padding:9px 14px}.menu-options{gap:4px}.option-btn{min-height:29px}}
+
+/* V7: Etwas präzisere HUD-Lesbarkeit, die Steuerpositionen bleiben unverändert. */
+.identity{background:rgba(255,252,238,.94)}
+.region-label{background:rgba(255,252,238,.94)}
+.target-label{text-shadow:0 2px 5px rgba(14,43,38,.85),0 0 2px rgba(14,43,38,.65)}
+.hint{text-shadow:0 1px 5px rgba(15,50,40,.95)}
+#viewBtn[aria-pressed="true"]{border-color:#7fb8a0;background:#dcefe2;color:#265b43}
