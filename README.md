@@ -1,64 +1,47 @@
-# Blockwelt V7 – Fernweh
+# Blockwelt V8 – Lebendige Welt
 
-**Eigenständiges, kreatives 3D-Blockspiel** für Smartphone und Desktop. Weiterentwicklung der funktionierenden **V6 Abenteuerwelt**. Alle Grafiken und Figuren werden vom Spiel selbst erzeugt; es enthält keine Minecraft-Dateien. Es ist kein offizielles Minecraft-Produkt.
+Ein eigenes, familienfreundliches 3D-Klötzchen-Abenteuer als Web-App. Eigenständige Grafiken und prozedural erzeugte Texturen; keine Minecraft-Originaldateien. Basiert auf der funktionierenden V5/V6-Grundlage und enthält auch die V7-Fernsicht.
 
-## Neu in V7
+## Was ist neu?
 
-1. **Mehr Fernsicht statt blauer Leere:** Der sichtbare Horizont wird aus einem separaten, stark vereinfachten Landschaftsmodell (Level of Detail, LOD) ergänzt. Hinter den tatsächlich geladenen 16×16-Blöcke-Chunks erscheinen Hügel, Felsen, Sand, Seen und Baum-Silhouetten. Die fernen Flächen sind nur Dekoration – nicht abbaubar, nicht begehbar; beim Annähern werden daraus wieder die echten Baublöcke.
-2. **Weniger, sanfterer Nebel:** Größere Sichtweite, besonders im Hochland. Die Sichtweite kann im Menü zwischen **Weit** (Standard) und **Normal** (leistungsärmer) gewechselt werden.
-3. **Schönerer Himmel:** eigenständig erzeugter Farbverlauf für Tageslicht, Sonnenuntergang und Nacht. Kein heruntergeladenes Bild nötig.
-4. **Mehr Atmosphäre:** dezente Wasserbewegung, abgestimmte Sonneneinstrahlung und kontrastreichere Landschaftsfarben.
-5. **Kleine Dorffelder:** Goldfarbene Feldpflanzen als instanzierte Dekoration neben den Dorfbauten. Sie beeinflussen die Spieler-Bauklötze nicht.
-6. **Erhalten:** die komplette 192×192-V6-Welt, beide Dörfer, Himmelswarte, Kristallfall, Bewohner, Tiere, Schleicher, Flugmodus, Spielmenü, Touch-Steuerung, Bauen/Abbauen, Undo und Export/Import.
+- **Wasser in Seen und am Wasserfall:** Statt aller transparenten Würfelseiten werden hauptsächlich die oberen Wasserflächen und die äußeren Wände gezeichnet. Dadurch entstehen ruhigere Seeflächen und weniger störende innere Kanten.
+- **Kristallfall:** Die bisher gerade, hoch aufragende Stein-/Wassersäule wurde durch einen gestaffelten Felsrücken mit sichtbarem Wasserlauf und flachem Becken ersetzt.
+- **Dorfhäuser:** Satteldächer, Dachüberstände, Giebel, Holzbalken, Eingangsüberdachungen, Fenster und kleine Details. Türen bleiben offen; die Dorfwege sind weiterhin begehbar.
+- **Wälder:** Variierende Bäume – höhere Eichen, Blütenbäume und gestufte Tannen.
+- **Dorfleben:** Goldene Felder mit kleinen Holzzäunen; freundlichere Gesichter der Bewohner.
+- **Texturen und Licht:** Feinere originale Pixeltexturen für Erde, Stein, Gras, Holz, Ziegel und Wasser; weniger überhellte Darstellung und spätere Nebelgrenze.
+- **V7-Fernsicht enthalten:** Vereinfachte entfernte Landschaft; Umschalter »Sichtweite: Weit/Normal« im Menü.
+- **Mobile Bedienung bleibt:** Joystick, Umsehen, Springen, Abbauen, Setzen, Flugmodus, Schnellreisen, 15 Materialien.
 
-## Erst sichern – dann installieren
+## Wichtig vor dem Update
 
-1. **Blockwelt V6** unter https://heimhafen.github.io/Blockwelt/ öffnen.
-2. In der App über **☰ → Welt sichern** die Datei `Blockwelt-Meine-Welt.json` herunterladen und sicher in der Dateien-App speichern. Eine GitHub-Sicherung allein **enthält den persönlichen Browser-Spielstand nicht**.
-3. Optional zusätzlich das GitHub-Repository als ZIP sichern oder den letzten funktionierenden V6-Commit notieren.
-4. Safari-Browserdaten und Website-Daten **nicht löschen**.
+1. Die aktuelle Blockwelt-Web-App im Safari-Browser öffnen.
+2. Im Menü **»Welt sichern«** wählen und die JSON-Datei in der iPhone-Dateien-App behalten. Zusätzlich bei Bedarf eine Sicherung des Repositorys anlegen.
+3. **Nicht** »Welt neu anfangen« wählen und **keine** Safari-Website-Daten löschen.
+4. Die vier Dateien dieses Pakets `index.html`, `styles.css`, `game.js`, `README.md` in das **Stammverzeichnis** von `HeimHafen/Blockwelt` übertragen und dort die gleichnamigen Dateien ersetzen (nicht das ZIP als Datei hochladen).
+5. Auf `main` committen; falls mit Working Copy gepusht wird: Source `refs/heads/main`, Remote `refs/heads/main`, **Force Push: Aus**.
+6. Website öffnen: `https://heimhafen.github.io/Blockwelt/?v=8`. Oben muss **»Lebendige Welt · V8«** stehen.
+7. Die bisherigen Bauten prüfen, danach Kristallfall und Sonnen-Dorf erkunden. Bei Rucklern im Menü die Sichtweite auf »Normal« stellen.
 
-## Installation
+## Spielstände / Kompatibilität
 
-1. Das ZIP `Blockwelt_V7_Fernweh_WebApp.zip` in der iPhone-Dateien-App entpacken.
-2. **Ausschließlich `HeimHafen/Blockwelt`** auf GitHub öffnen. Nicht `Family-Spots-Map`.
-3. Die vier Dateien `index.html`, `styles.css`, `game.js`, `README.md` **direkt im Hauptverzeichnis** hochladen und jeweils die vorhandenen Dateien ersetzen. Kein zusätzliches Unterverzeichnis, keine ZIP-Datei hochladen.
-4. **Commit** direkt auf `main`; GitHub Pages bleibt auf `main` und `/(root)`.
-5. Nach der Veröffentlichung https://heimhafen.github.io/Blockwelt/?v=7 öffnen. Oben muss **„Fernweh · V7“** stehen.
-6. **Testen:** Menü, Blickbewegung, Laufen, Bauen und Abbauen; dann Dorf, Hochland, See, Sichtweiten-Schalter, Tiere und V6-Speicherstand prüfen. Bei Leistungseinbrüchen im Menü **Sichtweite: Normal** wählen.
+- Die bereits vorhandene Speicherkennung bleibt `blockwelt-kleine-baumeister-v1`. Das Update löscht keine lokalen Bauänderungen.
+- Die ursprüngliche V3-Welt im Bereich von 64×64 Feldern bleibt bei der **Blockgeneration** unverändert.
+- Außerhalb dieses alten Bereichs können **automatisch erzeugte** Bäume, Häuser und Wasserfallbereiche gegenüber V6/V7 anders aussehen. Spieler-Edits werden nach der Generierung erneut angewendet.
+- Die JSON-Sicherung ist unabhängig vom GitHub-Repository. Ein GitHub-Commit enthält **nicht** die persönliche, nur im Browser gespeicherte Bauwelt.
+- Falls eine alte Welt nach dem Update nicht erscheint: im Menü »Welt laden« die JSON-Sicherung importieren. Nicht unüberlegt »Welt neu anfangen« auswählen.
 
-### Commit-Texte
+## Prüfstand
 
-**Zusammenfassung:** `Blockwelt V7 – Fernsicht, Himmel und lebendigere Landschaft`
+- JavaScript-Syntax geprüft (`node --check`).
+- Gleichheit der Legacy-/Geländeformeln zur V7-Version automatisch geprüft.
+- Logiktests: Dorf-Dach, Türen, Fenster und Vorbau; gestufter Kristallfall; Wasserrendering ohne innere Wasserwände.
+- HTML/CSS des Menüs auf 393×852, 375×667 und 844×390 Bildschirmgrößen gerendert.
+- Ein **vollständiger WebGL- und Touch-Performance-Test auf echtem iPhone** konnte hier nicht durchgeführt werden. Er muss nach dem GitHub-Pages-Update stattfinden; V8 ist ein testbereiter, nicht abschließend gerätegeprüfter Stand.
 
-**Detaillierte Informationen:** `Mobiles Fernlandschafts-LOD statt zusätzlicher Vollblöcke; größere Sichtweite, Farbverlauf-Himmel, Wasserbewegung, Dorffelder und feinere Farben. Alte V6-Welt und Spielstände erhalten.`
+## Technisches
 
-### Working Copy
-
-- Repository: `HeimHafen/Blockwelt`
-- Source-Referenz: `refs/heads/main`
-- Vorhandene oder neue Remote-Referenz: `refs/heads/main`
-- Force Push: **Aus**
-
-## Spielstände und Grenzen
-
-- Der alte lokale Speicherschlüssel **`blockwelt-kleine-baumeister-v1`** bleibt unverändert, dadurch werden die früheren Bauten weiter geladen.
-- Exportformat V7 enthält weiterhin nur die vom Spieler geänderten Blöcke; V2-, V3-, V5- und V6-JSON-Dateien lassen sich importieren.
-- Ein **Import überschreibt nach Bestätigung** den aktuellen Spielstand. Vorher exportieren.
-- „Welt neu anfangen“ kann die lokalen Bauänderungen löschen. Nicht zum Testen des Updates drücken.
-- Die Welt ist **192 × 192** Felder groß, nicht unendlich. Die Fernlandschaft ist nur Kulisse, keine zusätzlichen echten Blöcke.
-- Es gibt keine Kampf- oder Explosionsfunktion und keine Multiplayer-Funktion; Schleicher bleiben freundlich.
-- Die grafische KI-Konzeptillustration aus dem Chat ist **nicht** ein echtes Screenshot-Ziel für diese Version. V7 ist ein mobiles WebGL-Blockspiel mit bewusst reduzierter Geometrie, nicht fotorealistisch.
-
-## Technische Prüfung und offene Tests
-
-- `node --check game.js` erfolgreich.
-- Browser-Logiktests in 393×852, 375×667 und 844×390 mit **Three.js-Testattrappe** erfolgreich: Initialisierung, Fernlandschaftsaufbau, Sichtweitenwechsel, Tag/Nacht, Schnellreise, Menü und V6-Speicherstandimport.
-- Sämtliche Kernfunktionen der V6-Weltberechnung (`terrainHeight`, `biomeAt`, `baseWorld`, `generateChunkData`, `loadEdits`, `saveEdits`, `modifyWorld`) wurden unverändert übernommen.
-- Die fernsichtige Darstellung verwendet eine einzige zusammengefasste Geometrie sowie zwei instanzierte Baumarten (Stämme und Kronen). Die eigentliche, interaktive Welt bleibt auf die bereits genutzten Chunkbereiche beschränkt.
-- **Nicht geprüft:** reales Three.js-WebGL-Rendering und FPS auf einem echten iPhone / Android-Gerät sowie langfristige Stabilität nach mehreren Stunden Spielen. Diese Tests müssen nach Veröffentlichung erfolgen.
-- Three.js 0.187.0 (MIT) wird wie bisher über jsDelivr geladen. Beim ersten Spielstart ist Internet erforderlich.
-
-## Rückkehr zu V6
-
-Bei Problemen: auf GitHub den zuletzt funktionierenden V6-Commit durch einen neuen Wiederherstellungs-Commit herstellen (nicht per Force Push) und den gesicherten Spielstand über **Welt laden** importieren, falls erforderlich.
+- Originale JavaScript-/Canvas-Pixeltexturen, auf dem Gerät aus Code erzeugt.
+- Keine zusätzlichen Bibliotheken gegenüber V7. Three.js 0.187.0 (MIT) wird über jsDelivr geladen; Internetverbindung erforderlich.
+- Teile der entfernten Landschaft werden als LOD-Geometrie dargestellt, während die aktiven Bereiche blockweise in Chunks nachgeladen werden.
+- Keine Multiplayer-Funktion, keine Werbung, kein Konto und keine aggressiven Kämpfe.

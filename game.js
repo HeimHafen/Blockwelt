@@ -1,4 +1,4 @@
-// BLOCKWELT V7 — Landschafts- und Sichtweiten-Upgrade, V6-kompatibel.
+// BLOCKWELT V8 — Dorfarchitektur, Felsen, Wasser und Licht. V3–V7-Spielstände bleiben kompatibel.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -47,59 +47,74 @@ const renderer = new THREE.WebGLRenderer({antialias:!MOBILE, powerPreference:'hi
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.35 : 1.65));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.16;
+renderer.toneMappingExposure = 1.02;
 renderer.setSize(window.innerWidth,window.innerHeight);
 gameEl.appendChild(renderer.domElement);
-const ambientSky = new THREE.HemisphereLight('#fff2dd','#567455',1.83);
+const ambientSky = new THREE.HemisphereLight('#fff2e7','#556c50',1.42);
 scene.add(ambientSky);
-const sunlight = new THREE.DirectionalLight('#fff3d5',2.26);
-sunlight.position.set(-34,53,-23);
+const sunlight = new THREE.DirectionalLight('#fff4d6',1.78);
+sunlight.position.set(-44,68,-28);
 scene.add(sunlight);
 
 // Make tiny pixel textures procedurally. Their palette and patterns are original.
 function texture(type,face){
-  const canvas=document.createElement('canvas'); canvas.width=32;canvas.height=32;
+  // Originale 32px-Pixeltexturen. Feineres, aber weiterhin klar blockiges Material.
+  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
   const ctx=canvas.getContext('2d');
   let seed=type.split('').reduce((a,c)=>a*31+c.charCodeAt(0),17)+(face==='top'?14:face==='bottom'?78:47);
   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   const palette={
-    grass:['#70b95e','#7abf67','#63af56','#8ac66b','#5fa852'],
-    dirt:['#9a7252','#a6805c','#886549','#b08a63','#94704f'],
-    stone:['#99a4a3','#adb7b4','#8b9795','#bec7bf','#929c99'],
-    wood:['#a97c50','#bf8b54','#90653f','#c99a66','#9c7147'],
-    leaves:['#508e57','#5f9f60','#427a4c','#75a86b','#4c8654'],
-    sand:['#dec993','#e7d39d','#d5bd86','#f0dba8','#cbb481'],
-    planks:['#c49358','#d0a36a','#b5824d','#e2b277','#ac7848'],
-    bricks:['#be805f','#c98a69','#ad6c52','#d49a78','#b77759'],
-    cobble:['#929e99','#aeb7af','#7f8e88','#c0c8bd','#8d9a92'],
-    glass:['#9bdfeb','#b5eaf0','#83c9da','#d6f8fc','#95d4e2'],
-    gold:['#f7d468','#eab24a','#e8c75b','#ffe69b','#d9a73b'],
-    water:['#52afd9','#74c4df','#439fca','#8dd5e7','#65bdd8'],
-    path:['#c9a778','#daba89','#b5976c','#dfc092','#bda077'],
-    snow:['#ecf4f5','#f8fcff','#dbe9ed','#f1f8ff','#d0e0e6'],
-    blossom:['#ea9bc6','#ffc0d6','#c97fab','#ffe0e8','#d996b8'],
-    lantern:['#f9c45a','#ffdb77','#edab3d','#fff0a4','#d98c35']
+    grass:['#77bd59','#6fb150','#83c967','#68a64c','#96d178'],
+    dirt:['#936c4b','#a47b56','#816044','#b18b64','#8a684a'],
+    stone:['#939b97','#aab2ad','#818e87','#c0c4b9','#8d9a93'],
+    wood:['#ae7945','#c28e53','#93653d','#d3a268','#a87746'],
+    leaves:['#4c8a46','#5d9e53','#427940','#70ae5b','#85ba69'],
+    sand:['#dcca92','#ebd5a1','#cbb47e','#f1dfad','#d9be87'],
+    planks:['#c5975e','#d6a76d','#ab7848','#e0b47a','#b88752'],
+    bricks:['#ad6349','#ba7050','#9e503e','#cf8061','#c47958'],
+    cobble:['#84918a','#a0a9a0','#73857d','#b6bdb1','#929c92'],
+    glass:['#a7e5ed','#bdf2f2','#78c4d3','#d4f7f8','#8ad6dd'],
+    gold:['#f2cd5b','#e8b548','#cfa03a','#ffe49b','#edc65c'],
+    water:['#57accf','#74c5e0','#4198ba','#96d8e8','#65bad4'],
+    path:['#c4a178','#d6b58a','#b49168','#e0c19b','#c9a984'],
+    snow:['#eaf3f4','#f8fbfa','#d7e4e7','#f2fafb','#d3e3ec'],
+    blossom:['#ebabc8','#ffd2df','#d98cb4','#ffe4ec','#df9dc4'],
+    lantern:['#f6c556','#ffde86','#edab3d','#fff0aa','#db9434']
   };
-  let baseType=(type==='grass'&&face==='bottom')?'dirt':type;
-  for(let y=0;y<32;y+=4) for(let x=0;x<32;x+=4){
-    let colors=palette[baseType];
-    if(type==='grass'&&face==='side') colors=y<7?palette.grass:palette.dirt;
-    let index=Math.floor(random()*colors.length);
-    if(type==='wood'&&face==='side'&&x%12<4) index=2;
-    if(type==='wood'&&face==='top') {const r=Math.max(Math.abs(x-14),Math.abs(y-14)); index=r%12<4?2:1;}
-    if(type==='planks'&&face==='side'&&y%16<4)index=2;
-    if(type==='planks'&&face==='top'&&x%16<3)index=2;
-    if(type==='bricks'&&((y%16<2)||((x+(Math.floor(y/16)%2)*8)%16<2)))index=2;
-    if(type==='cobble'&&((x%12<2)||(y%12<2)))index=2;
-    if(type==='stone'&&random()>.94)index=3;
-    if(type==='leaves'&&random()>.965)index=3;
-    if(type==='path'&&y%16<2&&random()>.35)index=2;
-    ctx.fillStyle=colors[index];ctx.fillRect(x,y,4,4);
+  const base=(type==='grass'&&face==='bottom')?'dirt':type;
+  const pick=(arr)=>arr[Math.floor(random()*arr.length)];
+  for(let y=0;y<32;y+=2)for(let x=0;x<32;x+=2){
+    let pal=palette[base];
+    if(type==='grass'&&face==='side')pal=y<6?palette.grass:palette.dirt;
+    if(type==='wood'&&face==='side')pal=x%11<2?[palette.wood[2],palette.wood[0]]:palette.wood;
+    if(type==='planks'&&face!=='bottom')pal=y%10<2?[palette.planks[2],palette.planks[2],palette.planks[0]]:palette.planks;
+    if(type==='bricks'){
+      const offset=Math.floor(y/9)%2===0?0:8;
+      if(y%9===0 || (x+offset)%16<2){ctx.fillStyle='#e2b298';ctx.fillRect(x,y,2,2);continue;}
+    }
+    if(type==='cobble' && ((y+Math.floor(x/9)*3)%11<2||(x+Math.floor(y/11)*5)%13<2))pal=[palette.cobble[2],palette.cobble[0]];
+    if(type==='wood'&&face==='top'){
+      const r=Math.max(Math.abs(x-15),Math.abs(y-15));
+      pal=r%7<2?[palette.wood[2],palette.wood[0]]:palette.wood;
+    }
+    if(type==='stone'&&random()>.91)pal=[palette.stone[3],palette.stone[2]];
+    ctx.fillStyle=pick(pal);ctx.fillRect(x,y,2,2);
   }
   if(type==='grass'&&face==='side'){
-    ctx.fillStyle='#5c9e50';for(let x=0;x<32;x+=4){ctx.fillRect(x,7,4,3+Math.floor(random()*5));}
+    ctx.fillStyle='#528e42';for(let x=0;x<32;x+=2)ctx.fillRect(x,5,2,1+Math.floor(random()*4));
   }
-  const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;
+  if(type==='water'){
+    ctx.fillStyle='rgba(225,251,255,.45)';
+    for(let i=0;i<7;i++){
+      const x=Math.floor(random()*27),y=Math.floor(random()*30);
+      ctx.fillRect(x,y,3+Math.floor(random()*4),1);
+    }
+  }
+  if(type==='glass'){
+    ctx.fillStyle='rgba(234,255,255,.65)';ctx.fillRect(3,2,3,24);ctx.fillRect(8,4,2,14);
+  }
+  const t=new THREE.CanvasTexture(canvas);
+  t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;
   return t;
 }
 const materialByType={};
@@ -111,16 +126,25 @@ for(const type of BLOCK_TYPES){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:'#ffae3c',emissiveIntensity:.42});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='water'){
-    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.63,depthWrite:false});
+    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.72,depthWrite:false});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='glass'){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.78,depthWrite:false});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else materialByType[type]=[side,side,top,bottom,side,side];
 }
-// Gentle water shimmer: one repeating procedural texture, not a heavy shader.
+// V8: Seen erhalten nur eine ruhige, zusammenhängende obere Wasserhaut.
+// Beim Wasserfall werden nur tatsächlich freiliegende Seiten gerendert,
+// statt die transparenten Wände jeder einzelnen Wasser-Zelle zu zeichnen.
 const waterSurfaceMap=materialByType.water[0].map;
-waterSurfaceMap.wrapS=THREE.RepeatWrapping;waterSurfaceMap.wrapT=THREE.RepeatWrapping;
+waterSurfaceMap.wrapS=THREE.RepeatWrapping;
+waterSurfaceMap.wrapT=THREE.RepeatWrapping;
+const waterTopGeometry=new THREE.BoxGeometry(1.012,.065,1.012);
+const waterWallXGeometry=new THREE.BoxGeometry(.062,1.015,1.012);
+const waterWallZGeometry=new THREE.BoxGeometry(1.012,1.015,.062);
+const waterTopMaterial=new THREE.MeshPhongMaterial({map:waterSurfaceMap,color:'#e4faff',transparent:true,opacity:.86,depthWrite:false,shininess:74,specular:'#a9dfea'});
+const waterWallMaterial=new THREE.MeshLambertMaterial({map:waterSurfaceMap,color:'#c5ecf8',transparent:true,opacity:.73,depthWrite:false,side:THREE.DoubleSide});
+
 const blockGeo=new THREE.BoxGeometry(1,1,1);
 const key=(x,y,z)=>`${x},${y},${z}`;
 const get=(x,y,z)=>blocks.get(key(x,y,z));
@@ -200,47 +224,58 @@ const HOUSE_OFFSETS=[[-8,-8],[7,-9],[-10,7],[9,8]];
 function villageBlocks(x,z,y,chunkPut){
   for(const v of VILLAGES){
     if(Math.abs(x-v.x)>21||Math.abs(z-v.z)>21)continue;
-    // Paths connecting the houses; keep a clean, broad square in the center.
-    if(Math.abs(x-v.x)<15&&Math.abs(z-v.z)<=1||
-       Math.abs(z-v.z)<15&&Math.abs(x-v.x)<=1||
-       Math.abs(x-v.x)<=2&&Math.abs(z-v.z)<=2){
+    const crossX=Math.abs(x-v.x),crossZ=Math.abs(z-v.z);
+    // Straßennetz, Dorfplatz und breite Eingänge auf Höhe des Geländes.
+    if((crossX<15&&crossZ<=1)||(crossZ<15&&crossX<=1)||(crossX<=2&&crossZ<=2)){
       const h=terrainHeight(x,z);
       if(y===h-1)chunkPut(x,y,z,'path');
     }
     for(let i=0;i<HOUSE_OFFSETS.length;i++){
-      const [dx,dz]=HOUSE_OFFSETS[i];
-      const hx=v.x+dx,hz=v.z+dz;
+      const [dx,dz]=HOUSE_OFFSETS[i],hx=v.x+dx,hz=v.z+dz;
       const rx=x-hx,rz=z-hz,ax=Math.abs(rx),az=Math.abs(rz);
-      if(ax>4||az>4)continue;
+      if(ax>5||az>5)continue;
       const floor=5;
+      // Fundament und warmer Dielenboden.
       if(ax<=3&&az<=3&&y===floor)chunkPut(x,y,z,'planks');
-      // Chest-high stone foundation, warm wood frame, windows and open doorway.
+      // Gerahmte Holzwände, lichte Fenster und eine offene zweiblockhohe Tür.
       if(ax<=3&&az<=3&&y>=floor+1&&y<=floor+3&&(ax===3||az===3)){
-        let type='planks';
-        if(y===floor+1)type='cobble';
-        if((ax===3&&az===0||az===3&&ax===0)&&y===floor+2)type='glass';
-        if(rz===3&&rx===0&&y<=floor+2)type=null;
-        if(type!==null)chunkPut(x,y,z,type);
+        const isDoor=rz===3&&rx===0&&y<=floor+2;
+        if(!isDoor){
+          const post=ax===3&&az===3;
+          const window=(y===floor+2)&&((ax===3&&az===0)||(az===3&&ax===0));
+          const block=y===floor+1?'cobble':post?'wood':window?'glass':'planks';
+          chunkPut(x,y,z,block);
+        }
       }
-      // Stepped warm roof, recognizable as a village house.
-      for(let k=0;k<3;k++){
-        if(y===floor+4+k && az<=4-k && ax<=4-k && (az===4-k||ax===4-k))chunkPut(x,y,z,'bricks');
+      // Erkennbares Satteldach: durchgehender First statt flacher, roter Blockplatte.
+      if(az<=4&&ax<=4){
+        const roofY=floor+4+(4-ax); // von 9 an der Traufe bis 13 am First
+        if(y===roofY)chunkPut(x,y,z,'bricks');
+        // Sichtbarer Unterbau an den vorderen und hinteren Giebelseiten.
+        if(az===3&&ax<=2&&y>=floor+4&&y<roofY)chunkPut(x,y,z,'planks');
+        if(az===4&&ax<=3&&y===floor+3)chunkPut(x,y,z,'wood');
       }
-      if(y===floor+6&&ax<=1&&az<=1)chunkPut(x,y,z,'planks');
+      // Kleine Eingangsstufe und hölzerner Vorbau.
+      if(rz===4&&rx===0&&y===floor)chunkPut(x,y,z,'path');
+      if(rz===4&&ax===2&&y>=floor+1&&y<=floor+3)chunkPut(x,y,z,'wood');
+      if(rz===4&&ax<=2&&y===floor+4)chunkPut(x,y,z,'planks');
+      // Blumenfenster und eine Laterne, ohne den Weg zuzustellen.
+      if(rz===-4&&rx===0&&y===floor+2)chunkPut(x,y,z,'blossom');
+      if(rz===4&&rx===0&&y===floor+4)chunkPut(x,y,z,'lantern');
+      // Ein schmaler dekorativer Schornstein über dem Dachrand.
+      if(i%2===0&&rx===2&&rz===-2&&y>=floor+6&&y<=floor+8)chunkPut(x,y,z,'cobble');
     }
-    // Low village lanterns: visible at dusk, never replace player edits.
-    const ax=Math.abs(x-v.x),az=Math.abs(z-v.z);
-    if(ax===5&&az===5){
+    // Beleuchtete Wege und kleine Gartenbeete.
+    if((crossX===5&&crossZ===5)||(crossX===13&&crossZ===3)){
       if(y>=5&&y<=6)chunkPut(x,y,z,'wood');
       if(y===7)chunkPut(x,y,z,'lantern');
     }
-    // A village meeting well at the crossroads.
-    if(Math.abs(x-v.x)<=2&&Math.abs(z-v.z)<=2){
-      const ax=Math.abs(x-v.x),az=Math.abs(z-v.z);
-      if(y===5&&(ax===2||az===2))chunkPut(x,y,z,'cobble');
-      if(y===5&&ax<2&&az<2)chunkPut(x,y,z,'water');
-      if(y>=6&&y<=8&&ax===2&&az===2)chunkPut(x,y,z,'wood');
-      if(y===9&&ax<=2&&az<=2)chunkPut(x,y,z,'planks');
+    // Dorfbrunnen bleibt unverändert benutzbar und interaktiv.
+    if(crossX<=2&&crossZ<=2){
+      if(y===5&&(crossX===2||crossZ===2))chunkPut(x,y,z,'cobble');
+      if(y===5&&crossX<2&&crossZ<2)chunkPut(x,y,z,'water');
+      if(y>=6&&y<=8&&crossX===2&&crossZ===2)chunkPut(x,y,z,'wood');
+      if(y===9&&crossX<=2&&crossZ<=2)chunkPut(x,y,z,'planks');
     }
   }
 }
@@ -276,14 +311,39 @@ function addAdventureLandmarks(xmin,xmax,zmin,zmax){
       put(x,lookoutTop+17,z,'lantern');
     }
   }
-  // A blue waterfall pours from a rocky outcrop into the eastern lake.
-  for(let x=Math.max(xmin,FALL.x);x<=Math.min(xmax,FALL.x+5);x++)
-  for(let z=Math.max(zmin,FALL.z-3);z<=Math.min(zmax,FALL.z+3);z++){
-    for(let y=terrainHeight(x,z);y<=24;y++){
-      if(x>=FALL.x+1&&Math.abs(z-FALL.z)<=2)put(x,y,z,'stone');
-      if(x===FALL.x&&Math.abs(z-FALL.z)<=1&&y>=6)put(x,y,z,'water');
+  // Kristallfall V8: natürlich abgestufter Felsrücken statt rechteckigem Turm.
+  // Nur oberhalb des bestehenden Geländes, keine Eingriffe in Spieler-Edits.
+  for(let x=Math.max(xmin,FALL.x-2);x<=Math.min(xmax,FALL.x+10);x++)
+  for(let z=Math.max(zmin,FALL.z-8);z<=Math.min(zmax,FALL.z+8);z++){
+    const dx=x-FALL.x,dz=z-FALL.z,dist=Math.abs(dz);
+    const taper=Math.max(0,1-Math.abs(dx-3.3)/9);
+    const jagged=pixelHash(x,z,417)*3.4-1.7;
+    const peak=Math.round(terrainHeight(x,z)+Math.max(0,13.7*taper-1.28*dist+jagged));
+    const slope=x<=FALL.x-1?Math.max(0,2+dx*2):100;
+    const cap=Math.min(peak,terrainHeight(x,z)+slope);
+    if(cap>terrainHeight(x,z)+1){
+      for(let y=terrainHeight(x,z);y<=Math.min(36,cap);y++){
+        if(x===FALL.x && dist<=1 && y>=WATER_LEVEL+1)continue;
+        put(x,y,z,y>=cap-1&&dist>4?'grass':'stone');
+      }
     }
-    if(x>=FALL.x+1&&x<=FALL.x+3&&Math.abs(z-FALL.z)<=1)put(x,25,z,'water');
+    // Wasser sickert über Felsstufen hinab, auf der sichtbaren Vorderseite.
+    if(x===FALL.x&&dist<=1){
+      const top=Math.min(26,Math.round(terrainHeight(FALL.x+2,FALL.z)+11));
+      for(let y=Math.max(5,terrainHeight(x,z));y<=top;y++)put(x,y,z,'water');
+    }
+    if(x>=FALL.x+1&&x<=FALL.x+3&&dist<=1){
+      const top=Math.min(26,Math.round(terrainHeight(FALL.x+2,FALL.z)+11));
+      if(top>=terrainHeight(x,z))put(x,top,z,'water');
+    }
+  }
+  // Ein flaches, unregelmäßiges Felsbecken am Fuß des Wasserfalls.
+  for(let x=Math.max(xmin,FALL.x-4);x<=Math.min(xmax,FALL.x);x++)
+  for(let z=Math.max(zmin,FALL.z-5);z<=Math.min(zmax,FALL.z+5);z++){
+    const d=((x-(FALL.x-2))/3.4)**2+((z-FALL.z)/4.7)**2;
+    if(d>1.14)continue;
+    const h=terrainHeight(x,z);
+    if(d>.80&&h<=WATER_LEVEL+1)put(x,h,z,'cobble');
   }
 }
 function generatedTreeAt(ax,az){
@@ -296,19 +356,42 @@ function generatedTreeAt(ax,az){
 function decorateChunkTree(ax,az,xmin,xmax,zmin,zmax){
   if(!generatedTreeAt(ax,az))return;
   const h=terrainHeight(ax,az),conifer=biomeAt(ax,az)==='nadelwald';
-  const high=conifer?7:5;
+  const tall=pixelHash(ax,az,122)>.68;
+  const high=conifer?(tall?9:7):(tall?7:5);
+  const blossom=!conifer&&pixelHash(ax,az,92)>.82;
   function setIfInside(x,y,z,type){
     if(x<xmin||x>xmax||z<zmin||z>zmax||inLegacy(x,z))return;
-    if(y<terrainHeight(x,z))return;
+    if(y<terrainHeight(x,z)||y>MAX_Y)return;
     if(!get(x,y,z))put(x,y,z,type);
   }
+  // Stämme wachsen versetzt zu unterschiedlich hohen Baumkronen.
   for(let dy=0;dy<high;dy++)setIfInside(ax,h+dy,az,'wood');
-  for(let dy=2;dy<high+2;dy++){
-    const radius=conifer?(dy<=4?2:dy<=6?1:0):dy>=high?1:2;
-    for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
-      if(radius===2&&Math.abs(dx)===2&&Math.abs(dz)===2)continue;
-      const blossom=!conifer&&pixelHash(ax,az,92)>.86;
-      setIfInside(ax+dx,h+dy,az+dz,blossom?'blossom':'leaves');
+  if(conifer){
+    // Drei gestaffelte Tannenebenen statt einer perfekten quadratischen Krone.
+    for(let dy=2;dy<high+3;dy++){
+      const radius=(dy%3===2&&dy<high)?2:dy>=high+1?0:1;
+      for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+        if(radius===2&&Math.abs(dx)===2&&Math.abs(dz)===2)continue;
+        setIfInside(ax+dx,h+dy,az+dz,'leaves');
+      }
+    }
+  }else{
+    // Eichen & Blütenbäume: lockere, abgestufte Kronen mit sichtbaren Ästen.
+    const leaf=blossom?'blossom':'leaves';
+    const crownBase=high-2;
+    const layers=[2,3,3,2,1];
+    for(let layer=0;layer<layers.length;layer++){
+      const dy=crownBase+layer;
+      const radius=layers[layer]-(tall?0:layer===1?1:0);
+      for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+        const roundness=(dx*dx+dz*dz)/(radius*radius||1);
+        if(roundness>1.58)continue;
+        if(roundness>1.2&&pixelHash(ax+dx,az+dz,dy+677)>.35)continue;
+        setIfInside(ax+dx,h+dy,az+dz,leaf);
+      }
+    }
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      if(pixelHash(ax+dx,az+dz,211)>.38)setIfInside(ax+dx,h+high-2,az+dz,'wood');
     }
   }
 }
@@ -343,7 +426,7 @@ function generateChunkData(cx,cz){
     if(village.x<xmin-20||village.x>xmax+20||village.z<zmin-20||village.z>zmax+20)continue;
     for(let x=xmin;x<=xmax;x++)for(let z=zmin;z<=zmax;z++){
       if(Math.hypot(x-village.x,z-village.z)>20)continue;
-      for(let y=3;y<=13;y++)villageBlocks(x,z,y,put);
+      for(let y=3;y<=15;y++)villageBlocks(x,z,y,put);
     }
   }
   // Two adventure landmarks outside the original V3 64×64 region.
@@ -579,15 +662,25 @@ function rebuildChunk(cx,cz){
   const id=chunkKey(cx,cz);
   disposeChunkMesh(id);
   const byType=Object.fromEntries(BLOCK_TYPES.map(t=>[t,[]]));
+  const waterFaces={top:[],left:[],right:[],front:[],back:[]};
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     for(let y=0;y<=MAX_Y+8;y++){
       const type=get(x,y,z);
-      if(type&&visible(x,y,z))byType[type].push([x,y,z]);
+      if(!type)continue;
+      if(type==='water'){
+        const air=(a,b,c)=>!get(a,b,c);
+        // Nur Oberflächen und äußere Seiten; kein Würfelgitter im Seeinneren.
+        if(air(x,y+1,z))waterFaces.top.push([x,y,z]);
+        if(air(x-1,y,z))waterFaces.left.push([x,y,z]);
+        if(air(x+1,y,z))waterFaces.right.push([x,y,z]);
+        if(air(x,y,z-1))waterFaces.front.push([x,y,z]);
+        if(air(x,y,z+1))waterFaces.back.push([x,y,z]);
+      }else if(visible(x,y,z))byType[type].push([x,y,z]);
     }
   }
   const chunk=[];
-  for(const type of BLOCK_TYPES){
-    const positions=byType[type];if(!positions.length)continue;
+  function addInstanced(type,positions){
+    if(!positions.length)return;
     const mesh=new THREE.InstancedMesh(blockGeo,materialByType[type],positions.length);
     mesh.userData.positions=positions;
     for(let i=0;i<positions.length;i++){
@@ -595,13 +688,36 @@ function rebuildChunk(cx,cz){
       dummy.position.set(x+.5,y+.5,z+.5);
       dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
       mesh.setMatrixAt(i,dummy.matrix);
+      const variation=.92+pixelHash(x,z,y+811)*.14;
+      const shade=get(x,y+1,z)?variation*.93:variation;
+      mesh.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));
     }
-    if(type==='water'||type==='glass')mesh.renderOrder=2;
+    mesh.instanceColor.needsUpdate=true;
+    if(type==='glass')mesh.renderOrder=2;
     mesh.instanceMatrix.needsUpdate=true;
-    // Keep frustum culling enabled for good iPhone performance.
-    mesh.computeBoundingSphere();
+    mesh.computeBoundingSphere();scene.add(mesh);chunk.push(mesh);
+  }
+  for(const type of BLOCK_TYPES)if(type!=='water')addInstanced(type,byType[type]);
+  function waterSurface(positions,geometry,material,side){
+    if(!positions.length)return;
+    const mesh=new THREE.InstancedMesh(geometry,material,positions.length);
+    mesh.userData.positions=positions;
+    for(let i=0;i<positions.length;i++){
+      const [x,y,z]=positions[i];
+      const ox=side==='left'?.025:side==='right'?.975:.5;
+      const oy=side==='top'?.96:.5;
+      const oz=side==='front'?.025:side==='back'?.975:.5;
+      dummy.position.set(x+ox,y+oy,z+oz);
+      dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+    mesh.computeBoundingSphere();mesh.renderOrder=3;
     scene.add(mesh);chunk.push(mesh);
   }
+  waterSurface(waterFaces.top,waterTopGeometry,waterTopMaterial,'top');
+  for(const face of ['left','right'])waterSurface(waterFaces[face],waterWallXGeometry,waterWallMaterial,face);
+  for(const face of ['front','back'])waterSurface(waterFaces[face],waterWallZGeometry,waterWallMaterial,face);
   chunkMeshes.set(id,chunk);
   rebuildDecoration(cx,cz);
 }
@@ -611,7 +727,9 @@ const floralStemGeometry=new THREE.BoxGeometry(.08,.34,.08);
 const floralPetalGeometry=new THREE.BoxGeometry(.26,.20,.26);
 const floralGrassGeometry=new THREE.BoxGeometry(.10,.39,.10);
 const farmCropGeometry=new THREE.BoxGeometry(.12,.68,.12);
-const farmCropMaterial=new THREE.MeshLambertMaterial({color:'#edc65c'});
+const farmCropMaterial=new THREE.MeshLambertMaterial({color:'#e5b74c'});
+const farmFenceMaterial=new THREE.MeshLambertMaterial({color:'#ae7848'});
+const farmFenceGeometry=new THREE.BoxGeometry(1,1,1);
 const floralGreenMaterial=new THREE.MeshLambertMaterial({color:'#70a957'});
 const floralPetalMaterial=new THREE.MeshLambertMaterial({color:'#ffffff'});
 const floralLeafMaterial=new THREE.MeshLambertMaterial({color:'#80b95b'});
@@ -622,13 +740,23 @@ function farmPatch(x,z){
 function rebuildDecoration(cx,cz){
   const id=chunkKey(cx,cz);
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
-  const stems=[],blooms=[],tufts=[],crops=[];
+  const stems=[],blooms=[],tufts=[],crops=[],fencePosts=[],fenceRails=[];
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
     if(get(x,h-1,z)!=='grass'||get(x,h,z)||isInsideHouse(x+.5,z+.5))continue;
     if(farmPatch(x,z)){
-      // Kleine goldene Felder neben den Dorfhäusern, ohne Baublöcke zu überschreiben.
+      // Erntefeld mit drei goldenen Getreidehalmen je Feld, plus niedriger Holzeinfassung.
       for(let j=0;j<3;j++)crops.push([x+.24+j*.26,h+.30+(pixelHash(x+j,z,209)-.5)*.10,z+.35+(j%2)*.30]);
+      for(const v of VILLAGES){
+        const rx=x-v.x,rz=z-v.z;
+        if(rx<12||rx>17||rz< -6||rz> -1)continue;
+        const borderX=rx===12||rx===17,borderZ=rz===-6||rz===-1;
+        if(borderX||borderZ){
+          fencePosts.push([x+.5,h+.46,z+.5,.16,.93,.16]);
+          if(borderX&&!borderZ)fenceRails.push([x+.5,h+.55,z+.5,.13,.13,1.06]);
+          if(borderZ&&!borderX)fenceRails.push([x+.5,h+.55,z+.5,1.06,.13,.13]);
+        }
+      }
       continue;
     }
     const r=pixelHash(x,z,172);
@@ -661,9 +789,19 @@ function rebuildDecoration(cx,cz){
   spawn(floralStemGeometry,floralGreenMaterial,stems,false);
   spawn(floralPetalGeometry,floralPetalMaterial,blooms,true);
   spawn(floralGrassGeometry,floralLeafMaterial,tufts,false);
-  if(crops.length){
-    spawn(farmCropGeometry,farmCropMaterial,crops,false);
+  if(crops.length)spawn(farmCropGeometry,farmCropMaterial,crops,false);
+  // Zäune bestehen aus skalierten Instanzen – eine Materialgruppe, wenige Drawcalls.
+  function addScaled(items){
+    if(!items.length)return;
+    const mesh=new THREE.InstancedMesh(farmFenceGeometry,farmFenceMaterial,items.length);
+    for(let i=0;i<items.length;i++){
+      const [x,y,z,w,h,d]=items[i];
+      dummy.position.set(x,y,z);dummy.rotation.set(0,0,0);dummy.scale.set(w,h,d);dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
   }
+  addScaled(fencePosts);addScaled(fenceRails);
   decorativeMeshes.set(id,meshes);
 }
 function rebuild(){
@@ -921,6 +1059,10 @@ function makeCreature(kind,x,z,number,homeX=x,homeZ=z){
     part(group,.13,.17,.16,npcSkin,0,1.72,-.41); // friendly little nose
     part(group,.12,.11,.05,npcDark,-.19,1.86,-.343);
     part(group,.12,.11,.05,npcDark,.19,1.86,-.343);
+    // Kleine freundliche Mundlinie und helle Wangen für lesbarere Gesichter.
+    part(group,.22,.035,.035,npcDark,0,1.56,-.339);
+    part(group,.09,.07,.02,new THREE.MeshLambertMaterial({color:'#d89588'}),-.29,1.60,-.333);
+    part(group,.09,.07,.02,new THREE.MeshLambertMaterial({color:'#d89588'}),.29,1.60,-.333);
     part(group,.42,.11,.08,npcDark,0,2.15,.04); // cap trim
     part(group,.78,.12,.75,robe,0,2.24,.02);
     leftLeg=part(group,.25,.56,.32,npcDark,-.19,.31,0);
@@ -1051,9 +1193,9 @@ $('mobsBtn').addEventListener('click',()=>{
 });
 function applyLighting(){
   const options=[
-    {sky:'#8cc9f0',sun:'#fff2cb',power:2.28,hemi:1.85,exposure:1.16,label:'☀ Morgensonne'},
-    {sky:'#dfae8c',sun:'#ffd09a',power:2.2,hemi:1.35,exposure:1.17,label:'🌅 Goldene Stunde'},
-    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.87,exposure:1.08,label:'☾ Sternennacht'}
+    {sky:'#8cc9f0',sun:'#fff2cb',power:1.80,hemi:1.46,exposure:1.02,label:'☀ Morgensonne'},
+    {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
+    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
   const p=options[lightMode];scene.background.set(p.sky);scene.fog.color.set(p.sky);
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
@@ -1066,8 +1208,8 @@ function applyLighting(){
   applyView();
 }
 function applyView(){
-  const fogFar=farView?(MOBILE?140:180):(MOBILE?90:115);
-  scene.fog.near=farView?45:31;scene.fog.far=lightMode===2?fogFar*.84:fogFar;
+  const fogFar=farView?(MOBILE?155:190):(MOBILE?96:122);
+  scene.fog.near=farView?59:38;scene.fog.far=lightMode===2?fogFar*.84:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));

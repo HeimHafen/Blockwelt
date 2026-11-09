@@ -94,3 +94,9 @@ html,body{touch-action:auto}
 .target-label{text-shadow:0 2px 5px rgba(14,43,38,.85),0 0 2px rgba(14,43,38,.65)}
 .hint{text-shadow:0 1px 5px rgba(15,50,40,.95)}
 #viewBtn[aria-pressed="true"]{border-color:#7fb8a0;background:#dcefe2;color:#265b43}
+
+/* V8: Zurückhaltender Feinschliff des mobilen HUDs. */
+.identity{box-shadow:0 5px 20px rgba(23,61,44,.24);border-color:rgba(255,255,247,.9)}
+.region-label{border-radius:12px;box-shadow:0 3px 14px rgba(30,65,44,.18)}
+.target-label{background:rgba(21,53,43,.14);padding:2px 10px;border-radius:8px}
+@media(max-width:390px){.target-label{font-size:11px}}
