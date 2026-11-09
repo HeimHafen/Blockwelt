@@ -76,3 +76,14 @@ html,body{touch-action:auto}
  .start-btn{height:42px;font-size:16px}
  .reset-btn{padding-top:5px}
 }
+
+/* V6: subtler premium game HUD while preserving the working V5 touch positions. */
+.cube-snow{background:linear-gradient(155deg,#f9fdff 15%,#c1d9e4 100%);border:1px solid #f6ffff}
+.cube-blossom{background:repeating-linear-gradient(45deg,#ffd5ec 0 7px,#df94c6 7px 11px)}
+.cube-lantern{background:linear-gradient(135deg,#fff0a0,#eaa93c);box-shadow:0 0 10px #ffc86a,inset -4px -4px #c67d26}
+.identity{border:1px solid rgba(255,255,246,.85);box-shadow:0 5px 18px rgba(23,61,44,.2)}
+.region-label{background:rgba(255,253,237,.92);border:1px solid rgba(255,255,250,.9);box-shadow:0 4px 16px #1b513d32}
+.slot.active{box-shadow:0 2px 10px #245a2e44}
+.option-btn:active{transform:scale(.985)}
+.night-stars{background-image:radial-gradient(1px 1px at 8% 20%,#fff 100%,transparent),radial-gradient(1.5px 1.5px at 72% 12%,#fff 100%,transparent),radial-gradient(1px 1px at 47% 9%,#fff 100%,transparent),radial-gradient(1px 1px at 84% 34%,#fff 100%,transparent),radial-gradient(1px 1px at 21% 44%,#fff 100%,transparent);}
+@media(max-height:740px){.dialog-main{padding:9px 14px}.menu-options{gap:4px}.option-btn{min-height:29px}}

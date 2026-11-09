@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt: eine kleine kreative 3D-Klötzchenwelt zum Bauen und Entdecken.">
-  <title>Blockwelt V5 · Mega-Welt</title>
+  <meta name="description" content="Blockwelt V6: eine lebendige 3D-Abenteuerwelt mit Dörfern, Tieren, Bergen und Bauideen.">
+  <title>Blockwelt V6 · Abenteuerwelt</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Mega-Welt · V5</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Abenteuerwelt · V6</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -53,6 +53,9 @@
     <button class="slot" data-block="glass" type="button" aria-label="Glas auswählen" aria-pressed="false"><span class="cube cube-glass"></span><small>Glas</small></button>
     <button class="slot" data-block="gold" type="button" aria-label="Gold auswählen" aria-pressed="false"><span class="cube cube-gold"></span><small>Gold</small></button>
     <button class="slot" data-block="water" type="button" aria-label="Wasser auswählen" aria-pressed="false"><span class="cube cube-water"></span><small>Wasser</small></button>
+    <button class="slot" data-block="snow" type="button" aria-label="Schnee auswählen" aria-pressed="false"><span class="cube cube-snow"></span><small>Schnee</small></button>
+    <button class="slot" data-block="blossom" type="button" aria-label="Blüten auswählen" aria-pressed="false"><span class="cube cube-blossom"></span><small>Blüten</small></button>
+    <button class="slot" data-block="lantern" type="button" aria-label="Laterne auswählen" aria-pressed="false"><span class="cube cube-lantern"></span><small>Laterne</small></button>
   </nav>
   <div class="hint">Links laufen · Rechts umsehen · Blöcke auswählen</div>
 
@@ -62,13 +65,16 @@
       <div class="dialog-main">
         <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
-        <p>Riesige Wälder, Berge, Seen, Dörfer und freundliche Bewohner warten auf dich. Baue deine eigene Welt!</p>
+        <p>Erkunde lebendige Dörfer, Blumenwiesen, hohe Berge und eine geheimnisvolle Warte. Tiere und freundliche Bewohner begleiten dich!</p>
         <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span><span>🏘️ Dörfer</span></div>
         <div class="menu-options" aria-label="Spieloptionen">
           <button id="homeBtn" class="option-btn" type="button">⌂ Zur Startwiese</button>
           <button id="villageBtn" class="option-btn" type="button">🏘️ Zum Sonnen-Dorf</button>
-          <button id="mobsBtn" class="option-btn" type="button">✓ Bewohner und Schleicher: an</button>
-          <button id="dayBtn" class="option-btn" type="button">☀ Tagmodus</button>
+          <button id="lookoutBtn" class="option-btn" type="button">🏰 Zur Himmelswarte</button>
+          <button id="birchVillageBtn" class="option-btn" type="button">🏡 Zum Birken-Dorf</button>
+          <button id="waterfallBtn" class="option-btn" type="button">💦 Zum Kristallfall</button>
+          <button id="mobsBtn" class="option-btn" type="button">✓ Tiere und Bewohner: an</button>
+          <button id="dayBtn" class="option-btn" type="button">☀ Morgensonne</button>
           <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
           <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
           <div class="backup-row"><button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button><button id="importBtn" class="option-btn" type="button">↑ Welt laden</button></div>

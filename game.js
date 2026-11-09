@@ -1,12 +1,12 @@
-// BLOCKWELT V5 — selbst entwickeltes kreatives Blockabenteuer.
+// BLOCKWELT V6 — selbst entwickeltes kreatives Blockabenteuer.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
-const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble','glass','gold','water','path'];
-const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster',glass:'Glas',gold:'Gold',water:'Wasser',path:'Weg'};
-const HALF = 96; // V5: 192 × 192. Dynamische Chunks halten den iPhone-Speicher klein.
+const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble','glass','gold','water','path','snow','blossom','lantern'];
+const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster',glass:'Glas',gold:'Gold',water:'Wasser',path:'Weg',snow:'Schnee',blossom:'Blüten',lantern:'Laterne'};
+const HALF = 96; // 192 × 192 Felder; Chunk-Streaming hält den iPhone-Speicher klein.
 const LEGACY_HALF = 32; // Der komplette alte V3-Weltausschnitt bleibt erhalten.
 const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 740;
 const STREAM_RADIUS = MOBILE ? 2 : 3; // iPhone: maximal 5×5 aktive Chunks.
@@ -21,11 +21,12 @@ const KEY = 'blockwelt-kleine-baumeister-v1';
 const blocks = new Map();
 const edits = new Map();
 const chunkMeshes = new Map();
+const decorativeMeshes = new Map();
 const generatedChunks = new Set();
 let lastStreamCenter = '';
 const chunksPerSide = HALF / CHUNK;
 let showCreatures = true;
-let dayMode = true;
+let lightMode = 0; // 0: Morgensonne, 1: Goldene Stunde, 2: Nacht
 let selectedType = 'grass';
 let gameRunning = false;
 let toastTimer = null;
@@ -35,18 +36,21 @@ let jumpHeld = false;
 let descendHeld = false;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#a9d8ee');
-scene.fog = new THREE.Fog('#a9d8ee', MOBILE ? 26 : 40, MOBILE ? 53 : 74);
-const camera = new THREE.PerspectiveCamera(72, 1, .06, MOBILE ? 67 : 90);
+scene.background = new THREE.Color('#a5daf8');
+scene.fog = new THREE.Fog('#a5daf8', MOBILE ? 26 : 40, MOBILE ? 58 : 84);
+const camera = new THREE.PerspectiveCamera(74, 1, .06, MOBILE ? 76 : 100);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({antialias:!MOBILE, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.35 : 1.65));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.26;
 renderer.setSize(window.innerWidth,window.innerHeight);
 gameEl.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight('#ecf7ff','#677e5b',2.1));
-const sunlight = new THREE.DirectionalLight('#fff5d6',2.25);
-sunlight.position.set(-23,49,-28);
+const ambientSky = new THREE.HemisphereLight('#fff3df','#536b59',2.1);
+scene.add(ambientSky);
+const sunlight = new THREE.DirectionalLight('#fff0c6',2.5);
+sunlight.position.set(-34,53,-23);
 scene.add(sunlight);
 
 // Make tiny pixel textures procedurally. Their palette and patterns are original.
@@ -68,7 +72,10 @@ function texture(type,face){
     glass:['#9bdfeb','#b5eaf0','#83c9da','#d6f8fc','#95d4e2'],
     gold:['#f7d468','#eab24a','#e8c75b','#ffe69b','#d9a73b'],
     water:['#52afd9','#74c4df','#439fca','#8dd5e7','#65bdd8'],
-    path:['#c9a778','#daba89','#b5976c','#dfc092','#bda077']
+    path:['#c9a778','#daba89','#b5976c','#dfc092','#bda077'],
+    snow:['#ecf4f5','#f8fcff','#dbe9ed','#f1f8ff','#d0e0e6'],
+    blossom:['#ea9bc6','#ffc0d6','#c97fab','#ffe0e8','#d996b8'],
+    lantern:['#f9c45a','#ffdb77','#edab3d','#fff0a4','#d98c35']
   };
   let baseType=(type==='grass'&&face==='bottom')?'dirt':type;
   for(let y=0;y<32;y+=4) for(let x=0;x<32;x+=4){
@@ -94,7 +101,10 @@ for(const type of BLOCK_TYPES){
   const side=new THREE.MeshLambertMaterial({map:texture(type,'side')});
   const top=new THREE.MeshLambertMaterial({map:texture(type,'top')});
   const bottom=new THREE.MeshLambertMaterial({map:texture(type,'bottom')});
-  if(type==='water'){
+  if(type==='lantern'){
+    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:'#ffae3c',emissiveIntensity:.42});
+    materialByType[type]=[mat,mat,mat,mat,mat,mat];
+  }else if(type==='water'){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.63,depthWrite:false});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='glass'){
@@ -209,6 +219,12 @@ function villageBlocks(x,z,y,chunkPut){
       }
       if(y===floor+6&&ax<=1&&az<=1)chunkPut(x,y,z,'planks');
     }
+    // Low village lanterns: visible at dusk, never replace player edits.
+    const ax=Math.abs(x-v.x),az=Math.abs(z-v.z);
+    if(ax===5&&az===5){
+      if(y>=5&&y<=6)chunkPut(x,y,z,'wood');
+      if(y===7)chunkPut(x,y,z,'lantern');
+    }
     // A village meeting well at the crossroads.
     if(Math.abs(x-v.x)<=2&&Math.abs(z-v.z)<=2){
       const ax=Math.abs(x-v.x),az=Math.abs(z-v.z);
@@ -217,6 +233,48 @@ function villageBlocks(x,z,y,chunkPut){
       if(y>=6&&y<=8&&ax===2&&az===2)chunkPut(x,y,z,'wood');
       if(y===9&&ax<=2&&az<=2)chunkPut(x,y,z,'planks');
     }
+  }
+}
+const LOOKOUT={x:77,z:58,name:'Himmelswarte'};
+const FALL={x:75,z:-45,name:'Kristallfall'};
+const lookoutTop=(()=>{
+  let top=0;
+  for(let x=LOOKOUT.x-5;x<=LOOKOUT.x+5;x++)for(let z=LOOKOUT.z-5;z<=LOOKOUT.z+5;z++)top=Math.max(top,terrainHeight(x,z));
+  return Math.min(44,top+1);
+})();
+function addAdventureLandmarks(xmin,xmax,zmin,zmax){
+  // A climbable, windowed stone watchtower with a glowing golden top.
+  for(let x=Math.max(xmin,LOOKOUT.x-6);x<=Math.min(xmax,LOOKOUT.x+6);x++)
+  for(let z=Math.max(zmin,LOOKOUT.z-6);z<=Math.min(zmax,LOOKOUT.z+6);z++){
+    const ax=Math.abs(x-LOOKOUT.x),az=Math.abs(z-LOOKOUT.z);
+    const ground=terrainHeight(x,z);
+    if(ax<=3&&az<=3){
+      for(let y=ground;y<=lookoutTop;y++)put(x,y,z,'cobble');
+    }
+    if(ax<=2&&az<=2){
+      for(let y=lookoutTop+1;y<=lookoutTop+13;y++){
+        if(ax===2||az===2){
+          const type=(y===lookoutTop+8&&(ax===2&&az===0||az===2&&ax===0))?'glass':'stone';
+          if(z===LOOKOUT.z+2&&x===LOOKOUT.x&&(y===lookoutTop+1||y===lookoutTop+2))continue;
+          put(x,y,z,type);
+        }
+      }
+      if((ax===2||az===2)&&lookoutTop+15<=MAX_Y)put(x,lookoutTop+15,z,'cobble');
+    }
+    if(ax<=3&&az<=3&&lookoutTop+14<=MAX_Y)put(x,lookoutTop+14,z,'planks');
+    if(ax===0&&az===0){
+      put(x,lookoutTop+16,z,'gold');
+      put(x,lookoutTop+17,z,'lantern');
+    }
+  }
+  // A blue waterfall pours from a rocky outcrop into the eastern lake.
+  for(let x=Math.max(xmin,FALL.x);x<=Math.min(xmax,FALL.x+5);x++)
+  for(let z=Math.max(zmin,FALL.z-3);z<=Math.min(zmax,FALL.z+3);z++){
+    for(let y=terrainHeight(x,z);y<=24;y++){
+      if(x>=FALL.x+1&&Math.abs(z-FALL.z)<=2)put(x,y,z,'stone');
+      if(x===FALL.x&&Math.abs(z-FALL.z)<=1&&y>=6)put(x,y,z,'water');
+    }
+    if(x>=FALL.x+1&&x<=FALL.x+3&&Math.abs(z-FALL.z)<=1)put(x,25,z,'water');
   }
 }
 function generatedTreeAt(ax,az){
@@ -240,7 +298,8 @@ function decorateChunkTree(ax,az,xmin,xmax,zmin,zmax){
     const radius=conifer?(dy<=4?2:dy<=6?1:0):dy>=high?1:2;
     for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
       if(radius===2&&Math.abs(dx)===2&&Math.abs(dz)===2)continue;
-      setIfInside(ax+dx,h+dy,az+dz,'leaves');
+      const blossom=!conifer&&pixelHash(ax,az,92)>.86;
+      setIfInside(ax+dx,h+dy,az+dz,blossom?'blossom':'leaves');
     }
   }
 }
@@ -254,6 +313,7 @@ function generateChunkData(cx,cz){
       let type=y===h-1?'grass':y>=h-4?'dirt':'stone';
       if(biome==='wueste'||biome==='see')type=y>=h-3?'sand':'stone';
       if(biome==='berge'&&y>=h-3)type='stone';
+      if(biome==='berge'&&h>=27&&y===h-1)type='snow';
       if(biome==='dorf'&&y===h-1)type='grass';
       put(x,y,z,type);
     }
@@ -277,6 +337,8 @@ function generateChunkData(cx,cz){
       for(let y=3;y<=13;y++)villageBlocks(x,z,y,put);
     }
   }
+  // Two adventure landmarks outside the original V3 64×64 region.
+  addAdventureLandmarks(xmin,xmax,zmin,zmax);
   // Persist the player's builds on top of deterministic terrain.
   for(const edit of edits.values()){
     const [x,y,z,type]=edit;
@@ -287,6 +349,8 @@ function generateChunkData(cx,cz){
 function disposeChunkMesh(id){
   for(const mesh of chunkMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
   chunkMeshes.delete(id);
+  for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
+  decorativeMeshes.delete(id);
 }
 function unloadChunkData(cx,cz){
   if(isLegacyChunk(cx,cz))return;
@@ -305,12 +369,12 @@ function updateWorldStream(force=false){
   // Generate data in a one-chunk halo to avoid incorrect open edges.
   for(let dx=-STREAM_RADIUS-1;dx<=STREAM_RADIUS+1;dx++)for(let dz=-STREAM_RADIUS-1;dz<=STREAM_RADIUS+1;dz++){
     const x=cx+dx,z=cz+dz;
-    if(Math.abs(x)>=chunksPerSide||Math.abs(z)>=chunksPerSide)continue;
+    if(x<-chunksPerSide||x>=chunksPerSide||z<-chunksPerSide||z>=chunksPerSide)continue;
     generateChunkData(x,z);
   }
   for(let dx=-STREAM_RADIUS;dx<=STREAM_RADIUS;dx++)for(let dz=-STREAM_RADIUS;dz<=STREAM_RADIUS;dz++){
     const x=cx+dx,z=cz+dz;
-    if(Math.abs(x)>=chunksPerSide||Math.abs(z)>=chunksPerSide)continue;
+    if(x<-chunksPerSide||x>=chunksPerSide||z<-chunksPerSide||z>=chunksPerSide)continue;
     const key=chunkKey(x,z);desired.add(key);
     if(!chunkMeshes.has(key))rebuildChunk(x,z);
   }
@@ -432,6 +496,55 @@ function rebuildChunk(cx,cz){
     scene.add(mesh);chunk.push(mesh);
   }
   chunkMeshes.set(id,chunk);
+  rebuildDecoration(cx,cz);
+}
+// Flowers and little grass tufts add colour without becoming solid blocks.
+// All three meshes are instanced. They never participate in mining or collision.
+const floralStemGeometry=new THREE.BoxGeometry(.08,.34,.08);
+const floralPetalGeometry=new THREE.BoxGeometry(.26,.20,.26);
+const floralGrassGeometry=new THREE.BoxGeometry(.10,.39,.10);
+const floralGreenMaterial=new THREE.MeshLambertMaterial({color:'#70a957'});
+const floralPetalMaterial=new THREE.MeshLambertMaterial({color:'#ffffff'});
+const floralLeafMaterial=new THREE.MeshLambertMaterial({color:'#80b95b'});
+const floralPalette=['#f6df56','#f37c85','#f0a4d3','#e6f4fd','#e8bb72'];
+function rebuildDecoration(cx,cz){
+  const id=chunkKey(cx,cz);
+  for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
+  const stems=[],blooms=[],tufts=[];
+  for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
+    const h=terrainHeight(x,z);
+    if(get(x,h-1,z)!=='grass'||get(x,h,z)||isInsideHouse(x+.5,z+.5))continue;
+    const r=pixelHash(x,z,172);
+    // Keep entrances and roads clear.
+    if(inVillage(x,z)&&Math.abs(x-inVillage(x,z).x)<=2&&Math.abs(z-inVillage(x,z).z)<=2)continue;
+    if(r>.88){
+      const px=x+.5+(pixelHash(x,z,173)-.5)*.46;
+      const pz=z+.5+(pixelHash(x,z,174)-.5)*.46;
+      stems.push([px,h+.18,pz]);
+      blooms.push([px,h+.42,pz,pixelHash(x,z,176)]);
+    }else if(r>.68){
+      tufts.push([x+.5,h+.19,z+.5]);
+    }
+  }
+  const meshes=[];
+  function spawn(geometry,material,items,isBloom){
+    if(!items.length)return;
+    const mesh=new THREE.InstancedMesh(geometry,material,items.length);
+    for(let i=0;i<items.length;i++){
+      const p=items[i];dummy.position.set(p[0],p[1],p[2]);
+      dummy.rotation.set(0,(pixelHash(cx*37+i,cz,59)-.5)*2,0);
+      const scale=isBloom?1:1;dummy.scale.set(scale,scale,scale);dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+      if(isBloom)mesh.setColorAt(i,new THREE.Color(floralPalette[Math.min(4,Math.floor(p[3]*5))]));
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+    if(isBloom)mesh.instanceColor.needsUpdate=true;
+    mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+  }
+  spawn(floralStemGeometry,floralGreenMaterial,stems,false);
+  spawn(floralPetalGeometry,floralPetalMaterial,blooms,true);
+  spawn(floralGrassGeometry,floralLeafMaterial,tufts,false);
+  decorativeMeshes.set(id,meshes);
 }
 function rebuild(){
   for(const id of [...chunkMeshes.keys()])disposeChunkMesh(id);
@@ -467,6 +580,23 @@ for(let i=0;i<12;i++){
   clouds.add(group);
 }
 
+// Warm sun and moon are lightweight, unlit sprites rather than expensive post-processing.
+function skyDisk(day){
+  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+  const c=canvas.getContext('2d');const g=c.createRadialGradient(64,64,8,64,64,64);
+  g.addColorStop(0,day?'#fff9cd':'#f6f9ff');
+  g.addColorStop(.25,day?'#ffe6a0':'#d4e2ff');
+  g.addColorStop(.54,day?'#ffdb8b88':'#a3b6e355');
+  g.addColorStop(1,'#ffffff00');
+  c.fillStyle=g;c.fillRect(0,0,128,128);
+  const t=new THREE.CanvasTexture(canvas);
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,depthTest:true,transparent:true,fog:false}));
+  sprite.scale.set(day?19:12,day?19:12,1);sprite.renderOrder=-4;scene.add(sprite);return sprite;
+}
+const sunSprite=skyDisk(true),moonSprite=skyDisk(false);
+moonSprite.visible=false;
+const villageGlow=new THREE.PointLight('#ffc375',0,14,2);
+scene.add(villageGlow);
 const player={x:.5,y:terrainHeight(0,6)+.02,z:6.5,vy:0,grounded:false};
 let yaw=.08,pitch=-.22;
 const PLAYER_R=.25,PLAYER_H=1.73,GRAVITY=19.5,JUMP=7.0;
@@ -594,7 +724,7 @@ function setFlying(next){
   toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
 }
 function exportWorld(){
-  const data={format:'blockwelt',version:5,savedAt:new Date().toISOString(),edits:[...edits.values()]};
+  const data={format:'blockwelt',version:6,savedAt:new Date().toISOString(),edits:[...edits.values()]};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
@@ -607,7 +737,7 @@ async function importWorld(file){
   if(file.size>2_000_000){toast('Diese Datei ist zu groß');return;}
   try{
     const data=JSON.parse(await file.text());
-    if(data?.format!=='blockwelt'||![2,3,5].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    if(data?.format!=='blockwelt'||![2,3,5,6].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
     const incoming=new Map();
     for(const edit of data.edits){
       if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
@@ -687,6 +817,33 @@ for(const [vi,v] of VILLAGES.entries()){
 }
 makeCreature('sneaker',11,14,5,11,14);
 makeCreature('sneaker',-19,6,6,-19,6);
+function makeAnimal(kind,x,z,index,homeX=x,homeZ=z){
+  const group=new THREE.Group();
+  const animalColor=new THREE.MeshLambertMaterial({color:kind==='cow'?'#b99474':'#f0eee1'});
+  const snoutColor=new THREE.MeshLambertMaterial({color:kind==='cow'?'#e9b3a8':'#dbc5b8'});
+  const hoofColor=new THREE.MeshLambertMaterial({color:'#4c514e'});
+  part(group,1.16,.76,.66,animalColor,0,.95,0);
+  const head=part(group,.60,.58,.56,animalColor,0,1.1,-.58);
+  part(group,.49,.24,.22,snoutColor,0,.92,-.91);
+  part(group,.08,.09,.05,npcDark,-.18,1.24,-.87);
+  part(group,.08,.09,.05,npcDark,.18,1.24,-.87);
+  for(const sign of [-1,1])part(group,.20,.19,.16,animalColor,sign*.35,1.4,-.6);
+  if(kind==='cow'){
+    const patch=new THREE.MeshLambertMaterial({color:'#f8e8cf'});
+    part(group,.45,.43,.02,patch,-.26,1.07,-.341);
+    part(group,.2,.28,.16,patch,.44,1.14,.0);
+  }
+  const legs=[];
+  for(const sx of [-1,1])for(const sz of [-1,1])legs.push(part(group,.22,.52,.23,hoofColor,sx*.39,.35,sz*.22));
+  scene.add(group);
+  creatures.push({kind,group,head,leftLeg:legs[0],rightLeg:legs[1],leftArm:legs[2],rightArm:legs[3],
+    x,z,homeX,homeZ,angle:index*2.9,turnTimer:index*.7,walkTimer:index,number:index+22,isAnimal:true});
+}
+for(const [vi,v] of VILLAGES.entries()){
+  makeAnimal('cow',v.x+11,v.z-2,vi*2+1,v.x+10,v.z-2);
+  makeAnimal('sheep',v.x-12,v.z+4,vi*2+2,v.x-12,v.z+4);
+}
+makeAnimal('sheep',12,13,11,12,13);
 const npcTargetBtn=$('npcBtn');
 let selectedNpc=null;
 function updateCreatures(dt){
@@ -703,10 +860,10 @@ function updateCreatures(dt){
       npc.angle+=Math.sin(t*.45+npc.number*13)*2.2;
       npc.turnTimer=1.1+pixelHash(npc.number,Math.floor(t/2),83)*3.2;
     }
-    const speed=npc.kind==='villager'?.48:.33;
+    const speed=npc.kind==='villager'?.48:npc.isAnimal?.25:.33;
     const nx=npc.x+Math.cos(npc.angle)*speed*dt;
     const nz=npc.z+Math.sin(npc.angle)*speed*dt;
-    const wanderLimit=npc.kind==='villager'?8:7;
+    const wanderLimit=npc.isAnimal?8:npc.kind==='villager'?8:7;
     const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
     if(nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
        !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&Math.abs(terrainHeight(nx,nz)-terrainHeight(npc.x,npc.z))<2){
@@ -718,7 +875,7 @@ function updateCreatures(dt){
     npc.walkTimer+=dt*speed*11;
     const sway=Math.sin(npc.walkTimer)*.27;
     npc.leftLeg.rotation.x=sway;npc.rightLeg.rotation.x=-sway;
-    npc.leftArm.rotation.x=-sway*.65;npc.rightArm.rotation.x=sway*.65;
+    npc.leftArm.rotation.x=npc.isAnimal?-sway:-sway*.65;npc.rightArm.rotation.x=npc.isAnimal?sway:sway*.65;
     npc.head.rotation.y=Math.sin(t*.8+npc.number)*.06;
     if(dist<6){
       npcRay.set(npc.x,npc.group.position.y+1.45,npc.z).project(camera);
@@ -727,7 +884,7 @@ function updateCreatures(dt){
     }
   }
   npcTargetBtn.classList.toggle('visible',!!selectedNpc&&gameRunning);
-  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?'👋 Hallo sagen':'🌿 Schleicher ansehen';
+  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?'👋 Hallo sagen':selectedNpc?.kind==='cow'?'🐮 Kuh streicheln':selectedNpc?.kind==='sheep'?'🐑 Schaf streicheln':'🌿 Schleicher ansehen';
 }
 function isInsideHouse(x,z){
   for(const v of VILLAGES)for(const [ox,oz] of HOUSE_OFFSETS){
@@ -737,7 +894,7 @@ function isInsideHouse(x,z){
 }
 npcTargetBtn.addEventListener('click',()=>{
   if(!gameRunning||!selectedNpc)return;
-  toast(selectedNpc.kind==='villager'?'Hallo! Schön, dass du unser Dorf besuchst!':'Der grüne Schleicher ist ganz friedlich!');
+  toast(selectedNpc.kind==='villager'?'Hallo! Schön, dass du unser Dorf besuchst!':selectedNpc.kind==='cow'?'Muh! Die Kuh freut sich über deinen Besuch!':selectedNpc.kind==='sheep'?'Mäh! Das Schaf ist ganz freundlich.':'Der grüne Schleicher ist ganz friedlich!');
 });
 function visitVillage(){
   const v=VILLAGES[0];
@@ -749,16 +906,47 @@ function visitVillage(){
 $('villageBtn').addEventListener('click',visitVillage);
 $('mobsBtn').addEventListener('click',()=>{
   showCreatures=!showCreatures;
-  $('mobsBtn').textContent=showCreatures?'✓ Bewohner und Schleicher: an':'○ Bewohner und Schleicher: aus';
+  $('mobsBtn').textContent=showCreatures?'✓ Tiere und Bewohner: an':'○ Tiere und Bewohner: aus';
   toast(showCreatures?'Die Welt ist lebendig!':'Die Figuren machen eine Pause.');
 });
+function applyLighting(){
+  const options=[
+    {sky:'#a5daf8',sun:'#fff4d4',power:2.5,hemi:2.1,exposure:1.26,label:'☀ Morgensonne'},
+    {sky:'#e7ad86',sun:'#ffba78',power:2.35,hemi:1.45,exposure:1.3,label:'🌅 Goldene Stunde'},
+    {sky:'#152943',sun:'#9bb7df',power:.42,hemi:.83,exposure:1.08,label:'☾ Sternennacht'}
+  ];
+  const p=options[lightMode];scene.background.set(p.sky);scene.fog.color.set(p.sky);
+  sunlight.color.set(p.sun);sunlight.intensity=p.power;
+  ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
+  sunSprite.visible=lightMode!==2;moonSprite.visible=lightMode===2;
+  $('nightStars').classList.toggle('visible',lightMode===2);
+  $('dayBtn').textContent=p.label;
+}
 $('dayBtn').addEventListener('click',()=>{
-  dayMode=!dayMode;
-  scene.background.set(dayMode?'#a9d8ee':'#152a4d');
-  scene.fog.color.set(dayMode?'#a9d8ee':'#152a4d');
-  sunlight.intensity=dayMode?2.25:.38;
-  $('dayBtn').textContent=dayMode?'☀ Tagmodus':'☾ Nachtmodus';
-  $('nightStars').classList.toggle('visible',!dayMode);
+  lightMode=(lightMode+1)%3;applyLighting();
+  toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
+});
+$('lookoutBtn').addEventListener('click',()=>{
+  player.x=LOOKOUT.x+7.5;player.z=LOOKOUT.z+7.5;
+  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
+  player.vy=0;player.grounded=false;
+  yaw=Math.PI/4;pitch=-.12;updateWorldStream(true);updateCamera();
+  toast('Die Himmelswarte wartet auf dich!');
+});
+$('birchVillageBtn').addEventListener('click',()=>{
+  const v=VILLAGES[1];
+  player.x=v.x+5.5;player.z=v.z+.5;
+  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
+  player.vy=0;player.grounded=false;yaw=Math.PI/2;pitch=-.1;
+  updateWorldStream(true);updateCamera();
+  toast('Willkommen im Birken-Dorf!');
+});
+$('waterfallBtn').addEventListener('click',()=>{
+  player.x=FALL.x-8.5;player.z=FALL.z+5.5;
+  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
+  player.vy=0;player.grounded=false;yaw=-1.01;pitch=-.10;
+  updateWorldStream(true);updateCamera();
+  toast('Entdecke den Kristallfall!');
 });
 
 const keys=new Set();
@@ -867,7 +1055,7 @@ let regionName='';
 function updateRegion(){
   let b=biomeAt(Math.floor(player.x),Math.floor(player.z));
   if(b==='fels'&&player.x>23&&player.z>=-11&&player.z<=-1&&player.y<11)b='hoehle';
-  const name=b==='hoehle'?'🪨 Berghöhle':regions[b];
+  const name=Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
   if(name!==regionName){regionName=name;$('regionLabel').textContent=name;}
 }
 function resize(){
@@ -883,6 +1071,11 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);
+  sunSprite.position.set(player.x-39,player.y+51,player.z-55);
+  moonSprite.position.set(player.x+38,player.y+53,player.z-48);
+  let near=0;for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
+  villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
+  if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
   clouds.position.x=Math.sin(now*.00007)*1.4;
   renderer.render(scene,camera);

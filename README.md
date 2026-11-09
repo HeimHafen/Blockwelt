@@ -1,53 +1,69 @@
-# Blockwelt V5 – Mega-Welt
+# BLOCKWELT V6 – Abenteuerwelt
 
-Ein eigenständiges, Minecraft-ähnliches 3D-Kreativspiel für Kinder. Spielbar als Web-App im mobilen Safari, Chrome und am Computer. Die Blockwelt benutzt selbst erzeugte Pixeltexturen und selbst entworfene Figuren; es werden keine Minecraft-Originaldateien, -Texturen oder -Modelle verwendet. **Keine offizielle Minecraft-Version.**
+Eine eigenständige, im Browser spielbare 3D-Klötzchenwelt für Smartphone und Desktop. Grundlage ist die funktionierende **Blockwelt V5**. Die Welt nutzt selbst generierte Pixeltexturen und eigenständige Figuren, keine Minecraft-Originaldateien. Blockwelt ist **kein offizielles Minecraft-Produkt**.
 
-## Was ist neu?
+## Was V6 tatsächlich enthält
 
-- **192 × 192 Weltfelder**, statt 64 × 64 in V3 (neunmal so viel Fläche).
-- **Chunk-Streaming:** Auf dem iPhone werden höchstens 5 × 5 sichtbare Chunks mit einem kleinen Datenpuffer rund um die Spielfigur gehalten. Auf Desktop etwas mehr. Das gesamte 192 × 192-Gelände wird nicht auf einmal als Grafik aufgebaut.
-- Die vollständige ursprüngliche **64 × 64-V3-Landschaft bleibt Block für Block unverändert**. Vergleich durchgeführt: 21.556 belegte alte Blockpositionen, null Unterschiede. Alte Bauten werden mit demselben Speicherschlüssel geladen.
-- Neue Wälder, Tannenwald, Bergland, Sandland und zwei kleine Seen; zwei einfache Dörfer mit Blockhäusern, Wegen und Brunnen.
-- **Bewohner** gehen selbstständig umher. **Grüne Schleicher** sind an Creeper-artige Kreaturen angelehnt, aber eigenständig gestaltet. In dieser Kinderversion **keine Angriffe, kein Schaden und keine Explosionen**.
-- Nähe/Fadenkreuz: bei Figuren erscheint eine freundliche Interaktionsschaltfläche.
-- Im Menü: **Zum Sonnen-Dorf** springen, **Bewohner/Schleicher ein- und ausschalten**, **Tag/Nacht** wechseln.
-- **12 auswählbare Bausteine:** Gras, Erde, Stein, Holz, Blätter, Sand, Bretter, Ziegel, Pflaster, Glas, Gold und Wasser. Ein zusätzlicher Wegblock wird in Dörfern automatisch verwendet.
-- Die bekannten Funktionen bleiben: iPhone-Joystick, Blicksteuerung, Springen, Flugmodus, Abbauen/Setzen, Rückgängig, zurück zur Startwiese und Welt als JSON exportieren/importieren.
+- **192 × 192 Weltfelder** mit dem Chunk-Streaming aus V5: Auf Mobilgeräten werden maximal 5 × 5 sichtbare 16er-Chunks gerendert, dazu ein kleiner Datenpuffer. Keine unendliche Welt.
+- **Bestehende V5-Welt und Bedienung erhalten:** Startwiese, Dörfer, Wälder, Berge, Seen, Joystick, Umschauen, Springen, Flugmodus, Bauen, Abbauen, Rückgängig, Export/Import.
+- **Landschafts-Upgrade:** Blumen und Grasbüschel als leichte Instanzen, rosafarbene Blütenbäume, Schnee auf hohen Berggipfeln, wärmere Beleuchtung und atmosphärische Sonnen-/Mondscheiben.
+- **Zwei Entdeckerorte:** eine steinerne **Himmelswarte** mit Leuchtblock an der Spitze und ein **Kristallfall** aus Wasserblöcken vor einer Felswand. Die Warte ist ein Aussichtsziel; zum Erreichen des oberen Bereichs eignet sich der Flugmodus.
+- **Lebendigere Welt:** insgesamt 21 einfache eigenständige 3D-Figuren – Dorfbewohner, friedliche grüne Schleicher, Kühe und Schafe. Sie laufen innerhalb ihrer Bereiche umher und lassen sich freundlich ansprechen bzw. streicheln.
+- **Drei Lichtstimmungen:** Morgensonne, Goldene Stunde und Sternennacht, manuell im Menü umschaltbar. Keine automatische Uhr.
+- **15 direkt wählbare Baumaterialien:** die bisherigen 12 plus Schnee, Blüten und Laternen; Wege werden in Dörfern automatisch verwendet.
+- **Schnellreisen** zur Startwiese, zum Sonnen-Dorf, Birken-Dorf, zur Himmelswarte und zum Kristallfall.
+- **iPhone-optimiertes Menü:** kompakte Optionen, scrollbarer Dialog auf kleinen Displays und Landschaftsausrichtung.
 
-## Unbedingt zuerst sichern
+## Wichtig: V5 vor dem Update sichern
 
-1. Öffne **vor dem Austausch** deine bisherige Blockwelt: <https://heimhafen.github.io/Blockwelt/>.
-2. Im Spiel: `☰ → Welt sichern`. **Die Datei `Blockwelt-Meine-Welt.json` in der Dateien-App behalten.** Sie ist die Sicherung deiner selbst gesetzten und entfernten Blöcke. Ein GitHub-Repository-Backup sichert **keine** lokalen Browser-Spielstände.
-3. In GitHub zusätzlich den bisherigen Projektstand als ZIP sichern oder den V3-Commit notieren.
-4. **Keine Safari-/Website-Daten löschen**, bis der neue Spielstand geprüft ist.
+1. Die bestehende Blockwelt öffnen: https://heimhafen.github.io/Blockwelt/
+2. Im Menü **„Welt sichern“** wählen und die heruntergeladene Datei `Blockwelt-Meine-Welt.json` in der Dateien-App aufbewahren. **GitHub sichert nicht automatisch die lokalen Browser-Spielstände!**
+3. Optional den aktuellen funktionierenden V5-Commit auf GitHub notieren oder das Repository als ZIP herunterladen.
+4. Safari-Website-Daten und lokalen Speicher **nicht löschen**, solange die neue Version noch nicht geprüft wurde.
 
-## Installation via GitHub auf dem iPhone
+## Installation auf GitHub (iPhone/Safari)
 
-1. Das ZIP `Blockwelt_V5_Mega_Welt_WebApp.zip` herunterladen und in **Dateien** entpacken.
-2. In GitHub das Repository `HeimHafen/Blockwelt` öffnen, **nicht** `Family-Spots-Map`.
-3. Alle **vier entpackten Dateien direkt ins Hauptverzeichnis** des Repositories hochladen. Die bisherigen `index.html`, `game.js`, `styles.css`, `README.md` dadurch ersetzen. **Nicht das ZIP selbst hochladen.**
-4. Auf `main` committen. GitHub Pages bleibt bei `main` / `/(root)`.
-5. Nach erfolgreichem Deployment `https://heimhafen.github.io/Blockwelt/` neu laden. Im Startmenü muss `Mega-Welt · V5` stehen. Bei Cache-Problemen Safari neu laden; keine Website-Daten löschen.
-6. Spielen, Dorf besuchen, Bauänderungen und Speicherfunktion testen. Falls Bauten fehlen, `☰ → Welt laden` benutzen und die vorher exportierte JSON-Datei wählen.
+1. `Blockwelt_V6_Abenteuerwelt.zip` in die Dateien-App laden und entpacken.
+2. In GitHub **HeimHafen/Blockwelt** öffnen (nicht `Family-Spots-Map`).
+3. Genau die **vier Dateien** `index.html`, `styles.css`, `game.js`, `README.md` direkt ins **Hauptverzeichnis** hochladen und die gleichnamigen bisherigen Dateien ersetzen. Nicht das ZIP selbst hochladen, keine zusätzliche Unterordner-Ebene anlegen.
+4. Änderungen auf `main` committen. Bei GitHub Pages muss die Veröffentlichungsquelle `main` und `/(root)` sein.
+5. Nach erfolgreicher Veröffentlichung https://heimhafen.github.io/Blockwelt/ öffnen. Oben muss **„Abenteuerwelt · V6“** stehen. Wenn noch V5 angezeigt wird: Seite neu laden und gegebenenfalls etwas warten, aber keine Browserdaten löschen.
+6. Zuerst Menü und Steuerung testen, danach Dorf, Kristallfall, Himmelswarte, Tag/Nacht und Speicher-/Ladefunktion prüfen. Falls eigene Bauten fehlen, die zuvor gesicherte JSON-Datei über **„Welt laden“** importieren.
 
-## Arbeiten mit Working Copy (wenn verwendet)
+### Working Copy (Alternative zum Browser-Upload)
 
 - Repository: `HeimHafen/Blockwelt`
-- Source-Branch: `refs/heads/main`
+- Source-Referenz: `refs/heads/main`
 - Vorhandene oder neue Remote-Referenz: `refs/heads/main`
-- **Force Push: Aus**.
-- Commit-Zusammenfassung: `Blockwelt V5 – Mega-Welt, Dörfer und freundliche Bewohner`
-- Commit-Details: `192×192 Welt mit Chunk-Streaming, zwei Dörfern, neuen Biomen, 16 friedlichen Kreaturen, Tag/Nacht und Bau- und Speicherstand-Kompatibilität.`
+- Force Push: **Aus**
+- Commit-Zusammenfassung: `Blockwelt V6 – Abenteuerwelt mit Tieren, Entdeckerorten und neuer Atmosphäre`
+- Detaillierte Informationen: `V5-Welt und Steuerung beibehalten; Blumen, Blütenbäume, Schnee, Kühe, Schafe, Himmelswarte, Kristallfall, fünf Schnellreiseziele, drei Lichtstimmungen und neue Baumaterialien ergänzt.`
 
-## Technisches und Grenzen
+## Spielstand und Kompatibilität
 
-- Alle Spiellogik läuft lokal im Browser mit Three.js 0.187.0 über jsDelivr (MIT-Lizenz); für den ersten Start ist Internet nötig.
-- Der alte lokale Speicherschlüssel `blockwelt-kleine-baumeister-v1` wird **weiterverwendet**. Importiert werden Exportdateien aus V2, V3 und V5. V1 wird weiterhin über dessen lokalen Browser-Spielstand berücksichtigt.
-- Neue Baublöcke und geladene entfernte Regionen bleiben als Änderungsdaten gespeichert, während die unberührte Landschaft deterministisch neu erzeugt wird.
-- Die Dörfer sind einfache, vordefinierte Blockbauten. Figuren besitzen einfache Bewegungsabläufe, **noch keine ausgefeilte Wegfindung, Handel, Crafting, KI-Kämpfe oder Multiplayer**. Das Wasser ist ein einfacher Wasserblock ohne ausgereifte Schwimmphysik.
-- **Tests:** `node --check` bestanden. Technischer Browser-Lauf mit einer Three.js-Testattrappe: Welt-Streaming, Dorf, See, Nachtfunktion und Menüs ohne Skriptfehler. Ursprüngliches 64×64-Blockterrain von V3/V5 komplett identisch (21.556 Blöcke). **Ein echter Grafik- und Touch-Test auf einem iPhone steht aus.**
-- Die 192×192-Weltgröße bezeichnet die begehbare Gesamtfläche, nicht gleichzeitig geladene Grafik. Auf älteren Smartphones kann ein neues Chunk etwas Ladezeit beanspruchen.
+- Der bisherige Browser-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt erhalten.
+- V2-, V3- und V5-Exportdateien können weiterhin importiert werden; V6 exportiert und importiert ebenfalls JSON.
+- Die ursprünglichen V5-Funktionen zur Berechnung der alten Landschaft wurden nicht verändert. Die neue Dekoration und die neuen Bauwerke liegen zusätzlich darüber. Bestehende Bauänderungen werden bei der Chunk-Erzeugung zuletzt aufgebracht.
+- Beim Import wird der aktuelle Spielstand **nach Bestätigung ersetzt**. Vorher unbedingt sichern.
+- Die Welt wird weiterhin **nur lokal im Browser** gespeichert. Ein anderes Gerät sieht nicht automatisch dieselben Bauten.
 
-### Zurückrollen
+## Technische Hinweise und Grenzen
 
-Falls etwas nicht funktioniert, den letzten funktionierenden Commit für `Blockwelt` wiederherstellen und gegebenenfalls die JSON-Weltsicherung wieder importieren. **Ein Downgrade nach längerem Spielen kann neue V5-Bauten außerhalb der 64×64-Welt verlieren; deshalb die JSON vorher separat sichern.**
+- Three.js **0.187.0** wird als ES-Modul über jsDelivr geladen (MIT-Lizenz). Für den ersten Start wird eine Internetverbindung benötigt.
+- Die spektakuläre KI-Bildvorschau ist **ein Konzeptbild**, kein Screenshot der tatsächlichen WebGL-Grafik. V6 verwendet einfache, mobile-freundliche Voxelgeometrie; keine fotorealistischen Schatten, keine komplexe Burganlage und keine Shader-Pipeline wie in dem Bild.
+- Schleicher sind **friedlich**: keine Kämpfe, Explosionen oder Schadensmechanik. Dorfbewohner und Tiere haben einfache Bewegungsmuster, keine komplexe Wegfindung.
+- Kein Crafting, kein Multiplayer, keine unendliche Welt, keine komplexe Wasserphysik.
+- Die zusätzliche Dekoration kann die Leistung auf älteren Smartphones beeinflussen. V6 nutzt weiterhin Chunk-Streaming, instanzierte Blöcke und eine begrenzte Pixelauflösung auf Mobilgeräten.
+
+## Prüfstand
+
+- JavaScript-Syntaxprüfung mit `node --check`: bestanden.
+- DOM-Abgleich: alle aus JavaScript verwendeten Elemente vorhanden.
+- Vergleich der zentralen V5-Funktionen für ursprüngliches Terrain: unverändert.
+- Browser-Logiktest mit **Three.js-Testattrappe**: Start, Menüs, Lichtwechsel, Schnellreisen, Chunk-Erzeugung, Tiere, Import einer V5-JSON-Sicherung ohne Skriptfehler durchlaufen.
+- Layout-Screenshots in 393 × 852, 375 × 667 und 844 × 390 erstellt. Die Testattrappe rendert **keine echten 3D-Grafiken**.
+- **Noch offen:** echter WebGL-Grafiktest mit Three.js und praktischer Touch-/Leistungs-Test auf einem iPhone. Daher keine 1:1-Grafik- oder Performance-Garantie.
+
+## Zurück zur V5
+
+Wenn V6 auf deinem iPhone Probleme verursacht, den letzten funktionierenden V5-Commit auf GitHub wiederherstellen. Anschließend ggf. den gesicherten V5-Spielstand laden. Vor jedem Wechsel den aktuellen Spielstand exportieren, da V6-Bauten aus neuen Materialien in V5 nicht vollständig darstellbar sind.
