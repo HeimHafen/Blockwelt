@@ -1,46 +1,45 @@
-# Blockwelt – Kleine Baumeister (V2)
+# Blockwelt – Kleine Baumeister (V3)
 
-Ein eigenständig programmiertes, friedliches 3D-Blockspiel für Kinder. Es orientiert sich am Prinzip des Bauens und Entdeckens in Blockwelten. **Kein offizielles Minecraft-Produkt.** Keine kopierten Minecraft-Grafiken, -Sounds oder -Dateien.
+Eigenständiges, friedliches 3D-Blockspiel für Kinder, das im Browser auf iPhone, Android und Desktop läuft. Inspiriert vom allgemeinen Prinzip kreativer Klötzchen-Sandboxspiele; **kein offizielles Minecraft-Produkt** und keine Minecraft-Originalgrafiken oder -Dateien.
 
-## Neu in V2
+## Neu in V3
 
-- Größere Welt: 36 × 36 statt 26 × 26 Blockfelder, mehr Bäume.
-- Zwei zusätzliche Materialien: Sand und Bretter (jetzt sieben Baumaterialien).
-- Gedrückt gehaltene Tasten zum fortlaufenden Abbauen oder Bauen.
-- Optionaler Flugmodus, über das Menü ein- und ausschaltbar: Beim Fliegen mit HOCH und RUNTER steigen oder sinken.
-- Letzte Änderung rückgängig machen (bis zu 40 Schritte innerhalb derselben Spielsitzung).
-- Welt als JSON-Datei sichern und V2-Sicherung wieder laden.
-- Etwas kompaktere Materialleiste, sodass möglichst alle sieben Baumaterialien auf ein iPhone-Display passen.
+- **64 × 64 Blockfelder** statt 36 × 36; der ursprüngliche V2-Bereich (x/z jeweils -18 bis 17) bleibt **Block für Block unverändert**.
+- Neue Landschaft außerhalb der alten Welt mit hügeligem **Waldland**, **Sandtal**, **Felsenberg** und einem ausgehöhlten, begehbaren **Höhlengang** im östlichen Berg.
+- Insgesamt **neun** wählbare Bausteine: Gras, Erde, Stein, Holz, Blätter, Sand, Bretter, Ziegel, Pflaster. Materialleiste seitlich wischen, um weitere Steine zu sehen.
+- Schnelleres blockweises Neuberechnen der Grafik statt kompletter Neuaufbau bei jedem gesetzten/abgebauten Block (16 × 16-Felder-Chunks).
+- Präziseres Fadenkreuz in der **tatsächlichen Mitte** der anvisierten Kamerarichtung.
+- Ortsanzeige für die verschiedenen Landschaften.
+- **Zur Startwiese** im Menü, um beim Erkunden schnell zurückzukommen.
+- Bestehender Flugmodus, Sprungtaste, Touch-Joystick, Langdruck zum Weiterbauen, Undo und Dateisicherung bleiben erhalten.
+- V2-Sicherungsdateien und neue V3-Sicherungsdateien können geladen werden.
 
-## Bewusst unverändert
+## Wichtig: Vor dem Update die Bauwelt sichern
 
-- Die 3D-Grafik und grundlegende Steuerung aus V1.
-- Das Speicherformat und der lokale Speicherschlüssel: `blockwelt-kleine-baumeister-v1`.
-- Bereits gespeicherte V1-Bauänderungen werden weiter eingelesen (auf demselben Gerät, unter derselben Webadresse und mit unveränderten Browserdaten).
-- Ohne Werbeanzeigen, Kampf, Monster oder Account.
+1. Die **aktuelle V2** öffnen: https://heimhafen.github.io/Blockwelt/
+2. In der App **☰ → Welt sichern** wählen und die heruntergeladene JSON-Datei auf dem iPhone in der **Dateien-App** behalten. Sie enthält die bislang gebauten/abgebauten Blöcke.
+3. Optional auch das **GitHub-Repository als ZIP** sichern. **Ein Repository-ZIP enthält nicht den persönlichen Spielstand im Browser.**
+4. Die vier Dateien aus dem **V3-ZIP** entpacken und direkt in das **Hauptverzeichnis** des GitHub-Repositories `HeimHafen/Blockwelt` hochladen (gleichnamige Dateien ersetzen; **nicht das ZIP selbst hochladen**).
+5. Commit auf `main`, GitHub Pages auf `main` / `/(root)` belassen.
+6. Die Website neu laden. **Keine Browserdaten oder Websitedaten löschen.** Der bisherige lokale Speicherschlüssel bleibt gleich: `blockwelt-kleine-baumeister-v1`.
+7. Prüfen, ob deine alten Bauten noch da sind. Falls nicht, über **☰ → Welt laden** die zuvor gesicherte JSON-Datei importieren.
 
-## Update auf GitHub Pages
-
-1. **Backup anlegen:** Das bisherige Repository als ZIP herunterladen (GitHub: Code → Download ZIP); bereits erstellte Bauten bleiben grundsätzlich nur im Browser und sollten nach dem Update über „Welt sichern“ als Datei gesichert werden.
-2. Die **vier Dateien** `index.html`, `styles.css`, `game.js`, `README.md` aus diesem Paket direkt in das Hauptverzeichnis des Repositories `Blockwelt` hochladen. Bei bestehendem Namen die alte Datei ersetzen. **Nicht** die ZIP selbst hochladen.
-3. Änderungen auf `main` übernehmen (Commit). GitHub Pages soll weiterhin von `main` / `/(root)` veröffentlichen.
-4. Die bisherige Website erneut öffnen. Bei veralteten Dateien in Safari neu laden. Keine Browserdaten löschen.
-
-Beispiel: https://heimhafen.github.io/Blockwelt/
+**Hinweis:** „Welt neu anfangen“ löscht die lokal gespeicherten Bauänderungen; vorher unbedingt sichern. Der Browser kann lokale Spieldaten bei Löschung der Websitedaten verlieren.
 
 ## Bedienung
 
-- **iPhone/Android:** Links den Joystick benutzen, rechts im freien Bildbereich wischen, „SPRINGEN“, „ABBAUEN“ und „SETZEN“ antippen. Die Bauen/Abbauen-Tasten kann man für mehrere Blöcke gedrückt halten.
-- **Flugmodus:** Menü ☰ → „Flugmodus einschalten“ → weiterspielen. HOCH / RUNTER gedrückt halten. Im Menü wieder ausschalten.
-- **Rückgängig:** Menü ☰ → „Letzten Block rückgängig“. Funktioniert innerhalb der aktuellen Sitzung; nach Neustart beginnt die Rückgängig-Liste leer.
-- **Sicherung:** Menü ☰ → „Welt sichern“ (JSON-Datei herunterladen), „Welt laden“ (diese Datei auswählen und Austausch bestätigen). Der Import ersetzt die aktuelle Bauwelt.
-- **Computer:** WASD/Pfeiltasten, Leertaste, Maus ziehen; linker Mausklick abbauen, rechter setzen. Tasten 1–7 wählen das Baumaterial. Mit Strg+Z die letzte Aktion rückgängig machen. Im Flugmodus E/Leertaste hoch und Q/Umschalttaste runter.
+- **iPhone/Android:** links Joystick, im Spielbild rechts wischen für Blickrichtung, Springen, Abbauen, Setzen; Knöpfe zum fortlaufenden Bauen gedrückt halten.
+- **Materialleiste:** horizontal wischen und einen Block antippen.
+- **Menü:** Flugmodus, zurück zur Startwiese, rückgängig, Export/Import, neuer Spielstand.
+- **Computer:** WASD/Pfeiltasten, Leertaste, Maus ziehen; links klicken abbauen, rechts setzen, Tasten 1–9 zum Materialwechsel, Strg+Z zum Rückgängigmachen.
+- **Im Flugmodus:** Hoch = Springtaste / E, Runter = Sinken / Q bzw. Umschalt.
 
-## Hinweise und Grenzen
+## Technische Hinweise
 
-- **V2 ist ein Prototyp und wurde nicht auf einem echten iPhone durchgetestet.** HTML-Struktur, JavaScript-Syntax und sichtbares Responsive-Layout sind geprüft, aber echte Touch- und WebGL-Funktionen müssen auf dem Zielgerät getestet werden.
-- Offlinefähigkeit und Synchronisierung über mehrere Geräte fehlen weiterhin. Die Welt ist endlich und hat noch keine Höhlen, Crafting-, Inventar-, Tier-, Multiplayer- oder komplexen Mob-Systeme.
-- Browser-Löschung kann die lokale Welt entfernen. Die Sicherungsfunktion ist deshalb besonders wichtig.
-- Die 3D-Engine Three.js 0.187.0 (MIT) wird online über jsDelivr geladen; beim ersten Spielstart wird eine Internetverbindung benötigt.
+- Die V2-Basis der alten 36 × 36 Felder wurde programmatisch gegen die V3-Welt verglichen: **keine abweichenden Blöcke in diesem Bereich**.
+- JavaScript-Syntax, neun Material-IDs und das responsive HTML/CSS-Menülayout sind geprüft.
+- **Noch kein vollständiger 3D-/Touch-Test auf einem echten iPhone für V3.** Die neuen Berge, Höhlen und Chunk-Renderer müssen nach Veröffentlichung auf dem Gerät getestet werden.
+- Ohne Multiplayer, Tiere, Crafting oder echtes Wassersystem. Keine Werbung, kein Account, keine Kämpfe.
+- Three.js 0.187.0 (MIT) wird, wie in V2, über jsDelivr geladen. Internetverbindung ist nötig.
 
-Three.js: https://threejs.org/ · Lizenz: https://github.com/mrdoob/three.js/blob/master/LICENSE
+Quelle Three.js: https://threejs.org/ · MIT: https://github.com/mrdoob/three.js/blob/master/LICENSE

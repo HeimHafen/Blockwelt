@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Blockwelt: eine kleine kreative 3D-Klötzchenwelt zum Bauen und Entdecken.">
-  <title>Blockwelt V2 · Kleine Baumeister</title>
+  <title>Blockwelt V3 · Kleine Baumeister</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,11 +15,12 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister · V2</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister · V3</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
   <div id="crosshair" class="crosshair" aria-hidden="true"><span></span><span></span></div>
+  <div id="regionLabel" class="region-label">🌿 Startwiese</div>
   <div id="targetLabel" class="target-label" aria-live="off">Schau einen Block an</div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -45,8 +46,10 @@
     <button class="slot" data-block="leaves" type="button" aria-label="Blätter auswählen" aria-pressed="false"><span class="cube cube-leaves"></span><small>Blätter</small></button>
     <button class="slot" data-block="sand" type="button" aria-label="Sand auswählen" aria-pressed="false"><span class="cube cube-sand"></span><small>Sand</small></button>
     <button class="slot" data-block="planks" type="button" aria-label="Bretter auswählen" aria-pressed="false"><span class="cube cube-planks"></span><small>Bretter</small></button>
+    <button class="slot" data-block="bricks" type="button" aria-label="Ziegel auswählen" aria-pressed="false"><span class="cube cube-bricks"></span><small>Ziegel</small></button>
+    <button class="slot" data-block="cobble" type="button" aria-label="Pflaster auswählen" aria-pressed="false"><span class="cube cube-cobble"></span><small>Pflaster</small></button>
   </nav>
-  <div class="hint">Links bewegen · Rechts umsehen · Knöpfe halten zum Weiterbauen</div>
+  <div class="hint">Links laufen · Rechts umsehen · Materialien seitlich wischen</div>
 
   <div id="overlay" class="overlay">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
@@ -57,6 +60,7 @@
         <p>Eine kleine Welt nur für dich. Entdecke sie, baue ein Haus oder erfinde etwas ganz Neues!</p>
         <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span></div>
         <div class="menu-options" aria-label="Spieloptionen">
+          <button id="homeBtn" class="option-btn" type="button">⌂ Zur Startwiese</button>
           <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
           <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
           <div class="backup-row"><button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button><button id="importBtn" class="option-btn" type="button">↑ Welt laden</button></div>

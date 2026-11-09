@@ -1,16 +1,17 @@
-// BLOCKWELT V2 — selbst entwickeltes kreatives Blockabenteuer.
+// BLOCKWELT V3 — selbst entwickeltes kreatives Blockabenteuer.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
-const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks'];
-const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter'};
-const HALF = 18; // Größere Welt; bestehende V1-Spielstände bleiben erhalten.
+const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble'];
+const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster'};
+const HALF = 32; // V3: 64 × 64. Die ursprünglichen 36 × 36 Felder bleiben unverändert.
+const OLD_MIN = -18, OLD_MAX = 17, CHUNK = 16, MAX_Y = 40;
 const KEY = 'blockwelt-kleine-baumeister-v1';
 const blocks = new Map();
 const edits = new Map();
-const meshes = [];
+const chunkMeshes = new Map();
 let selectedType = 'grass';
 let gameRunning = false;
 let toastTimer = null;
@@ -25,7 +26,7 @@ scene.fog = new THREE.Fog('#a9d8ee', 22, 64);
 const camera = new THREE.PerspectiveCamera(72, 1, .06, 95);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setSize(window.innerWidth,window.innerHeight);
 gameEl.appendChild(renderer.domElement);
@@ -47,7 +48,9 @@ function texture(type,face){
     wood:['#a97c50','#bf8b54','#90653f','#c99a66','#9c7147'],
     leaves:['#508e57','#5f9f60','#427a4c','#75a86b','#4c8654'],
     sand:['#dec993','#e7d39d','#d5bd86','#f0dba8','#cbb481'],
-    planks:['#c49358','#d0a36a','#b5824d','#e2b277','#ac7848']
+    planks:['#c49358','#d0a36a','#b5824d','#e2b277','#ac7848'],
+    bricks:['#be805f','#c98a69','#ad6c52','#d49a78','#b77759'],
+    cobble:['#929e99','#aeb7af','#7f8e88','#c0c8bd','#8d9a92']
   };
   let baseType=(type==='grass'&&face==='bottom')?'dirt':type;
   for(let y=0;y<32;y+=4) for(let x=0;x<32;x+=4){
@@ -58,6 +61,8 @@ function texture(type,face){
     if(type==='wood'&&face==='top') {const r=Math.max(Math.abs(x-14),Math.abs(y-14)); index=r%12<4?2:1;}
     if(type==='planks'&&face==='side'&&y%16<4)index=2;
     if(type==='planks'&&face==='top'&&x%16<3)index=2;
+    if(type==='bricks'&&((y%16<2)||((x+(Math.floor(y/16)%2)*8)%16<2)))index=2;
+    if(type==='cobble'&&((x%12<2)||(y%12<2)))index=2;
     ctx.fillStyle=colors[index];ctx.fillRect(x,y,4,4);
   }
   if(type==='grass'&&face==='side'){
@@ -77,26 +82,93 @@ const blockGeo=new THREE.BoxGeometry(1,1,1);
 const key=(x,y,z)=>`${x},${y},${z}`;
 const get=(x,y,z)=>blocks.get(key(x,y,z));
 function put(x,y,z,type){const k=key(x,y,z);if(type)blocks.set(k,type);else blocks.delete(k);}
-function terrainHeight(x,z){
+// Preserve the complete V2 terrain and tree positions in the original area.
+function oldHeight(x,z){
   return Math.max(2,Math.min(6,Math.round(3.25+Math.sin(x*.31)*.68+Math.cos(z*.29)*.62+Math.sin((x+z)*.23)*.35)));
 }
-function baseWorld(){
-  blocks.clear();
-  for(let x=-HALF;x<HALF;x++)for(let z=-HALF;z<HALF;z++){
-    const h=terrainHeight(x,z);
-    for(let y=0;y<h;y++)put(x,y,z,y===h-1?'grass':y>=h-3?'dirt':'stone');
-  }
-  // Kinderfreundliche Bäume, rund um die Startposition bleibt Raum zum Bauen.
-  const trees=[[-9,-9],[-5,-4],[4,-8],[9,-7],[-10,5],[-4,10],[7,7],[10,2],[-10,-1],[3,11],[-15,-13],[-12,15],[14,-12],[15,9],[-16,3],[5,15]];
-  for(const [x,z] of trees){
-    const h=terrainHeight(x,z);
-    for(let y=h;y<h+4;y++)put(x,y,z,'wood');
-    for(let dx=-2;dx<=2;dx++) for(let dz=-2;dz<=2;dz++) for(let dy=2;dy<=4;dy++){
+function oldArea(x,z){return x>=OLD_MIN&&x<=OLD_MAX&&z>=OLD_MIN&&z<=OLD_MAX;}
+function terrainHeight(x,z){
+  if(oldArea(x,z))return oldHeight(x,z);
+  const edgeX=Math.max(OLD_MIN,Math.min(OLD_MAX,x));
+  const edgeZ=Math.max(OLD_MIN,Math.min(OLD_MAX,z));
+  const original=oldHeight(edgeX,edgeZ);
+  const distance=Math.max(Math.abs(x-edgeX),Math.abs(z-edgeZ));
+  const blend=Math.min(1,Math.max(0,(distance-.3)/8.8));
+  let hills=5.8+Math.sin(x*.14)*2+Math.cos(z*.17)*1.9+Math.sin((x-z)*.11)*1.2;
+  // Eastern rocky mountains with a small walk-in cave.
+  if(x>18)hills+=10*Math.exp(-((x-27)**2)/80-((z+6)**2)/140);
+  // Dry south-western valley, flatter so building is easier.
+  if(x< -18&&z>4)hills=4.5+Math.sin(x*.35)*.8+Math.cos(z*.32)*.7;
+  return Math.max(2,Math.min(24,Math.round(original*(1-blend)+hills*blend)));
+}
+function biomeAt(x,z){
+  if(oldArea(x,z))return 'wiese';
+  if(x>=20&&z<=5)return 'fels';
+  if(x<=-20&&z>=5)return 'sand';
+  return 'wald';
+}
+function pixelHash(x,z,salt=0){
+  let n=(Math.imul(x,374761393)+Math.imul(z,668265263)+Math.imul(salt,1442695041))|0;
+  n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296;
+}
+function tree(x,z,tall=false){
+  const h=terrainHeight(x,z);
+  const trunk=tall?5:4;
+  for(let y=h;y<h+trunk;y++)put(x,y,z,'wood');
+  if(tall){
+    // Spruce-like tree with a triangular crown, built from familiar leaves.
+    for(let dy=1;dy<=6;dy++){
+      const radius=dy<=2?2:dy<=4?1:0;
+      for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+        if(Math.abs(dx)===2&&Math.abs(dz)===2)continue;
+        const xx=x+dx,zz=z+dz,yy=h+dy+1;
+        if(xx>=-HALF&&xx<HALF&&zz>=-HALF&&zz<HALF&&!get(xx,yy,zz))put(xx,yy,zz,'leaves');
+      }
+    }
+  }else{
+    for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=2;dy<=4;dy++){
       if(Math.abs(dx)===2&&Math.abs(dz)===2)continue;
       if(dy===4&&Math.abs(dx)+Math.abs(dz)>2)continue;
       const xx=x+dx,yy=h+dy,zz=z+dz;
       if(xx>=-HALF&&xx<HALF&&zz>=-HALF&&zz<HALF&&!get(xx,yy,zz))put(xx,yy,zz,'leaves');
     }
+  }
+}
+function baseWorld(){
+  blocks.clear();
+  for(let x=-HALF;x<HALF;x++)for(let z=-HALF;z<HALF;z++){
+    const h=terrainHeight(x,z),biome=biomeAt(x,z);
+    for(let y=0;y<h;y++){
+      let type=y===h-1?'grass':y>=h-3?'dirt':'stone';
+      if(!oldArea(x,z)){
+        if(biome==='sand')type=y>=h-3?'sand':'stone';
+        else if(biome==='fels'&&h>=9)type=y>=h-2?'stone':'stone';
+        else if(biome==='wald'&&y===h-1&&pixelHash(x,z,6)>.84)type='dirt';
+      }
+      put(x,y,z,type);
+    }
+  }
+  // EXACT V2 tree locations and shape in the old area.
+  const trees=[[-9,-9],[-5,-4],[4,-8],[9,-7],[-10,5],[-4,10],[7,7],[10,2],[-10,-1],[3,11],[-15,-13],[-12,15],[14,-12],[15,9],[-16,3],[5,15]];
+  for(const [x,z] of trees)tree(x,z,false);
+  // Outside the old world, deterministic woodland and pine trees.
+  for(let x=-29;x<=29;x+=5)for(let z=-29;z<=29;z+=5){
+    const tx=x+Math.floor(pixelHash(x,z,11)*3)-1;
+    const tz=z+Math.floor(pixelHash(x,z,12)*3)-1;
+    if(oldArea(tx,tz)||tx>=OLD_MIN-3&&tx<=OLD_MAX+3&&tz>=OLD_MIN-3&&tz<=OLD_MAX+3)continue;
+    if(tx>18&&tz>=-13&&tz<=1)continue; // Keep cave path clear.
+    if(biomeAt(tx,tz)==='sand'||(biomeAt(tx,tz)==='fels'&&terrainHeight(tx,tz)>10))continue;
+    if(pixelHash(x,z,13)>.48)tree(tx,tz,pixelHash(x,z,14)>.52);
+  }
+  // Carve a walk-in tunnel through the eastern mountain. This only changes V3 land.
+  for(let x=20;x<=30;x++){
+    const width=x>=27?2:1;
+    for(let z=-6-width;z<=-6+width;z++)for(let y=5;y<=8;y++)put(x,y,z,null);
+  }
+  // Small secret chamber at the end of the cave, with a smooth-ish block silhouette.
+  for(let x=27;x<=31;x++)for(let z=-10;z<=-2;z++)for(let y=5;y<=11;y++){
+    const d=((x-29)/3)**2+((z+6)/4.2)**2+((y-8)/3.6)**2;
+    if(d<=1)put(x,y,z,null);
   }
 }
 function loadEdits(){
@@ -106,7 +178,7 @@ function loadEdits(){
     for(const item of arr){
       if(!Array.isArray(item)||item.length!==4)continue;
       const [x,y,z,type]=item;
-      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>25)continue;
+      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
       put(x,y,z,type);edits.set(key(x,y,z),item);
     }
@@ -116,28 +188,58 @@ function saveEdits(){
   try{localStorage.setItem(KEY,JSON.stringify([...edits.values()]));}
   catch(e){toast('Speichern ist auf diesem Gerät nicht möglich');}
 }
+// Chunked instanced rendering avoids reconstructing the entire world after each tap.
 const dummy=new THREE.Object3D();
+const chunkKey=(cx,cz)=>`${cx},${cz}`;
 function visible(x,y,z){
   return !get(x+1,y,z)||!get(x-1,y,z)||!get(x,y+1,z)||!get(x,y-1,z)||!get(x,y,z+1)||!get(x,y,z-1);
 }
-function rebuild(){
-  while(meshes.length){const mesh=meshes.pop();scene.remove(mesh);mesh.dispose();}
-  const typePositions=Object.fromEntries(BLOCK_TYPES.map(t=>[t,[]]));
-  for(const [k,type] of blocks){
-    const [x,y,z]=k.split(',').map(Number);
-    if(visible(x,y,z))typePositions[type].push([x,y,z]);
+function rebuildChunk(cx,cz){
+  if(cx<-HALF/CHUNK||cx>=HALF/CHUNK||cz<-HALF/CHUNK||cz>=HALF/CHUNK)return;
+  const id=chunkKey(cx,cz);
+  for(const mesh of chunkMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
+  const byType=Object.fromEntries(BLOCK_TYPES.map(t=>[t,[]]));
+  for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
+    for(let y=0;y<=MAX_Y+8;y++){
+      const type=get(x,y,z);
+      if(type&&visible(x,y,z))byType[type].push([x,y,z]);
+    }
   }
+  const chunk=[];
   for(const type of BLOCK_TYPES){
-    const positions=typePositions[type];if(!positions.length)continue;
+    const positions=byType[type];if(!positions.length)continue;
     const mesh=new THREE.InstancedMesh(blockGeo,materialByType[type],positions.length);
     mesh.userData.positions=positions;
-    mesh.frustumCulled=false;
-    positions.forEach(([x,y,z],i)=>{
-      dummy.position.set(x+.5,y+.5,z+.5);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
-    });
+    for(let i=0;i<positions.length;i++){
+      const [x,y,z]=positions[i];
+      dummy.position.set(x+.5,y+.5,z+.5);
+      dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+    }
     mesh.instanceMatrix.needsUpdate=true;
-    scene.add(mesh);meshes.push(mesh);
+    // Keep frustum culling enabled for good iPhone performance.
+    mesh.computeBoundingSphere();
+    scene.add(mesh);chunk.push(mesh);
   }
+  chunkMeshes.set(id,chunk);
+}
+function rebuild(){
+  for(let cx=-HALF/CHUNK;cx<HALF/CHUNK;cx++)for(let cz=-HALF/CHUNK;cz<HALF/CHUNK;cz++)rebuildChunk(cx,cz);
+}
+function rebuildAround(x,z){
+  const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK);
+  rebuildChunk(cx,cz);
+  const rx=((x%CHUNK)+CHUNK)%CHUNK,rz=((z%CHUNK)+CHUNK)%CHUNK;
+  if(rx===0)rebuildChunk(cx-1,cz);
+  if(rx===CHUNK-1)rebuildChunk(cx+1,cz);
+  if(rz===0)rebuildChunk(cx,cz-1);
+  if(rz===CHUNK-1)rebuildChunk(cx,cz+1);
+}
+function nearbyMeshes(){
+  const cx=Math.floor(camera.position.x/CHUNK),cz=Math.floor(camera.position.z/CHUNK);
+  const near=[];
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)near.push(...(chunkMeshes.get(chunkKey(cx+dx,cz+dz))||[]));
+  return near;
 }
 
 // Background clouds (not buildable, not included in raycasting).
@@ -216,13 +318,13 @@ function updateCamera(){
   camera.rotation.set(pitch,yaw,0);
 }
 
-const raycaster=new THREE.Raycaster();raycaster.far=6.3;
+const raycaster=new THREE.Raycaster();raycaster.far=5.6;
 const highlight=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.015,1.015,1.015)),new THREE.LineBasicMaterial({color:'#fffce2',depthTest:false,transparent:true,opacity:.96}));
 highlight.visible=false;highlight.renderOrder=15;scene.add(highlight);
 let pointed=null;
 function updateTarget(){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-  const hits=raycaster.intersectObjects(meshes,false);
+  const hits=raycaster.intersectObjects(nearbyMeshes(),false);
   pointed=null;
   for(const hit of hits){
     if(hit.instanceId===undefined||!hit.face)continue;
@@ -241,7 +343,7 @@ function modifyWorld(place,quiet=false){
   if(!pointed){toast('Schau zuerst einen Block an');return;}
   let {x,y,z}=pointed;
   if(place){x+=Math.round(pointed.face.x);y+=Math.round(pointed.face.y);z+=Math.round(pointed.face.z);}
-  if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>25){toast('Hier endet deine kleine Welt');return;}
+  if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y){toast('Hier endet deine kleine Welt');return;}
   if(place&&(get(x,y,z)||intersectsPlayer(x,y,z))){toast('Hier ist schon etwas');return;}
   if(!place&&y===0){toast('Der Boden bleibt sicher stehen');return;}
   const type=place?selectedType:null;
@@ -253,7 +355,7 @@ function modifyWorld(place,quiet=false){
   syncUndo();
   put(x,y,z,type);
   edits.set(key(x,y,z),[x,y,z,type]);
-  saveEdits();rebuild();updateTarget();
+  saveEdits();rebuildAround(x,z);updateTarget();
   if(!quiet)toast(place?`${LABELS[selectedType]} gesetzt!`:'Block abgebaut!');
 }
 function syncUndo(){
@@ -266,7 +368,7 @@ function undo(){
   const k=key(x,y,z);
   put(x,y,z,oldType);
   if(oldEdit)edits.set(k,oldEdit);else edits.delete(k);
-  saveEdits();rebuild();updateTarget();syncUndo();
+  saveEdits();rebuildAround(x,z);updateTarget();syncUndo();
   toast('Letzten Baustein rückgängig gemacht');
 }
 function setFlying(next){
@@ -279,7 +381,7 @@ function setFlying(next){
   toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
 }
 function exportWorld(){
-  const data={format:'blockwelt',version:2,savedAt:new Date().toISOString(),edits:[...edits.values()]};
+  const data={format:'blockwelt',version:3,savedAt:new Date().toISOString(),edits:[...edits.values()]};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
@@ -292,12 +394,12 @@ async function importWorld(file){
   if(file.size>2_000_000){toast('Diese Datei ist zu groß');return;}
   try{
     const data=JSON.parse(await file.text());
-    if(data?.format!=='blockwelt'||data.version!==2||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    if(data?.format!=='blockwelt'||![2,3].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
     const incoming=new Map();
     for(const edit of data.edits){
       if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
       const [x,y,z,type]=edit;
-      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>25||(type!==null&&!BLOCK_TYPES.includes(type)))throw new Error('entry');
+      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y||(type!==null&&!BLOCK_TYPES.includes(type)))throw new Error('entry');
       incoming.set(key(x,y,z),[x,y,z,type]);
     }
     if(!confirm('Die bisherige Welt durch diese Sicherung ersetzen?'))return;
@@ -317,7 +419,7 @@ window.addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   keys.add(e.code);
   if(e.code==='Space'&&!e.repeat)jump();
-  if(/^Digit[1-7]$/.test(e.code))selectBlock(BLOCK_TYPES[Number(e.code.slice(-1))-1]);
+  if(/^Digit[1-9]$/.test(e.code))selectBlock(BLOCK_TYPES[Number(e.code.slice(-1))-1]);
   if(e.code==='KeyZ'&&e.ctrlKey){e.preventDefault();undo();}
   if(e.code==='Escape'&&gameRunning)openMenu();
 });
@@ -397,6 +499,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function openMenu(){gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
 $('menuBtn').addEventListener('click',openMenu);
+$('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
 $('undoBtn').addEventListener('click',undo);
 $('flightBtn').addEventListener('click',()=>setFlying(!flying));
 $('exportBtn').addEventListener('click',exportWorld);
@@ -411,6 +514,15 @@ $('resetBtn').addEventListener('click',()=>{
   edits.clear();undoStack.length=0;syncUndo();baseWorld();rebuild();respawn();toast('Deine Welt ist wieder neu!');
 });
 
+// Small location indicator: no map, no extra complex menus for young players.
+const regions={wiese:'🌿 Startwiese',wald:'🌲 Waldland',sand:'🏜️ Sandtal',fels:'⛰️ Felsenberg'};
+let regionName='';
+function updateRegion(){
+  let b=biomeAt(Math.floor(player.x),Math.floor(player.z));
+  if(b==='fels'&&player.x>23&&player.z>=-11&&player.z<=-1&&player.y<11)b='hoehle';
+  const name=b==='hoehle'?'🪨 Berghöhle':regions[b];
+  if(name!==regionName){regionName=name;$('regionLabel').textContent=name;}
+}
 function resize(){
   const w=window.innerWidth,h=window.innerHeight;
   camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);
@@ -419,11 +531,12 @@ window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
 baseWorld();loadEdits();rebuild();syncUndo();updateCamera();resize();
 $('loading').remove();
-let lastTime=performance.now();
+let lastTime=performance.now(),lastTarget=0;
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
-  updateMovement(dt);updateCamera();updateTarget();
+  updateMovement(dt);updateCamera();updateRegion();
+  if(now-lastTarget>35){updateTarget();lastTarget=now;}
   clouds.position.x=Math.sin(now*.00007)*1.4;
   renderer.render(scene,camera);
 }

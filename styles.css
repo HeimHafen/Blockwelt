@@ -28,3 +28,17 @@
 @media(max-width:390px){.hotbar{gap:2px;padding:5px}.slot{flex-basis:46px;min-width:46px;width:46px}.controls{padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}.flying .joystick{width:105px;height:105px}.flying .action{width:51px;height:59px;border-radius:12px}.flying .action.jump{height:51px;width:51px}.flying .action small{font-size:8px}.flying .actions,.flying .build-actions{gap:4px}}
 @media(max-height:740px){.dialog-art{height:65px}.dialog-main{padding:13px 19px 12px}.dialog h1{font-size:22px;margin-bottom:5px}.dialog p{font-size:12px}.explain{margin:7px 0}.option-btn{min-height:34px}.menu-options{gap:5px;margin:7px 0}.start-btn{height:45px}}
 @media(max-height:410px){.dialog-art{display:none}.menu-options{grid-template-columns:1fr 1fr}.backup-row{grid-column:1 / -1}.dialog{max-width:530px}.dialog-main{padding:9px 16px}}
+
+/* V3: Target crosshair matches the precise raycasting center; region badge. */
+.crosshair{top:50%}
+.target-label{top:calc(50% + 18px)}
+.region-label{position:fixed;z-index:2;top:calc(79px + env(safe-area-inset-top));left:calc(18px + env(safe-area-inset-left));padding:6px 10px;border-radius:10px;background:#fffef0d6;border:1px solid #ffffffcc;box-shadow:0 3px 12px #1d4e382b;color:#37604a;font-size:11px;font-weight:800;pointer-events:none}
+.cube-bricks{background:repeating-linear-gradient(0deg,#b87960 0 8px,#e5b998 8px 10px)}
+.cube-cobble{background:repeating-linear-gradient(40deg,#99a49c 0 8px,#6d8075 8px 11px)}
+.hotbar{scroll-snap-type:x proximity}
+.slot{scroll-snap-align:center}
+.menu-options{grid-template-columns:1fr 1fr}
+.backup-row{grid-column:1 / -1}
+@media(max-width:390px){.region-label{top:calc(74px + env(safe-area-inset-top));left:12px}}
+@media(max-height:410px){.region-label{top:calc(54px + env(safe-area-inset-top));left:12px}}
+#undoBtn{grid-column:1 / -1}
