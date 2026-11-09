@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Blockwelt: eine kleine kreative 3D-Klötzchenwelt zum Bauen und Entdecken.">
-  <title>Blockwelt V3 · Kleine Baumeister</title>
+  <title>Blockwelt V5 · Mega-Welt</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Kleine Baumeister · V3</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Mega-Welt · V5</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -23,6 +23,8 @@
   <div id="regionLabel" class="region-label">🌿 Startwiese</div>
   <div id="targetLabel" class="target-label" aria-live="off">Schau einen Block an</div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="nightStars" class="night-stars" aria-hidden="true"></div>
+  <button id="npcBtn" class="npc-button" type="button" aria-label="Mit Figur interagieren">👋 Hallo sagen</button>
 
   <section id="controls" class="controls" aria-label="Spielsteuerung">
     <div id="joystick" class="joystick" aria-label="Bewegungssteuerung">
@@ -48,8 +50,11 @@
     <button class="slot" data-block="planks" type="button" aria-label="Bretter auswählen" aria-pressed="false"><span class="cube cube-planks"></span><small>Bretter</small></button>
     <button class="slot" data-block="bricks" type="button" aria-label="Ziegel auswählen" aria-pressed="false"><span class="cube cube-bricks"></span><small>Ziegel</small></button>
     <button class="slot" data-block="cobble" type="button" aria-label="Pflaster auswählen" aria-pressed="false"><span class="cube cube-cobble"></span><small>Pflaster</small></button>
+    <button class="slot" data-block="glass" type="button" aria-label="Glas auswählen" aria-pressed="false"><span class="cube cube-glass"></span><small>Glas</small></button>
+    <button class="slot" data-block="gold" type="button" aria-label="Gold auswählen" aria-pressed="false"><span class="cube cube-gold"></span><small>Gold</small></button>
+    <button class="slot" data-block="water" type="button" aria-label="Wasser auswählen" aria-pressed="false"><span class="cube cube-water"></span><small>Wasser</small></button>
   </nav>
-  <div class="hint">Links laufen · Rechts umsehen · Materialien seitlich wischen</div>
+  <div class="hint">Links laufen · Rechts umsehen · Blöcke auswählen</div>
 
   <div id="overlay" class="overlay">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
@@ -57,10 +62,13 @@
       <div class="dialog-main">
         <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
-        <p>Eine kleine Welt nur für dich. Entdecke sie, baue ein Haus oder erfinde etwas ganz Neues!</p>
-        <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span></div>
+        <p>Riesige Wälder, Berge, Seen, Dörfer und freundliche Bewohner warten auf dich. Baue deine eigene Welt!</p>
+        <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span><span>🏘️ Dörfer</span></div>
         <div class="menu-options" aria-label="Spieloptionen">
           <button id="homeBtn" class="option-btn" type="button">⌂ Zur Startwiese</button>
+          <button id="villageBtn" class="option-btn" type="button">🏘️ Zum Sonnen-Dorf</button>
+          <button id="mobsBtn" class="option-btn" type="button">✓ Bewohner und Schleicher: an</button>
+          <button id="dayBtn" class="option-btn" type="button">☀ Tagmodus</button>
           <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
           <button id="undoBtn" class="option-btn" type="button" disabled>↶ Letzten Block rückgängig</button>
           <div class="backup-row"><button id="exportBtn" class="option-btn" type="button">↓ Welt sichern</button><button id="importBtn" class="option-btn" type="button">↑ Welt laden</button></div>
