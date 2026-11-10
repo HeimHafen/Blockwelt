@@ -178,3 +178,21 @@ html,body{touch-action:auto}
 @media(max-width:375px){.discovery-button{font-size:10px;left:12px}.discovery-sheet{padding:15px}}
 @media(max-height:410px){.discovery-button{top:calc(68px + env(safe-area-inset-top));left:calc(15px + env(safe-area-inset-left))}.npc-button{bottom:calc(144px + env(safe-area-inset-bottom))}.discovery-panel{place-items:start center}}
 @media(prefers-reduced-motion:reduce){.npc-button,.toast,.action{transition:none!important}}
+
+/* V11: lightweight compass, aligned below the location and discovery controls. */
+.compass-guide{position:fixed;z-index:4;top:calc(171px + env(safe-area-inset-top));
+  left:calc(18px + env(safe-area-inset-left));display:flex;align-items:center;
+  gap:9px;max-width:calc(100vw - 36px);padding:7px 11px;
+  border-radius:12px;border:1px solid rgba(255,255,241,.82);
+  background:rgba(25,64,48,.77);color:#fffbe9;
+  font-size:11px;font-weight:800;box-shadow:0 4px 13px rgba(16,40,25,.18);
+  pointer-events:none;backdrop-filter:blur(7px)}
+.compass-guide.hidden{display:none}
+.compass-arrow{display:inline-grid;place-items:center;width:23px;height:23px;
+  border-radius:50%;background:#d9edd2;color:#356a4a;font-size:18px;font-weight:900;
+  transition:transform .2s linear;flex:none}
+@media(max-height:420px){.compass-guide{top:calc(111px + env(safe-area-inset-top));left:12px;
+  padding:5px 8px;font-size:9px}.compass-arrow{width:19px;height:19px;font-size:16px}}
+@media(max-width:390px){.compass-guide{left:12px}}
+/* The new destination is clearly visible even on narrow phones. */
+.option-grid #campBtn{grid-column:1/-1}

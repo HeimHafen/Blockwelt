@@ -1,59 +1,63 @@
-# Blockwelt V10 – Legendenwelt
+# Blockwelt V12 – Natur & Präzision
 
-**Status: INTERNAL / NICHT FREIGEGEBEN** (10. November 2026)
+**Status: interner, technisch geprüfter Teststand vom 10. November 2026. Nicht als grafisch abgenommene Vollversion freigegeben.**
 
-Die Grafik aus dem KI-Konzeptbild ist nicht als echte Spielgrafik nachgewiesen. Dieses Verzeichnis enthält einen technisch weiterentwickelten, aber nicht vollständig auf einem iPhone geprüften Entwicklungsstand. Keine Freigabe, keine Veröffentlichung.
+Blockwelt ist eine eigenständige, kinderfreundliche, frei begehbare Blockwelt als Web-App. Die 3D-Technik basiert auf Three.js. Sämtliche Blocktexturen und die neuen Pflanzenformen werden zur Laufzeit selbst erzeugt; keine Minecraft-Grafiken, Modelle oder fremden Spielinhalte werden übernommen.
 
-## Technische Grundlage
+## Änderungen gegenüber V11
 
-* Wiederhergestellte vollständige **V9**-Spiellogik (`game.js` und `styles.css`) plus die bereits entwickelte V10-HTML-Oberfläche.
-* Dieselbe Weltgröße 192 × 192; alle 36.864 Terrain-Höhen mit V9 verglichen, unverändert.
-* Sämtliche alten 64 × 64 Biome unverändert.
-* Browser-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt erhalten; alte Blockwelt-Sicherungen (Formatversion 7) wurden importiert.
+### Präzise Interaktion und geringere Rechenlast
 
-## Implementiert in dieser Arbeitsrunde
+- Die bisherige Raycaster-Suche durch zahlreiche InstancedMesh-Würfel wurde durch einen eigenen **3D-DDA-Blockstrahl** ersetzt. Er folgt dem festen Voxelraster, berechnet die getroffene Blockseite und erlaubt weiterhin Abbauen und Setzen am richtigen Nachbarblock.
+- Bewohner dürfen weiterhin nur angesprochen werden, wenn keine massiven Blöcke die Blicklinie verdecken. Diese Prüfung nutzt denselben leichten Rasterstrahl statt einer zusätzlichen 3D-Mesh-Raycaster-Abfrage.
+- Die Reichweite von 5,6 Blockeinheiten bleibt gleich. Diese Änderung optimiert *nur die Auswahl/Interaktion*, nicht das eigentliche Rendering.
 
-1. **Schattenruine:** begehbarer gepflasterter Innenhof, Torbogen, verwitterte Außenmauern, Laternen und dezenter magisch-violetter Dunst; Schattenwald-Biom außerhalb der Alt-Welt. Der Hof ist geräumt und bleibt auf begehbarer Höhe.
-2. **Entdeckungen:** sechs erkundbare Orte, drei leuchtende Geheimnisse; getrennte Speicherbereiche für Orte und Relikte; gesammelte Kristalle verschwinden nach dem Aufsammeln.
-3. **Dörfer:** zusätzliche kleine Marktstände mit gestreiften Dächern, Kisten und Leuchten; instanzierte Dekoration, damit mobile Geräte nur wenige zusätzliche Drawcalls pro Chunk benötigen.
-4. **Bewohner:** sechs Rollen mit individuelleren Farben, Kopfbedeckungen, Gesichtern und Dialogen. Gesicht, Hut und Augen sind jetzt Kind-Objekte des drehbaren Kopfes. Bewohner beachten Hindernisse, Sichtlinien und reagieren mit einer kurzen Begrüßungsgeste.
-5. **Kamerastart:** Schnellreisen positionieren die Kamera auf dem Dorfweg bzw. am Zielort, Blickrichtung zum Zentrum.
-6. **Performance:** gemeinsam genutzte Geometrien für ähnliche Körperteile, NPC-Sichtprüfung auf 125-ms-Intervall, optionale Entwicklermesswerte über `?debug=1`.
-7. **UI:** Entdeckerbuch mit sechs Orten und Fortschrittsanzeige; Responsive CSS und reduzierte Animationen für entsprechende Systemeinstellungen.
+### Differenziertere Natur ohne neue Baublöcke
 
-## Prüfungen
+- Selbst erzeugte, pixelartig texturierte Pflanzen, zwei gekreuzte Ebenen pro Pflanze sowie kleine polygonale Steine ergänzen geeignete Flächen.
+- Die Details sind deterministisch nach Weltkoordinaten verteilt und werden in gemeinsam gerenderten InstancedMeshes pro Chunk gruppiert.
+- Sie sind **keine** festen Baublöcke, beeinflussen Kollisionen und Weltbearbeitung nicht und erscheinen nicht auf Häuserböden oder bebauten Flächen.
+- Im Modus **„Grafik: Flüssig“** werden die zusätzlichen 3D-Pflanzen und Steine ausgeblendet, um mobile Geräte zu entlasten. Der Modus **„Grafik: Schön“** zeigt sie an.
 
-* `node --check game.js` bestanden.
-* `node qa_internal.cjs`: **11 Tests bestanden**, einschließlich 192² Terrain-Vergleich, 64² Alt-Biome, begehbarer Ruinenöffnung, Dorf-Haustür, DOM-Kopplung, Speicher-Kompatibilität und NPC-Verhalten.
-* `python ui_qa.py`: Menü, Spielstart und Entdeckerbuch bei **375×667, 393×852 und 844×390** geprüft.
-* `python runtime_qa.py`: vollständige JavaScript-Initialisierung mit **simulierter** Three.js-API, Menü-/Schnellreise-/Entdeckeraktionen, V9-Backup-Import und Chunk-Rundreise; **0 JavaScript-Laufzeitfehler**.
-* **NICHT geprüft:** visuelle Echtzeit-WebGL-Ausgabe mit realer Three.js-Bibliothek; FPS und Touchsteuerung auf einem echten iPhone; detaillierte grafische Übereinstimmung mit dem V10-Konzeptbild. Die Simulation ist nur ein Funktions-Smoke-Test, kein 3D-Rendernachweis.
+### Begehbare Dorfhäuser
 
-## Freigabe-Gates
+- Die Innenräume und Türen werden beim Generieren freigeräumt, auch wenn die natürliche Geländehöhe unter dem Haus höher liegt. Der Boden wird bei Bedarf abgestützt.
+- Wenige kleine Einrichtungsblöcke und eine Deckenlaterne beleben den Innenraum. Die Hauptgänge und Türen bleiben frei.
+- **Wichtig:** Diese Änderungen an den automatisch generierten Dorfgebäuden befinden sich außerhalb des ursprünglichen 64×64-Weltausschnitts. Spielerbearbeitungen werden nach der Generierung wieder darübergelegt.
 
-1. Vollständige originale Three.js-Szene im echten Browser rendern und aus dem laufenden Spiel aufnehmen.
-2. Architektur, Landschaft und Figuren mit echten Live-Spielbildern beurteilen und visuell verbessern.
-3. iPhone-Tests für Steuerung, Bau- und Abbauaktionen, Speichern, Import, Schnellreise und langes Erkundungsspiel.
-4. Leistung bei Bewegung über viele Chunk-Grenzen, Bildschirmgrößen und Grafikstufen prüfen.
-5. Erst nach visueller und technischer Abnahme ein Austauschpaket veröffentlichen.
+### Unverändert
 
-Keine externe Veröffentlichung. Die vorherige Live-Version (V9) bleibt unangetastet.
+- Alle 36.864 Höhenwerte des 192×192-Geländegenerators.
+- Alle 21.556 generierten Baublöcke im ursprünglichen 64×64-Ausschnitt.
+- Bisheriger Speicherschlüssel `blockwelt-kleine-baumeister-v1`, Welt-Import und -Export. Bauwerke werden **nicht** durch den Versionswechsel zurückgesetzt.
+- Entdeckerbuch, Kompass, Waldlager, Schattenruine, Himmelswarte, Wasserfall und sämtliche bisherigen Orte.
+- Die vier Dateien für GitHub bleiben: `index.html`, `styles.css`, `game.js`, `README.md`.
 
-## Weiterer Qualitätsschritt – 10.11.2026 (intern, nicht freigegeben)
+## Durchgeführte Tests
 
-Dies ist eine Arbeitskopie von V10 und **keine freigegebene Veröffentlichung**.
+Die reproduzierbaren Tests liegen im Entwicklungsordner, nicht im vierteiligen Austausch-ZIP:
 
-* **Licht/Schatten:** Den vorhandenen Instanz-Blöcken wird beim Chunk-Bau ein vorsichtiger Nachbarschafts-/Abdeckungsschatten zugewiesen. Keine teuren zusätzlichen GPU-Schattenkarten.
-* **Lebendigere Figuren:** Sechs Berufe tragen unterschiedliche kleine Accessoires; Bewohner bleiben beim nahen Spieler stehen, wenden sich ihm zu, begrüßen ihn gestisch und wandern danach weiter. Tiere können gelegentlich friedlich grasen. Kopfteile bewegen sich weiterhin gemeinsam.
-* **Geheimnisvolle Waldgebiete:** Sparsam verteilte violette Lichtpunkte und Pilzgruppen im Schattenwald; warme Lichtpunkte an Dörfern. Instanziertes Rendering ohne zusätzliche Kollision.
-* **Beleuchtung:** Langsame, subtile Helligkeitsänderung der Lichtpunkte. Instanzlisten werden nur bei Chunk-Erzeugung erstellt.
-* **Sicherheit:** Ursprüngliche V9/V10-Terrain-Höhen, 64x64-Biome, Spielstandformat und Speicherschlüssel bleiben unverändert.
+- `node --check game.js` – JavaScript-Syntax OK.
+- `node raycast_qa.cjs` – sechs Richtungen, äußere Flächennormale, Reichweitengrenze und **1.867** Vergleiche gegen einen unabhängigen Ray/AABB-Schnitt. Im Messfall durchschnittlich **acht Blockabfragen** pro Strahl. Das sind keine FPS-Messwerte.
+- `node houses_qa.cjs` – begehbare Innenräume und Türöffnungen bei **sieben** Geländehöhen.
+- `node world_qa.cjs` – **36.864** Höhen identisch; Waldlager und Konfliktschutz überprüft.
+- `node compat_qa.cjs` – **21.556** ursprüngliche Blöcke identisch; Import/Export-Routinen und Speicherschlüssel verglichen.
+- `node movement_qa.cjs` – Schwimmen über 300 Simulationsschritte stabil.
+- `python ui_review.py` – Chromium-HTML/CSS-Kontrolle bei 375 × 667, 393 × 852 und 844 × 390 Pixel. Keine Überlappung zwischen Entdeckerbuch und Kompass; Menü erreichbar.
+- Prüfung auf doppelte HTML-IDs und fehlende DOM-Referenzen – OK.
 
-### Nachgewiesene Tests
+### Noch offen
 
-* `node --check`: gültige JS-Syntax.
-* `node qa_internal.cjs`: 11 Struktur-/Welt- und Speicherregressionen bestanden.
-* `python runtime_qa.py`: simulierte vollständige Three.js-Initialisierung ohne Laufzeitfehler; V9-JSON-Import, entfernte gesetzte Blöcke nach Chunk-Rundreise, Dorf-/Ruinenwechsel; zusätzliche Tests für Begrüßung, zufügte Hindernisse und Lichtmaterialien.
-* `python ui_qa.py`: drei Viewports mit interaktiver Bedienung.
+Die vollständige Web-App konnte in dieser Umgebung mangels lokaler Three.js-Bibliothek und wegen gesperrter Browsernavigation **nicht** mit originalem WebGL gerendert werden. Deshalb sind die tatsächliche 3D-Bildqualität, die iPhone-FPS, die Touchsteuerung und die Grafikleistung mit vielen Pflanzen **noch nicht geprüft**. Ein Test mit dem originalen Spiel auf einem echten Gerät bleibt erforderlich. Es wurden keine künstlichen Livebilder zur Freigabe herangezogen.
 
-**Noch nicht abgenommen:** Echte WebGL-Bilder, die iPhone-Frame-Rate, Touchsteuerung auf dem Gerät und visuelle Äquivalenz zur Bildvorlage. Keine Veröffentlichung/keine Freigabe.
+## Sichere Testinstallation
+
+1. Auf deinem bisherigen Blockwelt-Stand **„Welt sichern“** benutzen; die heruntergeladene JSON-Datei aufbewahren.
+2. Das bisherige Repository sichern. V12 zunächst in einem **Testbranch** ausprobieren, nicht ungeprüft auf `main` übernehmen.
+3. Vier Projektdateien an gleicher Stelle austauschen.
+4. In Safari oder Chrome das Starten, Bewegen, Abbauen, Setzen, Schwimmen und die Speicherfunktion prüfen. Dorfhäuser betreten und prüfen, ob die Naturdetails in beiden Grafikmodi korrekt erscheinen.
+5. Bei Problemen auf den unveränderten Live-Stand zurückgehen und die JSON-Sicherung bereithalten.
+
+**Commit-Zusammenfassung:** `Blockwelt V12 – Natur, präzise Blockauswahl und begehbare Häuser (Test)`
+
+**Remote-Referenz für einen gesonderten Testbranch:** `refs/heads/test/blockwelt-v12-natur-praezision` (Branch im Repository anlegen bzw. auswählen; Force Push aus).

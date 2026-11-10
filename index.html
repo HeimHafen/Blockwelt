@@ -6,22 +6,23 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V10: frei erkundbare 3D-Abenteuerwelt mit schöneren Dörfern, Burg, Wasserfall und großen Landschaften.">
-  <title>Blockwelt V10 · Erkundungstest</title>
-  <link rel="stylesheet" href="styles.css?v=10-prototype">
+  <meta name="description" content="Blockwelt V12: kinderfreundliche 3D-Abenteuerwelt mit Dörfern, Burg, Wasserfall, Entdeckerkompass und lebendiger Natur.">
+  <title>Blockwelt V12 · Natur &amp; Präzision · Test</title>
+  <link rel="stylesheet" href="styles.css?v=12-test">
 </head>
 <body>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Legendenwelt · V10 – Test</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Legendenwelt · V12 – Test</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
   <div id="crosshair" class="crosshair" aria-hidden="true"><span></span><span></span></div>
   <div id="regionLabel" class="region-label">🌿 Startwiese</div>
-  <button id="discoveryBtn" class="discovery-button" type="button" aria-label="Entdeckerbuch öffnen">🧭 Entdeckt <span id="discoveryCount">0/6</span></button>
+  <button id="discoveryBtn" class="discovery-button" type="button" aria-label="Entdeckerbuch öffnen">🧭 Entdeckt <span id="discoveryCount">0/7</span></button>
+  <div id="compassGuide" class="compass-guide" role="status" aria-live="off"><span id="compassArrow" class="compass-arrow" aria-hidden="true">↑</span><span id="compassText">Nächster Entdeckerort</span></div>
   <div id="targetLabel" class="target-label" aria-live="off">Schau einen Block an</div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="nightStars" class="night-stars" aria-hidden="true"></div>
@@ -71,7 +72,7 @@
         <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
         <div class="menu-options" aria-label="Spieloptionen">
           <details class="menu-panel" open>
-            <summary>🧭 Orte entdecken <span>6 Ziele</span></summary>
+            <summary>🧭 Orte entdecken <span>7 Ziele</span></summary>
             <div class="option-grid">
               <button id="homeBtn" class="option-btn" type="button">⌂ Startwiese</button>
               <button id="villageBtn" class="option-btn" type="button">🏘️ Sonnen-Dorf</button>
@@ -79,6 +80,7 @@
               <button id="birchVillageBtn" class="option-btn" type="button">🏡 Birken-Dorf</button>
               <button id="waterfallBtn" class="option-btn" type="button">💦 Kristallfall</button>
               <button id="ruinBtn" class="option-btn" type="button">🗝️ Schattenruine</button>
+              <button id="campBtn" class="option-btn" type="button">⛺ Waldlager</button>
             </div>
           </details>
           <details class="menu-panel">
@@ -88,6 +90,7 @@
               <button id="viewBtn" class="option-btn" type="button" aria-pressed="true">🏔️ Sichtweite: Weit</button>
               <button id="graphicsBtn" class="option-btn" type="button" aria-pressed="true">✨ Grafik: Schön</button>
               <button id="dayBtn" class="option-btn" type="button">☀ Morgensonne</button>
+              <button id="compassBtn" class="option-btn" type="button" aria-pressed="true">🧭 Entdecker-Kompass: an</button>
               <button id="flightBtn" class="option-btn" type="button" aria-pressed="false">✦ Flugmodus einschalten</button>
             </div>
           </details>
@@ -117,6 +120,6 @@
     </div>
   </section>
 
-  <script type="module" src="game.js?v=10-prototype"></script>
+  <script type="module" src="game.js?v=12-test"></script>
 </body>
 </html>

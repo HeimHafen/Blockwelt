@@ -1,4 +1,4 @@
-// BLOCKWELT V10 — grafischer Welt-Feinschliff, bessere Fernsicht, lebendigere Orte, Performanceprofil. V3–V8-Spielstände bleiben kompatibel.
+// BLOCKWELT V12 — präzise Voxeltreffer, bessere iPhone-Leistung und differenzierte Natur. V3–V11-Spielstände bleiben kompatibel.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -281,8 +281,18 @@ function villageBlocks(x,z,y,chunkPut){
       const rx=x-hx,rz=z-hz,ax=Math.abs(rx),az=Math.abs(rz);
       if(ax>5||az>5)continue;
       const floor=5;
+      // A stable foundation even when the surrounding hill dips below the house.
+      if(ax<=3&&az<=3&&y>=terrainHeight(x,z)&&y<floor)chunkPut(x,y,z,'cobble');
+      // Level and clear the actual walkable interior; natural hills must never
+      // protrude invisibly through the rooms or block their front doorway.
+      if(ax<=2&&az<=2&&y>=floor+1&&y<=floor+3)chunkPut(x,y,z,null);
+      if(rx===0&&(rz===3||rz===4)&&y>=floor+1&&y<=floor+2)chunkPut(x,y,z,null);
       // Fundament und warmer Dielenboden.
       if(ax<=3&&az<=3&&y===floor)chunkPut(x,y,z,'planks');
+      // A few small interior furnishings make buildings worth exploring.
+      // The middle aisle, door and the 2-block-tall walking clearance stay open.
+      if((rx===-2&&rz===-2||rx===2&&rz===-2)&&y===floor+1)chunkPut(x,y,z,i%2?'wood':'planks');
+      if(rx===0&&rz===-2&&y===floor+3)chunkPut(x,y,z,'lantern');
       // Gerahmte Holzwände, lichte Fenster und eine offene zweiblockhohe Tür.
       if(ax<=3&&az<=3&&y>=floor+1&&y<=floor+3&&(ax===3||az===3)){
         const isDoor=rz===3&&rx===0&&y<=floor+2;
@@ -333,9 +343,10 @@ function villageBlocks(x,z,y,chunkPut){
 const LOOKOUT={x:77,z:58,name:'Himmelswarte'};
 const FALL={x:75,z:-45,name:'Kristallfall'};
 const RUIN={x:-77,z:-73,name:'Schattenruine'};
+const CAMP={x:-24,z:54,name:'Waldlager'};
 const DISCOVERY_KEY='blockwelt-entdeckerbuch-v10';
 const RELICS_KEY='blockwelt-relikte-v10';
-const DISCOVERIES=[{id:'home',name:'Startwiese',x:0,z:6,emoji:'🌿'},{id:'sun',name:'Sonnen-Dorf',x:47,z:9,emoji:'🏘️'},{id:'birch',name:'Birken-Dorf',x:-53,z:-48,emoji:'🏡'},{id:'lookout',name:'Himmelswarte',x:77,z:58,emoji:'🏰'},{id:'falls',name:'Kristallfall',x:75,z:-45,emoji:'💦'},{id:'ruin',name:'Schattenruine',x:-77,z:-73,emoji:'🗝️'}];
+const DISCOVERIES=[{id:'home',name:'Startwiese',x:0,z:6,emoji:'🌿'},{id:'sun',name:'Sonnen-Dorf',x:47,z:9,emoji:'🏘️'},{id:'birch',name:'Birken-Dorf',x:-53,z:-48,emoji:'🏡'},{id:'lookout',name:'Himmelswarte',x:77,z:58,emoji:'🏰'},{id:'falls',name:'Kristallfall',x:75,z:-45,emoji:'💦'},{id:'ruin',name:'Schattenruine',x:-77,z:-73,emoji:'🗝️'},{id:'camp',name:'Waldlager',x:CAMP.x,z:CAMP.z,emoji:'⛺'}];
 const RELIC_PLACES=[{id:'lookout',name:'Sternenstein',x:LOOKOUT.x+7,z:LOOKOUT.z+5},{id:'falls',name:'Wassertropfen',x:FALL.x-7,z:FALL.z+5},{id:'ruin',name:'Mondsplitter',x:RUIN.x+2,z:RUIN.z+4}];
 const lookoutTop=(()=>{
   let top=0;
@@ -471,6 +482,50 @@ function addAdventureLandmarks(xmin,xmax,zmin,zmax){
     }else if(floor<=WATER_LEVEL+2)put(x,floor,z,'cobble');
   }
 }
+// New V11 destination. A low-impact woodland campsite built from the game's
+// existing block palette. Blocks are regenerated deterministically per chunk.
+function addForestCamp(xmin,xmax,zmin,zmax){
+  const cx=CAMP.x,cz=CAMP.z;
+  if(cx+7<xmin||cx-7>xmax||cz+7<zmin||cz-7>zmax)return;
+  // If an existing world already contains a build here, preserve it in full.
+  // Do not place a landmark through somebody's house or childhood creation.
+  for(const [x,,z] of edits.values()){
+    if(Math.abs(x-cx)<=8&&Math.abs(z-cz)<=8)return;
+  }
+  const floor=terrainHeight(cx,cz);
+  for(let x=Math.max(xmin,cx-7);x<=Math.min(xmax,cx+7);x++)
+  for(let z=Math.max(zmin,cz-7);z<=Math.min(zmax,cz+7);z++){
+    const dx=x-cx,dz=z-cz,r=Math.hypot(dx,dz);
+    if(r>6.4)continue;
+    const ground=terrainHeight(x,z);
+    // Level a small clearing; existing user edits are applied afterwards.
+    if(r<=5.3){
+      for(let y=Math.min(ground,floor);y<floor;y++)put(x,y,z,'dirt');
+      for(let y=floor+1;y<=Math.min(MAX_Y,Math.max(floor+9,ground+10));y++)put(x,y,z,null);
+      put(x,floor,z,r<2.5?'cobble':pixelHash(x,z,1221)>.60?'path':'grass');
+    }
+    // Two small seats and a fire pit (a lantern, NOT a damaging fire).
+    if(Math.abs(dx)<=1&&Math.abs(dz)<=1&&r>=1&&r<=1.6&&floor+1<=MAX_Y){
+      put(x,floor+1,z,'cobble');
+    }
+    if(dx===0&&dz===0)put(x,floor+1,z,'lantern');
+    if((dx===-4||dx===4)&&Math.abs(dz)<=1)put(x,floor+1,z,'planks');
+    // An open A-frame shelter at the rear of the clearing.
+    if(dx>=-2&&dx<=2&&dz>=-5&&dz<=-2){
+      const ax=Math.abs(dx);
+      if(floor+1<=MAX_Y)put(x,floor+1,z,'planks');
+      const roofY=floor+4-ax;
+      if(roofY<=MAX_Y)put(x,roofY,z,'wood');
+      if(dz===-5&&dx!==0&&floor+2<=MAX_Y)put(x,floor+2,z,'planks');
+      if(dz===-5&&dx===0&&floor+3<=MAX_Y)put(x,floor+3,z,'lantern');
+    }
+    // Trail marker at the clearing entrance.
+    if(dx===0&&dz===5){
+      put(x,floor+1,z,'wood');put(x,floor+2,z,'wood');
+      put(x,floor+3,z,'lantern');
+    }
+  }
+}
 function generatedTreeAt(ax,az){
   if(inLegacy(ax,az)||inVillage(ax,az)||lakeDistance(ax,az)<10||Math.hypot(ax-RUIN.x,az-RUIN.z)<15)return false;
   if(Math.abs(ax)>=HALF-4||Math.abs(az)>=HALF-4)return false;
@@ -556,6 +611,7 @@ function generateChunkData(cx,cz){
   }
   // Two adventure landmarks outside the original V3 64×64 region.
   addAdventureLandmarks(xmin,xmax,zmin,zmax);
+  addForestCamp(xmin,xmax,zmin,zmax);
   // Persist the player's builds on top of deterministic terrain.
   for(const edit of edits.values()){
     const [x,y,z,type]=edit;
@@ -891,6 +947,38 @@ const fireflyGold=new THREE.MeshBasicMaterial({color:'#fff4ac',transparent:true,
 const fireflyViolet=new THREE.MeshBasicMaterial({color:'#d6aaff',transparent:true,opacity:.83,depthWrite:false});
 const mushroomStemMaterial=new THREE.MeshLambertMaterial({color:'#d6c8af'});
 const mushroomCapMaterial=new THREE.MeshLambertMaterial({color:'#7a639c'});
+// V12: Original pixel-art ground plants. Alpha-tested crossed cards are much
+// cheaper than hundreds of individually modelled leaves; they also keep the
+// whimsical voxel silhouette when seen from a distance.
+function makeFoliageTexture(){
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,64,64);ctx.fillStyle='#ffffff';
+  // Non-symmetric leaves, deliberately kept chunky and readable on a phone.
+  for(const [x,tip,wide] of [[8,35,7],[17,14,9],[28,26,7],[37,7,10],[48,27,7],[55,35,5]]){
+    const base=30;
+    const half=wide/2;
+    ctx.beginPath();ctx.moveTo(base,62);ctx.lineTo(x-half,tip+12);
+    ctx.lineTo(x,tip);ctx.lineTo(x+half,tip+12);ctx.lineTo(base+4,62);
+    ctx.closePath();ctx.fill();
+  }
+  ctx.fillRect(25,40,13,23);
+  const map=new THREE.CanvasTexture(canvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.magFilter=THREE.NearestFilter;
+  map.minFilter=THREE.NearestMipmapNearestFilter;
+  return map;
+}
+const foliageGeometry=new THREE.PlaneGeometry(.85,1);
+const foliageMaterial=new THREE.MeshLambertMaterial({
+  map:makeFoliageTexture(),transparent:true,alphaTest:.48,
+  side:THREE.DoubleSide,depthWrite:true
+});
+const scatterRockGeometry=new THREE.DodecahedronGeometry(.46,0);
+const scatterRockMaterial=new THREE.MeshLambertMaterial({color:'#ffffff',flatShading:true});
+const stonePalette=['#87948a','#a2aa9b','#b9b6a5','#91877c'];
+const forestPlantPalette=['#6da34b','#8abd63','#629c56','#a3b66c'];
+const shadowPlantPalette=['#788872','#9276a4','#608677','#ab8b9a'];
 function farmPatch(x,z){
   return VILLAGES.some(v=>x>=v.x+12&&x<=v.x+17&&z>=v.z-6&&z<=v.z-1);
 }
@@ -901,8 +989,27 @@ function rebuildDecoration(cx,cz){
   const trimBlocks=[],shutters=[],flowerBoxes=[],roofBands=[],sparkles=[];
   const marketPosts=[],marketReds=[],marketWhites=[],marketCrates=[],marketLanterns=[],runeCrystals=[];
   const villageFireflies=[],forestFireflies=[],mushroomStems=[],mushroomCaps=[];
+  const groundFoliage=[],rockScatter=[];
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
+    // Small-scale terrain variation with no solid voxel edits. Keep homes,
+    // paths, discoveries and already-built places clear. Every item is fixed by
+    // world coordinates: visiting/reloading cannot change its placement.
+    const topBlock=get(x,h-1,z);
+    const surfaceFree=!get(x,h,z)&&!isInsideHouse(x+.5,z+.5);
+    if(surfaceFree&&topBlock&&(topBlock==='grass'||topBlock==='sand'||topBlock==='stone')){
+      const b=biomeAt(x,z),insideVillage=!!inVillage(x,z);
+      const r=pixelHash(x,z,1401);
+      if(topBlock==='grass'&&!insideVillage&&r>.873){
+        const scale=.65+pixelHash(x,z,1402)*.47;
+        groundFoliage.push([x+.24+pixelHash(x,z,1403)*.52,h+.36*scale,
+          z+.24+pixelHash(x,z,1404)*.52,scale,b==='schattenwald',pixelHash(x,z,1405)]);
+      }else if(!insideVillage&&r>(topBlock==='sand'?.938:.963)){
+        const size=.38+pixelHash(x,z,1406)*.66;
+        rockScatter.push([x+.22+pixelHash(x,z,1407)*.53,h+.16*size,
+          z+.22+pixelHash(x,z,1408)*.53,size,false,pixelHash(x,z,1409)]);
+      }
+    }
     // Fireflies guide discovery: golden near farms, lavender near the shadow ruins.
     // Sparse deterministic placement ensures the same scene after every reload.
     if(get(x,h-1,z)==='grass'&&!get(x,h,z)&&!isInsideHouse(x+.5,z+.5)){
@@ -1046,6 +1153,30 @@ function rebuildDecoration(cx,cz){
   addTrim(mushroomStems,mushroomStemMaterial);addTrim(mushroomCaps,mushroomCapMaterial);
   spawn(fireflyGeo,fireflyGold,villageFireflies,false);
   spawn(fireflyGeo,fireflyViolet,forestFireflies,false);
+  // Two crossed foliage sheets and a single small-stone mesh per chunk.
+  // All foliage is non-solid and excluded from block mining / collisions.
+  function addGroundDetails(items,geometry,material,angles,asRock=false){
+    if(!items.length)return;
+    for(const angle of angles){
+      const mesh=new THREE.InstancedMesh(geometry,material,items.length);
+      for(let i=0;i<items.length;i++){
+        const [x,y,z,scale,tint,variant]=items[i];
+        dummy.position.set(x,y,z);
+        dummy.rotation.set(0,angle+(asRock?variant*6.28:0),0);
+        if(asRock)dummy.scale.set(scale,scale*.57,scale*.83);
+        else dummy.scale.set(scale,scale,scale);
+        dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+        const pal=asRock?stonePalette:(tint?shadowPlantPalette:forestPlantPalette);
+        mesh.setColorAt(i,new THREE.Color(pal[Math.min(pal.length-1,Math.floor(variant*pal.length))]));
+      }
+      mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;
+      mesh.userData.natureDetail=true;
+      mesh.visible=graphicMode==='schoen';
+      mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+    }
+  }
+  addGroundDetails(groundFoliage,foliageGeometry,foliageMaterial,[Math.PI/4,-Math.PI/4]);
+  addGroundDetails(rockScatter,scatterRockGeometry,scatterRockMaterial,[0],true);
   if(sparkles.length){
     const mesh=new THREE.InstancedMesh(sparkleGeometry,sparkleMaterial,sparkles.length);
     for(let i=0;i<sparkles.length;i++){
@@ -1070,11 +1201,38 @@ function rebuildAround(x,z){
   if(rz===0&&chunkMeshes.has(chunkKey(cx,cz-1)))rebuildChunk(cx,cz-1);
   if(rz===CHUNK-1&&chunkMeshes.has(chunkKey(cx,cz+1)))rebuildChunk(cx,cz+1);
 }
-function nearbyMeshes(){
-  const cx=Math.floor(camera.position.x/CHUNK),cz=Math.floor(camera.position.z/CHUNK);
-  const near=[];
-  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)near.push(...(chunkMeshes.get(chunkKey(cx+dx,cz+dz))||[]));
-  return near;
+// Grid-based voxel ray traversal (3D DDA) – a fixed number of map lookups,
+// rather than thousands of instanced-box triangle intersections per tap.
+// The returned normal points outward from the face entered by the ray.
+function traceVoxel(origin,direction,maxDistance=5.6){
+  const dx=direction.x,dy=direction.y,dz=direction.z;
+  const magnitude=Math.hypot(dx,dy,dz);
+  if(!Number.isFinite(magnitude)||magnitude<1e-8||maxDistance<=0)return null;
+  const ux=dx/magnitude,uy=dy/magnitude,uz=dz/magnitude;
+  let x=Math.floor(origin.x),y=Math.floor(origin.y),z=Math.floor(origin.z);
+  const sx=Math.sign(ux),sy=Math.sign(uy),sz=Math.sign(uz);
+  const tx=sx?(sx>0?x+1-origin.x:origin.x-x)/Math.abs(ux):Infinity;
+  const ty=sy?(sy>0?y+1-origin.y:origin.y-y)/Math.abs(uy):Infinity;
+  const tz=sz?(sz>0?z+1-origin.z:origin.z-z)/Math.abs(uz):Infinity;
+  let nextX=tx,nextY=ty,nextZ=tz;
+  const stepX=sx?1/Math.abs(ux):Infinity;
+  const stepY=sy?1/Math.abs(uy):Infinity;
+  const stepZ=sz?1/Math.abs(uz):Infinity;
+  for(let i=0;i<Math.ceil(maxDistance*3)+3;i++){
+    let travel,normal;
+    if(nextX<=nextY&&nextX<=nextZ){
+      travel=nextX;nextX+=stepX;x+=sx;normal={x:-sx,y:0,z:0};
+    }else if(nextY<=nextZ){
+      travel=nextY;nextY+=stepY;y+=sy;normal={x:0,y:-sy,z:0};
+    }else{
+      travel=nextZ;nextZ+=stepZ;z+=sz;normal={x:0,y:0,z:-sz};
+    }
+    if(travel>maxDistance+1e-6||!Number.isFinite(travel))break;
+    if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y+8)continue;
+    const type=get(x,y,z);
+    if(type)return {x,y,z,type,normal,distance:travel};
+  }
+  return null;
 }
 
 // Background clouds (not buildable, not included in raycasting).
@@ -1186,7 +1344,15 @@ function updateMovement(dt){
     player.vy=0;player.grounded=false;
     return;
   }
-  player.vy-=GRAVITY*dt;
+  // Safe swimming: water does not trap the player below its surface.
+  // A gentle automatic buoyancy keeps exploration child-friendly.
+  const feetX=Math.floor(player.x),feetZ=Math.floor(player.z);
+  const wFeet=get(feetX,Math.floor(player.y+.16),feetZ)==='water';
+  const wChest=get(feetX,Math.floor(player.y+.95),feetZ)==='water';
+  if(wFeet||wChest){
+    player.vy=Math.min(3.2,player.vy+14*dt);
+    if(jumpHeld||keys.has('Space'))player.vy=4.0;
+  }else player.vy-=GRAVITY*dt;
   const dy=player.vy*dt;
   const vsteps=Math.max(1,Math.ceil(Math.abs(dy)/.09));
   for(let i=0;i<vsteps;i++){
@@ -1199,28 +1365,25 @@ function updateMovement(dt){
   if(player.y< -5){respawn();toast('Wieder sicher auf der Wiese!');}
 }
 function respawn(){player.x=.5;player.z=6.5;player.y=terrainHeight(0,6)+.08;player.vy=0;}
-function jump(){if(!gameRunning||flying)return;if(player.grounded){player.vy=JUMP;player.grounded=false;}}
+function jump(){if(!gameRunning||flying)return;const inWater=get(Math.floor(player.x),Math.floor(player.y+.25),Math.floor(player.z))==='water';if(player.grounded||inWater){player.vy=inWater?4.5:JUMP;player.grounded=false;}}
 function updateCamera(){
   camera.position.set(player.x,player.y+1.57,player.z);
   camera.rotation.set(pitch,yaw,0);
 }
 
-const raycaster=new THREE.Raycaster();raycaster.far=5.6;
+const viewDirection=new THREE.Vector3();
 const highlight=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.015,1.015,1.015)),new THREE.LineBasicMaterial({color:'#fffce2',depthTest:false,transparent:true,opacity:.96}));
 highlight.visible=false;highlight.renderOrder=15;scene.add(highlight);
 let pointed=null;
 function updateTarget(){
-  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-  const hits=raycaster.intersectObjects(nearbyMeshes(),false);
-  pointed=null;
-  for(const hit of hits){
-    if(hit.instanceId===undefined||!hit.face)continue;
-    const pos=hit.object.userData.positions[hit.instanceId];if(!pos)continue;
-    pointed={x:pos[0],y:pos[1],z:pos[2],type:get(...pos),face:hit.face.normal.clone()};break;
-  }
+  camera.getWorldDirection(viewDirection);
+  const hit=traceVoxel(camera.position,viewDirection,5.6);
+  pointed=hit?{x:hit.x,y:hit.y,z:hit.z,type:hit.type,face:hit.normal}:null;
   highlight.visible=!!pointed;
-  if(pointed){highlight.position.set(pointed.x+.5,pointed.y+.5,pointed.z+.5);$('targetLabel').textContent=LABELS[pointed.type]||'';}
-  else $('targetLabel').textContent='Schau einen Block an';
+  if(pointed){
+    highlight.position.set(pointed.x+.5,pointed.y+.5,pointed.z+.5);
+    $('targetLabel').textContent=LABELS[pointed.type]||'';
+  }else $('targetLabel').textContent='Schau einen Block an';
 }
 function intersectsPlayer(x,y,z){
   return Math.abs((x+.5)-player.x)<PLAYER_R+.5&&Math.abs((z+.5)-player.z)<PLAYER_R+.5&&y<player.y+PLAYER_H&&y+1>player.y;
@@ -1417,9 +1580,13 @@ function makeCreature(kind,x,z,number,homeX=x,homeZ=z){
   scene.add(group);
   const entity={kind,role:kind==='villager'?style.role:'Schleicher',dialogue:kind==='villager'?style.line:'Im Schattenwald gibt es noch mehr zu entdecken!',group,head,leftLeg,rightLeg,leftArm,rightArm,x,z,homeX,homeZ,angle:number*2.32,turnTimer:number*.9,walkTimer:number,number};
   creatures.push(entity);
+  return entity;
 }
 // A gentle greeter near the starting area and villages with roaming residents.
 makeCreature('villager',-3,8,0,-3,8);
+const campGuide=makeCreature('villager',CAMP.x+5,CAMP.z-2,4,CAMP.x+5,CAMP.z-2);
+campGuide.role='Waldhüterin';
+campGuide.dialogue='Willkommen im Waldlager! Folge dem Kompass zu geheimen Orten – und schau auch bei der Himmelswarte vorbei.';
 for(const [vi,v] of VILLAGES.entries()){
   for(let i=0;i<v.people;i++){
     const angle=i*Math.PI*2/v.people;
@@ -1472,12 +1639,13 @@ function canNpcEnter(x,z,previousX,previousZ){
   return true;
 }
 function hasLineOfSight(npc){
-  const dest=new THREE.Vector3(npc.x,npc.group.position.y+1.45,npc.z);
-  const heading=dest.sub(camera.position);
-  const distance=heading.length();
-  if(distance>5.7)return false;
-  const trace=new THREE.Raycaster(camera.position,heading.normalize(),.05,distance-.24);
-  return trace.intersectObjects(nearbyMeshes(),false).length===0;
+  const dx=npc.x-camera.position.x;
+  const dy=npc.group.position.y+1.45-camera.position.y;
+  const dz=npc.z-camera.position.z;
+  const distance=Math.hypot(dx,dy,dz);
+  if(distance>5.7||distance<.01)return false;
+  // The last 0.24 blocks belong to the NPC, not a wall in front of it.
+  return !traceVoxel(camera.position,{x:dx,y:dy,z:dz},distance-.24);
 }
 function updateCreatures(dt){
   const ms=performance.now();
@@ -1559,7 +1727,7 @@ function teleportTo(x,z,label,targetX=x,targetZ=z){
   player.z=Math.max(-HALF+2,Math.min(HALF-2,z+.5));
   player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.14;
   player.vy=0;player.grounded=false;
-  faceTowards(targetX,targetZ);updateWorldStream(true);updateCamera();
+  faceTowards(targetX,targetZ);updateWorldStream(true);updateCamera();updateCompass();
   toast(label);
 }
 function visitVillage(){
@@ -1604,6 +1772,11 @@ function applyGraphicMode(notify=false){
   resize();
   $('graphicsBtn').textContent=graphicMode==='schoen'?'✨ Grafik: Schön':'⚡ Grafik: Flüssig';
   $('graphicsBtn').setAttribute('aria-pressed',String(graphicMode==='schoen'));
+  // On older phones optional cross-card vegetation can be skipped entirely.
+  // The terrain and all gameplay remain identical in either mode.
+  for(const meshes of decorativeMeshes.values())for(const mesh of meshes){
+    if(mesh.userData.natureDetail)mesh.visible=graphicMode==='schoen';
+  }
   if(notify)toast(graphicMode==='schoen'?'Schönere Grafik aktiviert':'Flüssigere Grafik aktiviert');
 }
 $('graphicsBtn').addEventListener('click',()=>{
@@ -1634,6 +1807,9 @@ $('waterfallBtn').addEventListener('click',()=>{
 
 $('ruinBtn').addEventListener('click',()=>{
   teleportTo(RUIN.x+2,RUIN.z+13,'Die Schattenruine ist ganz still …',RUIN.x,RUIN.z);
+});
+$('campBtn').addEventListener('click',()=>{
+  teleportTo(CAMP.x,CAMP.z+9,'Willkommen am Waldlager!',CAMP.x,CAMP.z);
 });
 const discovered=new Set();
 const collectedRelics=new Set();
@@ -1681,6 +1857,47 @@ function updateDiscoveries(){
     }
   }
 }
+// Minimal in-game discovery compass. Indicates the nearest unvisited landmark,
+// or the nearest missing relic after all places have been visited.
+const COMPASS_KEY='blockwelt-kompass-v11';
+let compassEnabled=true;
+try{compassEnabled=localStorage.getItem(COMPASS_KEY)!=='aus';}catch(_){}
+const compassEl=$('compassGuide');
+function setCompass(next){
+  compassEnabled=!!next;
+  compassEl.classList.toggle('hidden',!compassEnabled);
+  $('compassBtn').textContent=compassEnabled?'🧭 Entdecker-Kompass: an':'○ Entdecker-Kompass: aus';
+  $('compassBtn').setAttribute('aria-pressed',String(compassEnabled));
+  try{localStorage.setItem(COMPASS_KEY,compassEnabled?'an':'aus');}catch(_){}
+}
+function updateCompass(){
+  if(!compassEnabled||!gameRunning)return;
+  const nextPlaces=DISCOVERIES.filter(d=>!discovered.has(d.id));
+  let candidates=nextPlaces;
+  let clue='Neuer Ort';
+  if(!candidates.length){
+    candidates=RELIC_PLACES.filter(r=>!collectedRelics.has(r.id));
+    clue='Geheimnis';
+  }
+  if(!candidates.length){
+    $('compassText').textContent='Alle Geheimnisse gefunden!';
+    $('compassArrow').style.transform='rotate(0rad)';return;
+  }
+  let nearest=null,distance=Infinity;
+  for(const place of candidates){
+    const d=Math.hypot(place.x-player.x,place.z-player.z);
+    if(d<distance){distance=d;nearest=place;}
+  }
+  // Player forward = (-sin(yaw), -cos(yaw)). Screen-right = (+cos(yaw), -sin(yaw)).
+  const dx=nearest.x-player.x,dz=nearest.z-player.z;
+  const forward=-Math.sin(yaw)*dx-Math.cos(yaw)*dz;
+  const right=Math.cos(yaw)*dx-Math.sin(yaw)*dz;
+  const angle=Math.atan2(right,forward);
+  $('compassArrow').style.transform=`rotate(${angle.toFixed(3)}rad)`;
+  $('compassText').textContent=`${clue} · ${Math.round(distance)} Felder`;
+}
+$('compassBtn').addEventListener('click',()=>{setCompass(!compassEnabled);updateCompass();});
+setCompass(compassEnabled);
 $('discoveryBtn').addEventListener('click',()=>{
   updateBook();$('discoveryPanel').classList.remove('hidden');gameRunning=false;
 });
@@ -1795,7 +2012,7 @@ let regionName='';
 function updateRegion(){
   let b=biomeAt(Math.floor(player.x),Math.floor(player.z));
   if(b==='fels'&&player.x>23&&player.z>=-11&&player.z<=-1&&player.y<11)b='hoehle';
-  const name=Math.hypot(player.x-RUIN.x,player.z-RUIN.z)<17?'🗝️ Schattenruine':Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
+  const name=Math.hypot(player.x-RUIN.x,player.z-RUIN.z)<17?'🗝️ Schattenruine':Math.hypot(player.x-CAMP.x,player.z-CAMP.z)<13?'⛺ Waldlager':Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
   if(name!==regionName){regionName=name;$('regionLabel').textContent=name;}
 }
 function resize(){
@@ -1806,7 +2023,7 @@ window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
 baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();
 $('loading').remove();
-let lastTime=performance.now(),lastTarget=0;
+let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
@@ -1825,6 +2042,7 @@ function animate(now){
   if(shadowGlow.intensity)shadowGlow.position.set(RUIN.x+.5,terrainHeight(RUIN.x,RUIN.z)+6,RUIN.z+.5);
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
+  if(now-lastCompass>350){updateCompass();lastCompass=now;}
   clouds.position.set(player.x*.66+Math.sin(now*.00007)*2,0,player.z*.66);
   waterSurfaceMap.offset.x=Math.sin(now*.00015)*.065;
   waterSurfaceMap.offset.y=Math.cos(now*.00011)*.045;
