@@ -1,4 +1,4 @@
-// BLOCKWELT V9 — grafischer Welt-Feinschliff, bessere Fernsicht, lebendigere Orte, Performanceprofil. V3–V8-Spielstände bleiben kompatibel.
+// BLOCKWELT V10 — grafischer Welt-Feinschliff, bessere Fernsicht, lebendigere Orte, Performanceprofil. V3–V8-Spielstände bleiben kompatibel.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -258,6 +258,7 @@ function terrainHeight(x,z){
 function biomeAt(x,z){
   if(inLegacy(x,z))return legacyBiomeAt(x,z);
   if(inVillage(x,z))return 'dorf';
+  if(x<-65&&z<-63)return 'schattenwald';
   if(lakeDistance(x,z)<6)return 'see';
   if(x< -29&&z>7&&z<76)return 'wueste';
   if(terrainHeight(x,z)>19)return 'berge';
@@ -331,6 +332,11 @@ function villageBlocks(x,z,y,chunkPut){
 }
 const LOOKOUT={x:77,z:58,name:'Himmelswarte'};
 const FALL={x:75,z:-45,name:'Kristallfall'};
+const RUIN={x:-77,z:-73,name:'Schattenruine'};
+const DISCOVERY_KEY='blockwelt-entdeckerbuch-v10';
+const RELICS_KEY='blockwelt-relikte-v10';
+const DISCOVERIES=[{id:'home',name:'Startwiese',x:0,z:6,emoji:'🌿'},{id:'sun',name:'Sonnen-Dorf',x:47,z:9,emoji:'🏘️'},{id:'birch',name:'Birken-Dorf',x:-53,z:-48,emoji:'🏡'},{id:'lookout',name:'Himmelswarte',x:77,z:58,emoji:'🏰'},{id:'falls',name:'Kristallfall',x:75,z:-45,emoji:'💦'},{id:'ruin',name:'Schattenruine',x:-77,z:-73,emoji:'🗝️'}];
+const RELIC_PLACES=[{id:'lookout',name:'Sternenstein',x:LOOKOUT.x+7,z:LOOKOUT.z+5},{id:'falls',name:'Wassertropfen',x:FALL.x-7,z:FALL.z+5},{id:'ruin',name:'Mondsplitter',x:RUIN.x+2,z:RUIN.z+4}];
 const lookoutTop=(()=>{
   let top=0;
   for(let x=LOOKOUT.x-5;x<=LOOKOUT.x+5;x++)for(let z=LOOKOUT.z-5;z<=LOOKOUT.z+5;z++)top=Math.max(top,terrainHeight(x,z));
@@ -421,6 +427,38 @@ function addAdventureLandmarks(xmin,xmax,zmin,zmax){
       }
     }
   }
+  // Schattenruine: eine begehbare, abseits der alten Welt gelegene Ruine.
+  // Grundriss, Tordurchgang und Mauern werden ohne Zufall erzeugt.
+  const rFloor=terrainHeight(RUIN.x,RUIN.z)+2;
+  for(let x=Math.max(xmin,RUIN.x-10);x<=Math.min(xmax,RUIN.x+10);x++)
+  for(let z=Math.max(zmin,RUIN.z-10);z<=Math.min(zmax,RUIN.z+10);z++){
+    const dx=x-RUIN.x,dz=z-RUIN.z,ax=Math.abs(dx),az=Math.abs(dz);
+    const earth=terrainHeight(x,z);
+    if(ax<=7&&az<=7){
+      // Begehbarer Innenhof: niedrige Stellen auffüllen, hohe Stellen abtragen.
+      if(earth>rFloor){for(let y=rFloor;y<earth;y++)put(x,y,z,null);}
+      else for(let y=earth;y<rFloor;y++)put(x,y,z,'stone');
+      put(x,rFloor,z,(dx*3+dz*5)%7===0?'cobble':'path');
+    }
+    const outer=ax===7||az===7;
+    const entrance=dz===7&&ax<=1;
+    const broken=(pixelHash(x,z,785)>.75?1:0);
+    const maxH=rFloor+3+broken+Math.floor(pixelHash(x,z,789)*3);
+    if(outer&&ax<=7&&az<=7&&!entrance){
+      for(let y=rFloor+1;y<=Math.min(maxH,MAX_Y);y++)put(x,y,z,(x+z+y)%5===0?'cobble':'stone');
+    }
+    if(dz===7&&ax<=1&&dx!==0){
+      for(let y=rFloor+4;y<=rFloor+6;y++)put(x,y,z,'cobble');
+    }
+    // Vorhof-Torbogen, mittlerer Durchgang: zwei Blöcke breit und drei hoch.
+    if(dz===9&&ax<=3){
+      if(ax===3)for(let y=rFloor+1;y<=rFloor+6;y++)put(x,y,z,'stone');
+      if(rFloor+6<=MAX_Y)put(x,rFloor+6,z,'cobble');
+    }
+    if(ax===0&&az===0)put(x,rFloor+1,z,'gold');
+    if((ax===5&&az===4)||(ax===4&&az===5))put(x,rFloor+1,z,'lantern');
+    if(ax===9&&az<=2&&pixelHash(x,z,792)>.6)put(x,earth,z,'cobble');
+  }
   // Shallow irregular lagoon, edges and river outlet make the waterfall feel connected.
   for(let x=Math.max(xmin,wx-9);x<=Math.min(xmax,wx-2);x++)
   for(let z=Math.max(zmin,wz-7);z<=Math.min(zmax,wz+7);z++){
@@ -434,7 +472,7 @@ function addAdventureLandmarks(xmin,xmax,zmin,zmax){
   }
 }
 function generatedTreeAt(ax,az){
-  if(inLegacy(ax,az)||inVillage(ax,az)||lakeDistance(ax,az)<10)return false;
+  if(inLegacy(ax,az)||inVillage(ax,az)||lakeDistance(ax,az)<10||Math.hypot(ax-RUIN.x,az-RUIN.z)<15)return false;
   if(Math.abs(ax)>=HALF-4||Math.abs(az)>=HALF-4)return false;
   const b=biomeAt(ax,az),h=terrainHeight(ax,az);
   if(b==='wueste'||b==='see'||h>20)return false;
@@ -786,8 +824,13 @@ function rebuildChunk(cx,cz){
       dummy.position.set(x+.5,y+.5,z+.5);
       dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
       mesh.setMatrixAt(i,dummy.matrix);
-      const variation=.92+pixelHash(x,z,y+811)*.14;
-      const shade=get(x,y+1,z)?variation*.93:variation;
+      // Cheap voxel AO: shadow the base of walls and sheltered nooks without GPU shadow maps.
+      // This is evaluated only when a chunk is built, not every render frame.
+      const variation=.95+pixelHash(x,z,y+811)*.10;
+      const overhead=!!get(x,y+1,z);
+      const closeWalls=Number(!!get(x-1,y,z))+Number(!!get(x+1,y,z))+
+        Number(!!get(x,y,z-1))+Number(!!get(x,y,z+1));
+      const shade=Math.max(.67,variation*(overhead?.88:1)*(1-Math.min(3,closeWalls)*.037));
       mesh.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));
     }
     mesh.instanceColor.needsUpdate=true;
@@ -836,8 +879,18 @@ const trimMaterial=new THREE.MeshLambertMaterial({color:'#926039'});
 const shutterMaterial=new THREE.MeshLambertMaterial({color:'#568a77'});
 const flowerBoxMaterial=new THREE.MeshLambertMaterial({color:'#cf8f51'});
 const roofAccentMaterial=new THREE.MeshLambertMaterial({color:'#e0b376'});
+const marketRedMaterial=new THREE.MeshLambertMaterial({color:'#b95246'});
+const marketWhiteMaterial=new THREE.MeshLambertMaterial({color:'#fff1d3'});
+const marketGoldMaterial=new THREE.MeshLambertMaterial({color:'#f2bd58'});
+const ruinGlowMaterial=new THREE.MeshBasicMaterial({color:'#caa0ff',transparent:true,opacity:.83,depthWrite:false});
 const sparkleMaterial=new THREE.MeshBasicMaterial({color:'#e1fbff',transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
 const sparkleGeometry=new THREE.PlaneGeometry(.64,.09);
+// Light-catching particles are instanced, decorative and have no collision or mining hitbox.
+const fireflyGeo=new THREE.BoxGeometry(.12,.12,.12);
+const fireflyGold=new THREE.MeshBasicMaterial({color:'#fff4ac',transparent:true,opacity:.88,depthWrite:false});
+const fireflyViolet=new THREE.MeshBasicMaterial({color:'#d6aaff',transparent:true,opacity:.83,depthWrite:false});
+const mushroomStemMaterial=new THREE.MeshLambertMaterial({color:'#d6c8af'});
+const mushroomCapMaterial=new THREE.MeshLambertMaterial({color:'#7a639c'});
 function farmPatch(x,z){
   return VILLAGES.some(v=>x>=v.x+12&&x<=v.x+17&&z>=v.z-6&&z<=v.z-1);
 }
@@ -846,8 +899,28 @@ function rebuildDecoration(cx,cz){
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
   const stems=[],blooms=[],tufts=[],crops=[],fencePosts=[],fenceRails=[];
   const trimBlocks=[],shutters=[],flowerBoxes=[],roofBands=[],sparkles=[];
+  const marketPosts=[],marketReds=[],marketWhites=[],marketCrates=[],marketLanterns=[],runeCrystals=[];
+  const villageFireflies=[],forestFireflies=[],mushroomStems=[],mushroomCaps=[];
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
+    // Fireflies guide discovery: golden near farms, lavender near the shadow ruins.
+    // Sparse deterministic placement ensures the same scene after every reload.
+    if(get(x,h-1,z)==='grass'&&!get(x,h,z)&&!isInsideHouse(x+.5,z+.5)){
+      const forest=biomeAt(x,z)==='schattenwald';
+      const nearSafeVillage=!!inVillage(x,z);
+      const scatter=pixelHash(x,z,901);
+      if(forest&&scatter>.969){
+        forestFireflies.push([x+.22+pixelHash(x,z,903)*.60,h+.75+pixelHash(x,z,904)*1.5,z+.22+pixelHash(x,z,905)*.60]);
+      }else if(nearSafeVillage&&scatter>.989){
+        villageFireflies.push([x+.5,h+.7+pixelHash(x,z,906),z+.5]);
+      }
+      // Mushroom clusters are original scenery, never solid obstacles.
+      if(forest&&pixelHash(x,z,911)>.981){
+        const mx=x+.3+pixelHash(x,z,913)*.4,mz=z+.3+pixelHash(x,z,914)*.4;
+        mushroomStems.push([mx,h+.13,mz,.12,.25,.12]);
+        mushroomCaps.push([mx,h+.29,mz,.33,.14,.33]);
+      }
+    }
     // A few reflected highlights along the shores. No particles across the whole lake.
     if(get(x,h,z)==='water'&&lakeDistance(x+.5,z+.5)<-2&&
        pixelHash(x,z,712)>.985){sparkles.push([x+.5,WATER_LEVEL+1.03,z+.5]);}
@@ -901,6 +974,29 @@ function rebuildDecoration(cx,cz){
       flowerBoxes.push([hx,7.10,hz-3.62,1.0,.21,.31]);
     }
   }
+  // Kleiner Marktstand: ein fester Platz und durchlaufende Wege statt Häuser zuzustellen.
+  for(const v of VILLAGES){
+    const mx=v.x-3,mz=v.z-5;
+    if(Math.floor(mx/CHUNK)!==cx||Math.floor(mz/CHUNK)!==cz)continue;
+    const floor=Math.max(6,terrainHeight(mx,mz));
+    for(const sx of [-1,1])for(const sz of [-1,1]){
+      marketPosts.push([mx+sx*1.55,floor+1.25,mz+sz*.95,.15,2.5,.15]);
+      marketCrates.push([mx+sx*.6,floor+.35,mz+sz*.65,.6,.68,.63]);
+    }
+    for(let i=0;i<8;i++){
+      const x=mx-1.55+i*.44;
+      (i%2?marketWhites:marketReds).push([x,floor+2.55,mz, .43,.12,2.6]);
+    }
+    marketLanterns.push([mx,floor+2.17,mz, .26,.30,.26]);
+  }
+  // Drei farbige Kristalle sind sichtbare Orientierungspunkte beim Erkunden.
+  for(const target of RELIC_PLACES){
+    if(collectedRelics.has(target.id))continue;
+    const x=Math.floor(target.x),z=Math.floor(target.z);
+    if(Math.floor(x/CHUNK)!==cx||Math.floor(z/CHUNK)!==cz)continue;
+    const floor=target.id==='ruin'?terrainHeight(RUIN.x,RUIN.z)+2:terrainHeight(x,z);
+    runeCrystals.push([x+.5,floor+1.23,z+.5,.34,.53,.34]);
+  }
   const meshes=[];
   function spawn(geometry,material,items,isBloom){
     if(!items.length)return;
@@ -944,6 +1040,12 @@ function rebuildDecoration(cx,cz){
   }
   addTrim(trimBlocks,trimMaterial);addTrim(shutters,shutterMaterial);
   addTrim(flowerBoxes,flowerBoxMaterial);addTrim(roofBands,roofAccentMaterial);
+  addTrim(marketPosts,trimMaterial);addTrim(marketReds,marketRedMaterial);
+  addTrim(marketWhites,marketWhiteMaterial);addTrim(marketCrates,flowerBoxMaterial);
+  addTrim(marketLanterns,marketGoldMaterial);addTrim(runeCrystals,ruinGlowMaterial);
+  addTrim(mushroomStems,mushroomStemMaterial);addTrim(mushroomCaps,mushroomCapMaterial);
+  spawn(fireflyGeo,fireflyGold,villageFireflies,false);
+  spawn(fireflyGeo,fireflyViolet,forestFireflies,false);
   if(sparkles.length){
     const mesh=new THREE.InstancedMesh(sparkleGeometry,sparkleMaterial,sparkles.length);
     for(let i=0;i<sparkles.length;i++){
@@ -1025,6 +1127,20 @@ const sunSprite=skyDisk(true),moonSprite=skyDisk(false);
 moonSprite.visible=false;
 const villageGlow=new THREE.PointLight('#ffc375',0,14,2);
 scene.add(villageGlow);
+const shadowGlow=new THREE.PointLight('#ae80ff',0,19,2);
+scene.add(shadowGlow);
+// Only visible when a developer explicitly opens the page with ?debug=1.
+const perfEnabled=new URLSearchParams(location.search).has('debug');
+const perfEl=perfEnabled?document.createElement('output'):null;
+if(perfEl){
+  perfEl.setAttribute('aria-label','Entwicklungsdiagnose');perfEl.id='bwPerf';
+  Object.assign(perfEl.style,{position:'fixed',left:'8px',bottom:'166px',zIndex:'30',
+    font:'11px monospace',color:'#f5ffef',background:'#14281ad9',padding:'8px',
+    borderRadius:'8px',pointerEvents:'none'});
+  document.body.appendChild(perfEl);
+}
+let perfTime=performance.now(),perfFrames=0;
+const shadowFogColor=new THREE.Color('#80799c');
 const player={x:.5,y:terrainHeight(0,6)+.02,z:6.5,vy:0,grounded:false};
 let yaw=.08,pitch=-.22;
 const PLAYER_R=.25,PLAYER_H=1.73,GRAVITY=19.5,JUMP=7.0;
@@ -1194,48 +1310,112 @@ const npcSkin=new THREE.MeshLambertMaterial({color:'#e0af85'});
 const npcDark=new THREE.MeshLambertMaterial({color:'#213c32'});
 const npcWhite=new THREE.MeshLambertMaterial({color:'#f5eacd'});
 const villagerRobes=['#a97148','#577cba','#8d6596','#668c54','#b7884f'];
+// Materials and geometry are shared: villagers remain inexpensive on phones.
+const personStyles=[
+  {role:'Bäckerin',coat:'#bd8555',hat:'#e9c58b',accent:'#f7e5c4',line:'Die Brötchen sind gerade fertig! Sieh dich auf dem Marktplatz um.'},
+  {role:'Gärtner',coat:'#62865d',hat:'#9ab976',accent:'#d1dba1',line:'Im Birkenwald wachsen manchmal besonders schöne Blumen.'},
+  {role:'Wächterin',coat:'#587d9b',hat:'#506577',accent:'#b1cee4',line:'Hinter der alten Burg beginnt ein geheimnisvoller Weg.'},
+  {role:'Händlerin',coat:'#9b6380',hat:'#aa7d99',accent:'#efd3d8',line:'Auf dem Dorfplatz findest du einen kleinen Markt.'},
+  {role:'Forscher',coat:'#b99255',hat:'#725537',accent:'#d5b373',line:'Am Kristallfall wartet ein funkelndes Geheimnis.'},
+  {role:'Abenteurerin',coat:'#8c7658',hat:'#694f39',accent:'#ebc56a',line:'In der Schattenruine leuchtet nachts ein alter Stein.'}
+];
+const geometryCache=new Map();
 function part(parent,w,h,d,material,x,y,z){
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+  const name=`${w}/${h}/${d}`;
+  let geometry=geometryCache.get(name);
+  if(!geometry){geometry=new THREE.BoxGeometry(w,h,d);geometryCache.set(name,geometry);}
+  const mesh=new THREE.Mesh(geometry,material);
   mesh.position.set(x,y,z);parent.add(mesh);return mesh;
 }
 function makeCreature(kind,x,z,number,homeX=x,homeZ=z){
   const group=new THREE.Group();
-  const robe=new THREE.MeshLambertMaterial({color:villagerRobes[number%villagerRobes.length]});
   let leftLeg,rightLeg,leftArm,rightArm,head;
+  const style=personStyles[number%personStyles.length];
   if(kind==='villager'){
-    part(group,.7,.86,.46,robe,0,1.02,0);
-    part(group,.72,.22,.51,robe,0,.55,0);
-    head=part(group,.74,.69,.65,npcSkin,0,1.78,0);
-    part(group,.13,.17,.16,npcSkin,0,1.72,-.41); // friendly little nose
-    part(group,.12,.11,.05,npcDark,-.19,1.86,-.343);
-    part(group,.12,.11,.05,npcDark,.19,1.86,-.343);
-    // Kleine freundliche Mundlinie und helle Wangen für lesbarere Gesichter.
-    part(group,.22,.035,.035,npcDark,0,1.56,-.339);
-    part(group,.09,.07,.02,new THREE.MeshLambertMaterial({color:'#d89588'}),-.29,1.60,-.333);
-    part(group,.09,.07,.02,new THREE.MeshLambertMaterial({color:'#d89588'}),.29,1.60,-.333);
-    part(group,.42,.11,.08,npcDark,0,2.15,.04); // cap trim
-    part(group,.78,.12,.75,robe,0,2.24,.02);
-    leftLeg=part(group,.25,.56,.32,npcDark,-.19,.31,0);
-    rightLeg=part(group,.25,.56,.32,npcDark,.19,.31,0);
-    leftArm=part(group,.19,.68,.25,robe,-.46,1.08,0);
-    rightArm=part(group,.19,.68,.25,robe,.46,1.08,0);
+    const robe=new THREE.MeshLambertMaterial({color:style.coat});
+    const hat=new THREE.MeshLambertMaterial({color:style.hat});
+    const accent=new THREE.MeshLambertMaterial({color:style.accent});
+    const cheeks=new THREE.MeshLambertMaterial({color:'#d39a8d'});
+    const hair=new THREE.MeshLambertMaterial({color: number%3===0?'#634b34':number%3===1?'#785f47':'#49372f'});
+    // Body and boots; hands are visible and clothing has small role-specific details.
+    part(group,.75,.83,.48,robe,0,1.08,0);
+    part(group,.66,.26,.49,accent,0,.59,-.015);
+    part(group,.54,.10,.50,npcDark,0,.80,0);
+    part(group,.22,.24,.08,accent,0,1.22,-.30); // Shirt or apron emblem
+    leftLeg=part(group,.26,.57,.32,npcDark,-.20,.29,0);
+    rightLeg=part(group,.26,.57,.32,npcDark,.20,.29,0);
+    leftArm=part(group,.21,.70,.27,robe,-.48,1.08,0);
+    rightArm=part(group,.21,.70,.27,robe,.48,1.08,0);
+    part(leftArm,.20,.14,.26,npcSkin,0,-.40,0);
+    part(rightArm,.20,.14,.26,npcSkin,0,-.40,0);
+    // Head pivot is the one parent of EVERY face part and every hat component.
+    // In V9, the eyes and hat were attached to group, so they failed to turn.
+    head=new THREE.Group();head.position.set(0,1.76,0);group.add(head);
+    part(head,.78,.72,.67,npcSkin,0,.01,0);
+    part(head,.65,.13,.69,hair,0,.37,.00);
+    for(const sign of [-1,1]){
+      part(head,.115,.125,.045,npcWhite,sign*.21,.08,-.36);
+      part(head,.063,.098,.050,npcDark,sign*.21,.08,-.398);
+      part(head,.13,.075,.042,hair,sign*.21,.22,-.38);
+      part(head,.10,.075,.03,cheeks,sign*.30,-.13,-.353);
+    }
+    part(head,.135,.16,.17,npcSkin,0,-.03,-.415);
+    part(head,.23,.034,.039,npcDark,0,-.23,-.37);
+    // Hats have different silhouettes for the six villagers.
+    part(head,.84,.09,.80,hat,0,.42,.03);
+    if(number%3===0){part(head,.68,.19,.68,hat,0,.54,.02);part(head,.17,.065,.70,accent,0,.48,-.02);}
+    if(number%3===1){part(head,.62,.27,.62,hat,0,.56,.02);part(head,.22,.12,.06,accent,.15,.62,-.30);}
+    if(number%3===2){part(head,.66,.23,.62,hat,0,.52,.02);part(head,.74,.08,.65,accent,0,.43,.02);}
+    // Distinctive original silhouettes and clothing for six professions.
+    // Small shared boxes remain cheaper than external skeletal models on iPhone.
+    switch(number%personStyles.length){
+      case 0: // Bäckerin: light apron, pocket and baker's scarf.
+        part(group,.49,.48,.055,accent,0,1.04,-.27);
+        part(group,.28,.15,.07,hat,0,.91,-.31);
+        part(head,.45,.10,.08,accent,0,-.29,-.37);
+        break;
+      case 1: // Gärtner: moss-green shoulder cape and sprig on the hat.
+        part(group,.96,.14,.55,hat,0,1.46,.01);
+        part(head,.12,.23,.13,accent,.23,.71,-.08);
+        part(head,.28,.07,.16,accent,.20,.78,-.08);
+        break;
+      case 2: // Wächterin: sturdy shoulder armor and a bright chest badge.
+        for(const side of [-1,1])part(group,.29,.18,.48,hat,side*.45,1.41,.0);
+        part(group,.16,.24,.09,accent,0,1.19,-.34);
+        break;
+      case 3: // Händlerin: shoulder bag and embroidered belt buckle.
+        part(group,.33,.33,.30,hat,.43,.91,.13);
+        part(group,.14,.16,.11,accent,0,.79,-.31);
+        break;
+      case 4: // Forscher: tablet and a pocket on the working coat.
+        part(group,.34,.42,.06,hat,-.14,1.05,-.30);
+        part(group,.17,.22,.07,accent,.25,1.18,-.29);
+        break;
+      default: // Abenteurerin: backpack, sash and buckle.
+        part(group,.53,.58,.22,hat,0,1.13,.34);
+        part(group,.13,.72,.07,accent,.19,1.05,-.31);
+        part(group,.26,.14,.08,hat,0,.78,-.31);
+    }
   }else{
-    const skin=new THREE.MeshLambertMaterial({color:'#79b968'});
-    const darkGreen=new THREE.MeshLambertMaterial({color:'#316b56'});
-    const lively=new THREE.MeshLambertMaterial({color:'#9ad87a'});
-    part(group,.78,1.13,.62,skin,0,.91,0);
-    head=part(group,.87,.76,.73,lively,0,1.85,0);
-    part(group,.2,.18,.06,npcDark,-.21,1.91,-.397);
-    part(group,.2,.18,.06,npcDark,.21,1.91,-.397);
-    part(group,.27,.14,.07,darkGreen,0,1.68,-.40);
-    part(group,.15,.16,.08,npcDark,0,1.60,-.41);
+    const skin=new THREE.MeshLambertMaterial({color:'#6db45f'});
+    const darkGreen=new THREE.MeshLambertMaterial({color:'#326b48'});
+    const lively=new THREE.MeshLambertMaterial({color:'#8ad774'});
+    part(group,.73,1.03,.60,skin,0,.90,0);
+    head=new THREE.Group();head.position.set(0,1.74,0);group.add(head);
+    part(head,.86,.78,.75,lively,0,.02,0);
+    for(const sign of [-1,1])part(head,.18,.21,.059,npcDark,sign*.22,.10,-.403);
+    part(head,.27,.16,.08,darkGreen,0,-.15,-.41);
+    part(head,.14,.16,.09,npcDark,0,-.24,-.42);
     leftLeg=part(group,.24,.43,.26,darkGreen,-.23,.24,-.16);
     rightLeg=part(group,.24,.43,.26,darkGreen,.23,.24,-.16);
     leftArm=part(group,.24,.43,.26,skin,-.23,.24,.17);
     rightArm=part(group,.24,.43,.26,skin,.23,.24,.17);
   }
+  // Soft contact shadow makes the character less weightless.
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.45,10),new THREE.MeshBasicMaterial({color:'#1d3021',transparent:true,opacity:.20,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.027;group.add(shadow);
   scene.add(group);
-  const entity={kind,group,head,leftLeg,rightLeg,leftArm,rightArm,x,z,homeX,homeZ,angle:number*2.32,turnTimer:number*.9,walkTimer:number,number};
+  const entity={kind,role:kind==='villager'?style.role:'Schleicher',dialogue:kind==='villager'?style.line:'Im Schattenwald gibt es noch mehr zu entdecken!',group,head,leftLeg,rightLeg,leftArm,rightArm,x,z,homeX,homeZ,angle:number*2.32,turnTimer:number*.9,walkTimer:number,number};
   creatures.push(entity);
 }
 // A gentle greeter near the starting area and villages with roaming residents.
@@ -1277,10 +1457,33 @@ for(const [vi,v] of VILLAGES.entries()){
 }
 makeAnimal('sheep',12,13,11,12,13);
 const npcTargetBtn=$('npcBtn');
-let selectedNpc=null;
+let selectedNpc=null,lastNpcTargetCheck=0;
+function canNpcEnter(x,z,previousX,previousZ){
+  const ix=Math.floor(x),iz=Math.floor(z);
+  if(Math.abs(terrainHeight(ix,iz)-terrainHeight(Math.floor(previousX),Math.floor(previousZ)))>1)return false;
+  const floor=terrainHeight(ix,iz);
+  for(const ox of [-.25,.25])for(const oz of [-.25,.25]){
+    const bx=Math.floor(x+ox),bz=Math.floor(z+oz);
+    for(let y=floor;y<=floor+1;y++){
+      const type=get(bx,y,bz);
+      if(type&&type!=='water')return false;
+    }
+  }
+  return true;
+}
+function hasLineOfSight(npc){
+  const dest=new THREE.Vector3(npc.x,npc.group.position.y+1.45,npc.z);
+  const heading=dest.sub(camera.position);
+  const distance=heading.length();
+  if(distance>5.7)return false;
+  const trace=new THREE.Raycaster(camera.position,heading.normalize(),.05,distance-.24);
+  return trace.intersectObjects(nearbyMeshes(),false).length===0;
+}
 function updateCreatures(dt){
-  const t=performance.now()*.001;
-  selectedNpc=null;
+  const ms=performance.now();
+  const t=ms*.001;
+  const scanForSpeech=ms-lastNpcTargetCheck>125;
+  if(scanForSpeech){selectedNpc=null;lastNpcTargetCheck=ms;}
   let best=.09;
   for(const npc of creatures){
     const dist=Math.hypot(npc.x-player.x,npc.z-player.z);
@@ -1292,31 +1495,48 @@ function updateCreatures(dt){
       npc.angle+=Math.sin(t*.45+npc.number*13)*2.2;
       npc.turnTimer=1.1+pixelHash(npc.number,Math.floor(t/2),83)*3.2;
     }
-    const speed=npc.kind==='villager'?.48:npc.isAnimal?.25:.33;
+    const baseSpeed=npc.kind==='villager'?.48:npc.isAnimal?.25:.33;
+    // Villagers acknowledge a nearby visitor rather than wandering straight past.
+    const greeting=npc.kind==='villager'&&dist<3.9&&gameRunning;
+    const grazing=npc.isAnimal&&pixelHash(npc.number,Math.floor(t/9),306)>.69;
+    let speed=baseSpeed;
+    if(greeting){
+      const targetAngle=Math.atan2(player.z-npc.z,player.x-npc.x);
+      const difference=Math.atan2(Math.sin(targetAngle-npc.angle),Math.cos(targetAngle-npc.angle));
+      npc.angle+=difference*Math.min(1,dt*2.7);
+      speed=0;
+    }else if(grazing){speed=0;}
     const nx=npc.x+Math.cos(npc.angle)*speed*dt;
     const nz=npc.z+Math.sin(npc.angle)*speed*dt;
     const wanderLimit=npc.isAnimal?8:npc.kind==='villager'?8:7;
     const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
-    if(nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
-       !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&Math.abs(terrainHeight(nx,nz)-terrainHeight(npc.x,npc.z))<2){
+    if(speed>0&&nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
+       !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
       npc.x=nx;npc.z=nz;
-    }else npc.angle+=2.3*dt;
-    const ground=terrainHeight(Math.round(npc.x),Math.round(npc.z));
-    npc.group.position.set(npc.x,ground+Math.sin(t*2.3+npc.number)*.025,npc.z);
+    }else if(speed>0)npc.angle+=2.3*dt;
+    const ground=terrainHeight(Math.floor(npc.x),Math.floor(npc.z));
+    npc.group.position.set(npc.x,ground+(speed?Math.sin(t*2.3+npc.number)*.025:0),npc.z);
     npc.group.rotation.y=-npc.angle-Math.PI/2;
     npc.walkTimer+=dt*speed*11;
-    const sway=Math.sin(npc.walkTimer)*.27;
+    const sway=speed?Math.sin(npc.walkTimer)*.27:0;
     npc.leftLeg.rotation.x=sway;npc.rightLeg.rotation.x=-sway;
-    npc.leftArm.rotation.x=npc.isAnimal?-sway:-sway*.65;npc.rightArm.rotation.x=npc.isAnimal?sway:sway*.65;
+    npc.leftArm.rotation.x=sway;npc.rightArm.rotation.x=npc.isAnimal?sway:sway*.65;
+    if(npc.kind==='villager'){
+      const wave=npc.waveUntil&&ms<npc.waveUntil;
+      npc.rightArm.rotation.z=wave?.30+Math.sin(t*10+npc.number)*.33:greeting?.13:0;
+      npc.head.rotation.z=greeting?Math.sin(t*1.2+npc.number)*.035:0;
+    }else if(npc.isAnimal){
+      npc.head.rotation.x=grazing?.18+Math.sin(t*1.7+npc.number)*.12:0;
+    }
     npc.head.rotation.y=Math.sin(t*.8+npc.number)*.06;
-    if(dist<6){
+    if(scanForSpeech&&dist<6){
       npcRay.set(npc.x,npc.group.position.y+1.45,npc.z).project(camera);
       const screenDist=Math.hypot(npcRay.x,npcRay.y);
-      if(npcRay.z>=-1&&npcRay.z<=1&&screenDist<best){best=screenDist;selectedNpc=npc;}
+      if(npcRay.z>=-1&&npcRay.z<=1&&screenDist<best&&hasLineOfSight(npc)){best=screenDist;selectedNpc=npc;}
     }
   }
   npcTargetBtn.classList.toggle('visible',!!selectedNpc&&gameRunning);
-  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?'👋 Hallo sagen':selectedNpc?.kind==='cow'?'🐮 Kuh streicheln':selectedNpc?.kind==='sheep'?'🐑 Schaf streicheln':'🌿 Schleicher ansehen';
+  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?`👋 ${selectedNpc.role} ansprechen`: selectedNpc?.kind==='cow'?'🐮 Kuh streicheln':selectedNpc?.kind==='sheep'?'🐑 Schaf streicheln':'🌿 Schleicher ansehen';
 }
 function isInsideHouse(x,z){
   for(const v of VILLAGES)for(const [ox,oz] of HOUSE_OFFSETS){
@@ -1326,14 +1546,25 @@ function isInsideHouse(x,z){
 }
 npcTargetBtn.addEventListener('click',()=>{
   if(!gameRunning||!selectedNpc)return;
-  toast(selectedNpc.kind==='villager'?'Hallo! Schön, dass du unser Dorf besuchst!':selectedNpc.kind==='cow'?'Muh! Die Kuh freut sich über deinen Besuch!':selectedNpc.kind==='sheep'?'Mäh! Das Schaf ist ganz freundlich.':'Der grüne Schleicher ist ganz friedlich!');
+  selectedNpc.waveUntil=performance.now()+1600;
+  toast(selectedNpc.kind==='villager'?selectedNpc.dialogue:selectedNpc.kind==='cow'?'Muh! Die Kuh freut sich über deinen Besuch!':selectedNpc.kind==='sheep'?'Mäh! Das Schaf ist ganz freundlich.':'Der grüne Schleicher ist ganz friedlich!');
 });
+function faceTowards(x,z){
+  // V9 Kamera: look direction = (-sin(yaw), -cos(yaw)).
+  const dx=x-player.x,dz=z-player.z;
+  yaw=Math.atan2(-dx,-dz);pitch=-.08;
+}
+function teleportTo(x,z,label,targetX=x,targetZ=z){
+  player.x=Math.max(-HALF+2,Math.min(HALF-2,x+.5));
+  player.z=Math.max(-HALF+2,Math.min(HALF-2,z+.5));
+  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.14;
+  player.vy=0;player.grounded=false;
+  faceTowards(targetX,targetZ);updateWorldStream(true);updateCamera();
+  toast(label);
+}
 function visitVillage(){
   const v=VILLAGES[0];
-  player.x=v.x+4;player.z=v.z;player.y=terrainHeight(player.x,player.z)+.12;
-  yaw=Math.PI/2;pitch=-.13;
-  player.vy=0;player.grounded=false;updateWorldStream(true);updateCamera();
-  toast('Willkommen im Sonnen-Dorf!');
+  teleportTo(v.x+2,v.z+14,'Willkommen im Sonnen-Dorf!',v.x,v.z);
 }
 $('villageBtn').addEventListener('click',visitVillage);
 $('mobsBtn').addEventListener('click',()=>{
@@ -1391,28 +1622,73 @@ $('dayBtn').addEventListener('click',()=>{
   toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
 });
 $('lookoutBtn').addEventListener('click',()=>{
-  player.x=LOOKOUT.x+7.5;player.z=LOOKOUT.z+7.5;
-  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
-  player.vy=0;player.grounded=false;
-  yaw=Math.PI/4;pitch=-.12;updateWorldStream(true);updateCamera();
-  toast('Die Himmelswarte wartet auf dich!');
+  teleportTo(LOOKOUT.x+10,LOOKOUT.z+9,'Die Himmelswarte wartet auf dich!',LOOKOUT.x,LOOKOUT.z);
 });
 $('birchVillageBtn').addEventListener('click',()=>{
   const v=VILLAGES[1];
-  player.x=v.x+5.5;player.z=v.z+.5;
-  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
-  player.vy=0;player.grounded=false;yaw=Math.PI/2;pitch=-.1;
-  updateWorldStream(true);updateCamera();
-  toast('Willkommen im Birken-Dorf!');
+  teleportTo(v.x+2,v.z+14,'Willkommen im Birken-Dorf!',v.x,v.z);
 });
 $('waterfallBtn').addEventListener('click',()=>{
-  player.x=FALL.x-8.5;player.z=FALL.z+5.5;
-  player.y=terrainHeight(Math.floor(player.x),Math.floor(player.z))+.12;
-  player.vy=0;player.grounded=false;yaw=-1.01;pitch=-.10;
-  updateWorldStream(true);updateCamera();
-  toast('Entdecke den Kristallfall!');
+  teleportTo(FALL.x-10,FALL.z+7,'Entdecke den Kristallfall!',FALL.x,FALL.z);
 });
 
+$('ruinBtn').addEventListener('click',()=>{
+  teleportTo(RUIN.x+2,RUIN.z+13,'Die Schattenruine ist ganz still …',RUIN.x,RUIN.z);
+});
+const discovered=new Set();
+const collectedRelics=new Set();
+function loadSet(storageKey,valid){
+  try{
+    const input=JSON.parse(localStorage.getItem(storageKey)||'[]');
+    if(Array.isArray(input))return input.filter(item=>valid.has(item));
+  }catch(_){ /* Nicht gespeicherte Fortschritte sind unkritisch. */ }
+  return [];
+}
+const knownIds=new Set(DISCOVERIES.map(item=>item.id));
+const knownRelics=new Set(RELIC_PLACES.map(item=>item.id));
+for(const id of loadSet(DISCOVERY_KEY,knownIds))discovered.add(id);
+for(const id of loadSet(RELICS_KEY,knownRelics))collectedRelics.add(id);
+function saveSet(key,values){try{localStorage.setItem(key,JSON.stringify([...values]));}catch(_){}}
+function updateBook(){
+  $('discoveryCount').textContent=`${discovered.size}/${DISCOVERIES.length}`;
+  $('relicCount').textContent=`✨ Geheimnisse: ${collectedRelics.size}/${RELIC_PLACES.length} gefunden`;
+  const panel=$('discoveryList');
+  panel.replaceChildren();
+  for(const place of DISCOVERIES){
+    const found=discovered.has(place.id);
+    const item=document.createElement('div');item.className='discovery-item'+(found?' found':'');
+    const icon=document.createElement('span');icon.className='discovery-emoji';icon.textContent=found?place.emoji:'🔒';
+    const name=document.createElement('span');name.textContent=found?place.name:'Unentdeckter Ort';
+    const badge=document.createElement('span');badge.className='discovery-status';badge.textContent=found?'Entdeckt':'Geheim';
+    item.append(icon,name,badge);panel.appendChild(item);
+  }
+}
+function updateDiscoveries(){
+  let changed=false;
+  for(const place of DISCOVERIES){
+    if(!discovered.has(place.id)&&Math.hypot(player.x-place.x,player.z-place.z)<(place.id==='home'?11:15)){
+      discovered.add(place.id);changed=true;
+      toast(`Neuer Entdeckerort: ${place.name}!`);
+    }
+  }
+  if(changed){saveSet(DISCOVERY_KEY,discovered);updateBook();}
+  for(const relic of RELIC_PLACES){
+    if(collectedRelics.has(relic.id))continue;
+    if(Math.hypot(player.x-relic.x,player.z-relic.z)<2.3){
+      collectedRelics.add(relic.id);saveSet(RELICS_KEY,collectedRelics);updateBook();
+      rebuildDecoration(Math.floor(relic.x/CHUNK),Math.floor(relic.z/CHUNK));
+      toast(`✨ Geheimnis gefunden: ${relic.name}!`);
+    }
+  }
+}
+$('discoveryBtn').addEventListener('click',()=>{
+  updateBook();$('discoveryPanel').classList.remove('hidden');gameRunning=false;
+});
+$('closeDiscovery').addEventListener('click',()=>{
+  $('discoveryPanel').classList.add('hidden');
+  if($('overlay').classList.contains('hidden'))gameRunning=true;
+});
+updateBook();
 const keys=new Set();
 window.addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
@@ -1496,7 +1772,7 @@ function selectBlock(type){
   });
 }
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
-function openMenu(){gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
+function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
 $('menuBtn').addEventListener('click',openMenu);
 $('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
 $('undoBtn').addEventListener('click',undo);
@@ -1505,7 +1781,7 @@ $('exportBtn').addEventListener('click',exportWorld);
 $('importBtn').addEventListener('click',()=>$('importFile').click());
 $('importFile').addEventListener('change',async e=>{const f=e.target.files?.[0];e.target.value='';await importWorld(f);});
 $('startBtn').addEventListener('click',()=>{
-  $('overlay').classList.add('hidden');gameRunning=true;toast('Viel Spaß beim Bauen!');
+  $('discoveryPanel').classList.add('hidden');$('overlay').classList.add('hidden');gameRunning=true;toast('Viel Spaß beim Bauen!');
 });
 $('resetBtn').addEventListener('click',()=>{
   if(!confirm('Soll deine gebaute Welt wirklich gelöscht und neu begonnen werden?'))return;
@@ -1514,12 +1790,12 @@ $('resetBtn').addEventListener('click',()=>{
 });
 
 // Small location indicator: no map, no extra complex menus for young players.
-const regions={dorf:'🏘️ Dorf',see:'🌊 See',wueste:'🏜️ Sandland',berge:'🏔️ Hochland',nadelwald:'🌲 Tannenwald',wiese:'🌿 Startwiese',wald:'🌲 Waldland',sand:'🏜️ Sandtal',fels:'⛰️ Felsenberg'};
+const regions={schattenwald:'🌑 Schattenwald',dorf:'🏘️ Dorf',see:'🌊 See',wueste:'🏜️ Sandland',berge:'🏔️ Hochland',nadelwald:'🌲 Tannenwald',wiese:'🌿 Startwiese',wald:'🌲 Waldland',sand:'🏜️ Sandtal',fels:'⛰️ Felsenberg'};
 let regionName='';
 function updateRegion(){
   let b=biomeAt(Math.floor(player.x),Math.floor(player.z));
   if(b==='fels'&&player.x>23&&player.z>=-11&&player.z<=-1&&player.y<11)b='hoehle';
-  const name=Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
+  const name=Math.hypot(player.x-RUIN.x,player.z-RUIN.z)<17?'🗝️ Schattenruine':Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
   if(name!==regionName){regionName=name;$('regionLabel').textContent=name;}
 }
 function resize(){
@@ -1535,16 +1811,35 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);
+  if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
   sunSprite.position.set(player.x-39,player.y+51,player.z-55);
   moonSprite.position.set(player.x+38,player.y+53,player.z-48);
   let near=0;for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
+  const shadowRange=Math.hypot(player.x-RUIN.x,player.z-RUIN.z);
+  const mystery=Math.max(0,Math.min(1,(34-shadowRange)/22));
+  const baseFog=lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
+  scene.fog.color.set(baseFog).lerp(shadowFogColor,mystery*.4);
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
+  shadowGlow.intensity=shadowRange<22?(lightMode===2?1.0:.64):0;
+  if(shadowGlow.intensity)shadowGlow.position.set(RUIN.x+.5,terrainHeight(RUIN.x,RUIN.z)+6,RUIN.z+.5);
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
   clouds.position.set(player.x*.66+Math.sin(now*.00007)*2,0,player.z*.66);
   waterSurfaceMap.offset.x=Math.sin(now*.00015)*.065;
   waterSurfaceMap.offset.y=Math.cos(now*.00011)*.045;
+  // Slow, restrained magic glow: 2 shared materials instead of per-object animation.
+  const breath=Math.sin(now*.00165);
+  fireflyViolet.opacity=.66+breath*.20;
+  fireflyGold.opacity=.73+Math.sin(now*.0011)*.13;
+  ruinGlowMaterial.opacity=.76+breath*.13;
   renderer.render(scene,camera);
+  if(perfEl){
+    perfFrames++;
+    if(now-perfTime>1000){
+      perfEl.textContent=`FPS ${Math.round(perfFrames*1000/(now-perfTime))} · Chunks ${chunkMeshes.size} · Drawcalls ${renderer.info.render.calls} · Dreiecke ${renderer.info.render.triangles}`;
+      perfFrames=0;perfTime=now;
+    }
+  }
 }
 requestAnimationFrame(animate);

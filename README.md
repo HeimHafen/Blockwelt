@@ -1,45 +1,59 @@
-# Blockwelt V9 – Weltenzauber
+# Blockwelt V10 – Legendenwelt
 
-Ein eigenständig entwickeltes, kinderfreundliches **3D-Blockbau-Abenteuer** als Web-App für iPhone, Android und Desktop. Das Spiel verwendet selbst erzeugte Pixeltexturen und Three.js (MIT); keine originalen Minecraft-Dateien, -Modelle oder -Grafiken. Die visuelle Orientierung an spektakulären Blockspiel-Videos ist ein langfristiges Designziel, **keine Zusage fotorealistischer Shader-Qualität**.
+**Status: INTERNAL / NICHT FREIGEGEBEN** (10. November 2026)
 
-## V9: Gezielter grafischer Qualitätsschritt
+Die Grafik aus dem KI-Konzeptbild ist nicht als echte Spielgrafik nachgewiesen. Dieses Verzeichnis enthält einen technisch weiterentwickelten, aber nicht vollständig auf einem iPhone geprüften Entwicklungsstand. Keine Freigabe, keine Veröffentlichung.
 
-- **Fernsicht repariert:** Die vereinfachte Fernlandschaft erhält rundum geschlossene Felsflanken. Das soll die hohl wirkenden Gitter- und Schwebekanten der bisherigen Fernansicht vermeiden.
-- **Himmelswarte als kleine Burg:** Hauptturm, zwei Seitentürme, Fenster, Zinnen und Mauern statt einer einzelnen Steinsäule.
-- **Kristallfall:** Breiterer, unregelmäßig abgestufter Felsrücken mit mehrstufigem Wasserlauf und flacherem Uferbecken.
-- **Dorfhäuser:** Vier unterschiedlich gedeckte Giebeldächer; feinere Fensterläden, Holzbänder und Blumenkästen als leichte, nicht kollidierende Dekoration.
-- **Neue originale Pixelmaterialien:** Detailreichere 64×64-Texturen für Stein, Holz, Gras, Erde, Sand, Wasser, Pflaster u. a.; es sind keine zusätzlichen Bilddateien erforderlich.
-- **Weicheres Tageslicht:** Warmes Umgebungslicht, dezente kühle Seitenaufhellung und weniger früh einsetzender Nebel.
-- **Grafik-Auswahl im Menü:** „Schön“ (höhere Renderauflösung) und „Flüssig“ (niedrigere Renderauflösung), ohne Spielstände zu verändern.
-- **Übersichtlicheres Menü für Kinder:** „Losspielen“ steht gut sichtbar oben. Schnellreiseziele, Grafikeinstellungen und Spielstände sind in drei aufklappbaren Bereichen organisiert.
+## Technische Grundlage
 
-Das Spielfeld bleibt 192 × 192 Felder groß und verwendet Chunk-Streaming und vereinfachte entfernte Landschaft. Tiere, friedliche Schleicher, Bewohner, Bauen, Abbauen, Flugmodus und Tageszeiten sind weiterhin vorhanden.
+* Wiederhergestellte vollständige **V9**-Spiellogik (`game.js` und `styles.css`) plus die bereits entwickelte V10-HTML-Oberfläche.
+* Dieselbe Weltgröße 192 × 192; alle 36.864 Terrain-Höhen mit V9 verglichen, unverändert.
+* Sämtliche alten 64 × 64 Biome unverändert.
+* Browser-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt erhalten; alte Blockwelt-Sicherungen (Formatversion 7) wurden importiert.
 
-## Vor jedem Update: persönliche Welt sichern
+## Implementiert in dieser Arbeitsrunde
 
-1. Aktuelle Blockwelt öffnen: https://heimhafen.github.io/Blockwelt/
-2. ☰ → **Meine Bauwerke** → **Welt sichern**. Die heruntergeladene JSON-Datei in „Dateien“ behalten.
-3. Optional GitHub-Repository als ZIP sichern. **Ein GitHub-Backup allein enthält die lokal gespeicherten Bauten nicht.**
-4. Die vier Dateien `index.html`, `game.js`, `styles.css`, `README.md` aus dem V9-Archiv direkt in das Hauptverzeichnis von `HeimHafen/Blockwelt` hochladen und die gleichnamigen Dateien ersetzen. **Nicht die ZIP-Datei selbst hochladen.**
-5. Auf `main` committen (bei Working Copy: Remote-Referenz `refs/heads/main`, Source `refs/heads/main`, Force Push aus).
-6. Nach erfolgreicher GitHub-Pages-Veröffentlichung öffnen: https://heimhafen.github.io/Blockwelt/?v=9
-7. Falls alte Bauwerke fehlen: ☰ → Meine Bauwerke → Welt laden und die JSON-Sicherung importieren. **Keine Browserdaten löschen.**
+1. **Schattenruine:** begehbarer gepflasterter Innenhof, Torbogen, verwitterte Außenmauern, Laternen und dezenter magisch-violetter Dunst; Schattenwald-Biom außerhalb der Alt-Welt. Der Hof ist geräumt und bleibt auf begehbarer Höhe.
+2. **Entdeckungen:** sechs erkundbare Orte, drei leuchtende Geheimnisse; getrennte Speicherbereiche für Orte und Relikte; gesammelte Kristalle verschwinden nach dem Aufsammeln.
+3. **Dörfer:** zusätzliche kleine Marktstände mit gestreiften Dächern, Kisten und Leuchten; instanzierte Dekoration, damit mobile Geräte nur wenige zusätzliche Drawcalls pro Chunk benötigen.
+4. **Bewohner:** sechs Rollen mit individuelleren Farben, Kopfbedeckungen, Gesichtern und Dialogen. Gesicht, Hut und Augen sind jetzt Kind-Objekte des drehbaren Kopfes. Bewohner beachten Hindernisse, Sichtlinien und reagieren mit einer kurzen Begrüßungsgeste.
+5. **Kamerastart:** Schnellreisen positionieren die Kamera auf dem Dorfweg bzw. am Zielort, Blickrichtung zum Zentrum.
+6. **Performance:** gemeinsam genutzte Geometrien für ähnliche Körperteile, NPC-Sichtprüfung auf 125-ms-Intervall, optionale Entwicklermesswerte über `?debug=1`.
+7. **UI:** Entdeckerbuch mit sechs Orten und Fortschrittsanzeige; Responsive CSS und reduzierte Animationen für entsprechende Systemeinstellungen.
 
-## Bedienung
+## Prüfungen
 
-- Linker Joystick: bewegen; rechts im Spielbild streichen: umsehen.
-- Springen, Abbauen, Setzen und Materialleiste am unteren Rand.
-- ☰ → Orte entdecken: Startwiese, Sonnen-Dorf, Himmelswarte, Birken-Dorf, Kristallfall.
-- ☰ → Welt & Grafik: Bewohner/Tiere, Sichtweite, Renderqualität, Licht und Flugmodus.
-- ☰ → Meine Bauwerke: letzten Block rückgängig, exportieren, importieren oder die Welt neu beginnen.
-- Am Computer: WASD, Leertaste, Maus ziehen; 1–9 für Materialien.
+* `node --check game.js` bestanden.
+* `node qa_internal.cjs`: **11 Tests bestanden**, einschließlich 192² Terrain-Vergleich, 64² Alt-Biome, begehbarer Ruinenöffnung, Dorf-Haustür, DOM-Kopplung, Speicher-Kompatibilität und NPC-Verhalten.
+* `python ui_qa.py`: Menü, Spielstart und Entdeckerbuch bei **375×667, 393×852 und 844×390** geprüft.
+* `python runtime_qa.py`: vollständige JavaScript-Initialisierung mit **simulierter** Three.js-API, Menü-/Schnellreise-/Entdeckeraktionen, V9-Backup-Import und Chunk-Rundreise; **0 JavaScript-Laufzeitfehler**.
+* **NICHT geprüft:** visuelle Echtzeit-WebGL-Ausgabe mit realer Three.js-Bibliothek; FPS und Touchsteuerung auf einem echten iPhone; detaillierte grafische Übereinstimmung mit dem V10-Konzeptbild. Die Simulation ist nur ein Funktions-Smoke-Test, kein 3D-Rendernachweis.
 
-## Stand der Prüfungen
+## Freigabe-Gates
 
-- **Bestanden:** JavaScript-Syntaxprüfung, HTML-Bedienelemente, alte Höhen- und Geländeformeln, alter Speicher-/Export-/Importcode sowie programmatische Kontrollen der vier Hausdächer, der Burgtürme und des Fels-/Wasserfall-Aufbaus.
-- **Bestanden:** Menü-Darstellung mit Chromium bei 393×852, 375×667 und 844×390; Auswahlfelder und Bereiche sind im Menü vorhanden, Scrollbarkeit ist vorgesehen.
-- **Nicht in dieser Entwicklungsumgebung möglich:** Vollständiger Live-WebGL-/Touchtest und FPS-Messung auf einem echten iPhone. Auch die grafische Wirkung muss nach dem Hochladen mit tatsächlichen Screenshots kontrolliert werden.
+1. Vollständige originale Three.js-Szene im echten Browser rendern und aus dem laufenden Spiel aufnehmen.
+2. Architektur, Landschaft und Figuren mit echten Live-Spielbildern beurteilen und visuell verbessern.
+3. iPhone-Tests für Steuerung, Bau- und Abbauaktionen, Speichern, Import, Schnellreise und langes Erkundungsspiel.
+4. Leistung bei Bewegung über viele Chunk-Grenzen, Bildschirmgrößen und Grafikstufen prüfen.
+5. Erst nach visueller und technischer Abnahme ein Austauschpaket veröffentlichen.
 
-Kompatibilität: Der vorhandene Browser-Speicherschlüssel `blockwelt-kleine-baumeister-v1` sowie Gelände- und Speicherfunktionen wurden beibehalten. Die neue Grafik und neu erzeugte Bauwerke können die Ansicht an bestimmten Orten verändern; eigene gespeicherte Blockänderungen bleiben auf die generierte Welt anwendbar.
+Keine externe Veröffentlichung. Die vorherige Live-Version (V9) bleibt unangetastet.
 
-Technik: Three.js 0.187.0 wird aus jsDelivr geladen und erfordert Internet beim initialen Aufruf. Three.js: https://threejs.org/ · Lizenz: https://github.com/mrdoob/three.js/blob/master/LICENSE
+## Weiterer Qualitätsschritt – 10.11.2026 (intern, nicht freigegeben)
+
+Dies ist eine Arbeitskopie von V10 und **keine freigegebene Veröffentlichung**.
+
+* **Licht/Schatten:** Den vorhandenen Instanz-Blöcken wird beim Chunk-Bau ein vorsichtiger Nachbarschafts-/Abdeckungsschatten zugewiesen. Keine teuren zusätzlichen GPU-Schattenkarten.
+* **Lebendigere Figuren:** Sechs Berufe tragen unterschiedliche kleine Accessoires; Bewohner bleiben beim nahen Spieler stehen, wenden sich ihm zu, begrüßen ihn gestisch und wandern danach weiter. Tiere können gelegentlich friedlich grasen. Kopfteile bewegen sich weiterhin gemeinsam.
+* **Geheimnisvolle Waldgebiete:** Sparsam verteilte violette Lichtpunkte und Pilzgruppen im Schattenwald; warme Lichtpunkte an Dörfern. Instanziertes Rendering ohne zusätzliche Kollision.
+* **Beleuchtung:** Langsame, subtile Helligkeitsänderung der Lichtpunkte. Instanzlisten werden nur bei Chunk-Erzeugung erstellt.
+* **Sicherheit:** Ursprüngliche V9/V10-Terrain-Höhen, 64x64-Biome, Spielstandformat und Speicherschlüssel bleiben unverändert.
+
+### Nachgewiesene Tests
+
+* `node --check`: gültige JS-Syntax.
+* `node qa_internal.cjs`: 11 Struktur-/Welt- und Speicherregressionen bestanden.
+* `python runtime_qa.py`: simulierte vollständige Three.js-Initialisierung ohne Laufzeitfehler; V9-JSON-Import, entfernte gesetzte Blöcke nach Chunk-Rundreise, Dorf-/Ruinenwechsel; zusätzliche Tests für Begrüßung, zufügte Hindernisse und Lichtmaterialien.
+* `python ui_qa.py`: drei Viewports mit interaktiver Bedienung.
+
+**Noch nicht abgenommen:** Echte WebGL-Bilder, die iPhone-Frame-Rate, Touchsteuerung auf dem Gerät und visuelle Äquivalenz zur Bildvorlage. Keine Veröffentlichung/keine Freigabe.

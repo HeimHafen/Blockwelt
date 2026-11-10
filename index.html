@@ -6,21 +6,22 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V9: frei erkundbare 3D-Abenteuerwelt mit schöneren Dörfern, Burg, Wasserfall und großen Landschaften.">
-  <title>Blockwelt V9 · Weltenzauber</title>
-  <link rel="stylesheet" href="styles.css?v=9">
+  <meta name="description" content="Blockwelt V10: frei erkundbare 3D-Abenteuerwelt mit schöneren Dörfern, Burg, Wasserfall und großen Landschaften.">
+  <title>Blockwelt V10 · Erkundungstest</title>
+  <link rel="stylesheet" href="styles.css?v=10-prototype">
 </head>
 <body>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Weltenzauber · V9</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Legendenwelt · V10 – Test</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
   <div id="crosshair" class="crosshair" aria-hidden="true"><span></span><span></span></div>
   <div id="regionLabel" class="region-label">🌿 Startwiese</div>
+  <button id="discoveryBtn" class="discovery-button" type="button" aria-label="Entdeckerbuch öffnen">🧭 Entdeckt <span id="discoveryCount">0/6</span></button>
   <div id="targetLabel" class="target-label" aria-live="off">Schau einen Block an</div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="nightStars" class="night-stars" aria-hidden="true"></div>
@@ -70,13 +71,14 @@
         <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
         <div class="menu-options" aria-label="Spieloptionen">
           <details class="menu-panel" open>
-            <summary>🧭 Orte entdecken <span>5 Ziele</span></summary>
+            <summary>🧭 Orte entdecken <span>6 Ziele</span></summary>
             <div class="option-grid">
               <button id="homeBtn" class="option-btn" type="button">⌂ Startwiese</button>
               <button id="villageBtn" class="option-btn" type="button">🏘️ Sonnen-Dorf</button>
               <button id="lookoutBtn" class="option-btn" type="button">🏰 Himmelswarte</button>
               <button id="birchVillageBtn" class="option-btn" type="button">🏡 Birken-Dorf</button>
               <button id="waterfallBtn" class="option-btn" type="button">💦 Kristallfall</button>
+              <button id="ruinBtn" class="option-btn" type="button">🗝️ Schattenruine</button>
             </div>
           </details>
           <details class="menu-panel">
@@ -106,6 +108,15 @@
     </div>
   </div>
 
-  <script type="module" src="game.js?v=9"></script>
+  <section id="discoveryPanel" class="discovery-panel hidden" aria-label="Entdeckerbuch" role="dialog" aria-modal="true">
+    <div class="discovery-sheet">
+      <div class="discovery-heading"><div><span>DEIN ABENTEUER</span><h2>🧭 Entdeckerbuch</h2></div><button id="closeDiscovery" type="button" aria-label="Entdeckerbuch schließen">×</button></div>
+      <p>Entdecke die geheimen Orte deiner Blockwelt. Jeder besuchte Ort bleibt in deinem Entdeckerbuch.</p>
+      <p id="relicCount" class="relic-progress">✨ Geheimnisse: 0/3 gefunden</p>
+      <div id="discoveryList" class="discovery-list"></div>
+    </div>
+  </section>
+
+  <script type="module" src="game.js?v=10-prototype"></script>
 </body>
 </html>
