@@ -1,46 +1,36 @@
-# Blockwelt V23 – Sonnen-Dorf: Lebendige Werkstätten (internes Labor)
+# Blockwelt V24 — Sonnen-Dorf, Qualitätslabor
 
-**NICHT VERÖFFENTLICHT – nicht auf `main` hochladen.**
+**Nicht als fertig freigegeben.** Ausgangspunkt ist die auf iPhone getestete V23-Fassung. Diese V24 wurde nur lokal geändert; die bisher veröffentlichte Version wurde nicht automatisch bearbeitet.
 
-Arbeitsbasis ist die lokal gesicherte V22-Innenraumfassung. Die auf GitHub veröffentlichte V12 wurde nicht bearbeitet.
+## Ziel: Ein Ort statt neuer Funktionen
 
-## Ziel dieses Schritts
+Die fünf echten iPhone-Screenshots von V23 zeigten drei konkrete Probleme: erhöht stehende Bewohner, zu hohe aufgesetzte Dachaufbauten und einen überladenen zentralen Dorfplatz. V24 setzt an diesen Ursachen an, ohne das ganze Spiel umzubauen.
 
-Die vier sorgfältig eingerichteten Werkstätten des Sonnen-Dorfs sollen **spielerisch erforschbar** sein, nicht nur aus dekorativen Möbeln bestehen. Die bereits recht volle Touch-Oberfläche soll dabei ruhig bleiben; fremde Orte und bestehende Bauwerke bleiben unangetastet.
+### Änderungen
 
-## Neu in V23
+1. **Fünf Dorfbewohner auf niedrigeren Plätzen**: Die Berufsfiguren starten nicht länger auf den erhöhten Terrassen der Hauszugänge. Sie laufen nur in einem engeren Bereich auf einer freien Gehfläche auf Dorfhöhe. Wenn eigene Bauwerke einen Standort blockieren, wird ein geeigneter freier Platz beim Arbeitsplatz gesucht; sonst ist die Figur vorübergehend unsichtbar, statt in einer Mauer oder hoch auf einer Säule zu stehen.
+2. **Kartenstube und Wachhaus**: Die blockbasierten Dachaufbauten wurden verkleinert. Die Kartenstube hat nun einen niedrigeren Ausguck (maximales Dach-Zellniveau 15); das Wachhaus einen kompakten Aufsatz mit Fenstern und Dachkante (maximales Dach-Zellniveau 17). Auch Dachdekoration, Wimpel und Geländer wurden entsprechend neu gesetzt.
+3. **Ruhigerer Dorfplatz**: Der zweite dekorative Marktstand neben dem Brunnen ist entfernt. Der vorhandene vollständige Marktstand bleibt erhalten. Brunnen, zentrale Straßen und die vier Werkstätten bleiben am selben Ort.
+4. **Keine neuen Bildschirmknöpfe**: Interaktion, Entdeckerbuch, vier Werkstatt-Abenteuer und sieben Entdeckungsorte bleiben erhalten. Beibehalten sind die Speicherschlüssel `blockwelt-kleine-baumeister-v1`, `blockwelt-entdeckerbuch-v10` und `blockwelt-sonnendorf-werkstaetten-v23`.
+5. **Cache-/Versionskennzeichnung**: `index.html` nennt V24-Labor und verlangt per Query-Parameter eine neue CSS- und JS-Ressource.
 
-- Vier kindgerechte Mini-Aktivitäten in den echten V22-Gebäuden: **Brot backen, Karte lesen, Pflanze pflegen und Wache halten**. Pro Aktivität drei kurze, aufeinander aufbauende Schritte.
-- Die **bereits vorhandene NPC-Interaktionstaste** wird in Innenräumen kontextabhängig als Werkstattaktion verwendet. Kein zusätzlicher dauerhafter Bildschirmknopf.
-- Die Aktion ist nur aus dem jeweiligen **Innenraum**, auf richtiger Fußhöhe, in Reichweite des Arbeitsplatzes und mit freier Sichtlinie durch die festen Blöcke möglich. Benutzeränderungen im Bereich des Arbeitsplatzes deaktivieren das Angebot.
-- Sichtbare Rückmeldung als kurzer Text und als kleiner, maximal 1,15 Sekunden dauernder Partikeleffekt. Die **12 Würfelpartikel** verwenden ein einziges wiederverwendetes `InstancedMesh` und keine neue Bilddatei.
-- Nach drei Schritten wird eine **Werkstattmarke** verliehen. Die vier Marken erscheinen im bestehenden Entdeckerbuch, in einem dezenten 2×2-Raster. Sie sind bewusst **nicht** Teil der bestehenden sieben Ortsentdeckungen.
-- Werkstattfortschritte werden unabhängig von den gebauten Blöcken unter `blockwelt-sonnendorf-werkstaetten-v23` gespeichert. Eine erneute Durchführung erzeugt keine doppelten Marken.
-- Neue Welt-Backups enthalten den **optionalen** Eintrag `workshops`, zusätzlich zum unveränderten `edits`-Format (`format: blockwelt`, `version: 7`). Beim Import aus älteren Backupdateien bleiben bereits vorhandene Marken erhalten; ein V23-Backup kann die Marken wiederherstellen. Andere Spielversionen können den optionalen Eintrag ignorieren.
-- Versions- und Cache-Parameter für das lokale V23-Labor aktualisiert.
+### Durchgeführte Prüfungen (11. November 2026)
 
-**Wichtig:** Die Aktionen sind momentan text- und effektgestützte Abläufe, **keine physisch animierten Arbeitsmaschinen und keine vollwertigen Minispiele**. Sie sind ein funktionierender erster Interaktionsbaustein.
+- JavaScript: `node --check game.js` erfolgreich.
+- Welt: `node test_v24.cjs`: acht Regressionstestgruppen erfolgreich, darunter unveränderte **36.864 Gelände-Höhen**, unveränderte Birken-Dorf-Voxel und ausschließlich **68 geänderte erzeugte Dachblockpositionen** im Sonnen-Dorf.
+- Wege: `node test_house_paths_v23.cjs`: alle vier Werkstattwege und die freie Innenraumhöhe geprüft. Sechs Hauseingänge bleiben frei.
+- NPCs: `node test_npc_v24.cjs`: alle fünf neuen Bewohner-Standorte auf passierbarer Dorfhöhe; Ausweichposition nach selbst platziertem zweistöckigem Block geprüft.
+- Aktivitäten: `node test_workshops_v23.cjs`: 31 Interaktions- und Fortschrittsprüfungen erfolgreich.
+- Speicher: `node test_backup_v23.cjs`: fünf Import- und Exportfälle erfolgreich.
+- Handy-UI: `python test_ui_v24.py`: 375×667, 393×852, 844×390 ohne horizontale Überläufe, 49 eindeutige HTML-IDs.
+- Technische Vorschau: `V24_Dorf_Ueberblick_Codedaten.png` und `V24_Dorf_Dorfstrasse_Codedaten.png`, gerendert aus erzeugten Voxelpositionen und Dekorationsmaßen **mit einem separaten Prüf-Renderer**, nicht aus Safari/Three.js.
 
-## Technische Prüfungen
+## Grenzen
 
-Ausgeführt am 11. November 2026:
+- **Nicht geprüft:** tatsächliche Three.js-Laufzeit-/Bildrate mit WebGL auf einem iPhone, reale Material- und Lichtwirkung, Interaktionsgefühl beim Spielen mit Berührung.
+- **Nicht garantiert:** dass alle vorhandenen, selbst platzierten Bauwerke perfekt zu neuen Dachformen passen. Eigene gespeicherte Bearbeitungen haben bei der Weltgenerierung weiterhin Vorrang; daher vor jedem Test die Ingame-Funktion „Welt sichern“ verwenden.
+- Die Grafik entspricht weiterhin nicht der detaillierten Konzeptillustration und darf nicht als fertig bezeichnet werden.
 
-- `node --check game.js` – bestanden.
-- `node test_v23.cjs` – **8 Welt-Regressionsgruppen bestanden:** Alle 36.864 Geländehöhen identisch mit V22; feste generierte Blöcke beider Dörfer identisch; alle sechs Hauseingänge frei; unveränderte Innenraum- und Dekorationsdaten (1.161 Elemente); Speicher- und Weltfunktionen erhalten.
-- `node test_house_paths_v23.cjs` – alle **vier Innenräume** besitzen von der Tür aus eine freie Zwei-Block-hohe Route zum benutzbaren Arbeitsplatz.
-- `node test_workshops_v23.cjs` – **31 Assertionen** zu korrektem Raum, Reichweite, Höhenbereich, Sichtlinien-Sperre, eigenen Bauänderungen, drei Arbeitsschritten, einmaliger Belohnung und Wiederholbarkeit.
-- `node test_backup_v23.cjs` – **fünf Szenarien** für Altsicherungen, neue Marken, Importabbruch und ungültige Baukoordinaten.
-- `python test_ui_v23.py` – Menü und Stempelbereich bei 375 × 667, 393 × 852, 844 × 390 Pixeln ohne horizontale Überläufe. 49 einzigartige HTML-IDs. Die Bilder aus diesem Test sind statische DOM/CSS-Prüfungen.
+## Testen
 
-## Grenzen / noch offen
-
-- Kein vollständiger Live-Test der originalen Three.js-WebGL-Szene auf iPhone/Safari in dieser Umgebung. Echte Performance, Touch-Feeling und Effektwirkung sind noch nicht visuell abgenommen.
-- Das Sonnen-Dorf ist noch nicht auf dem angestrebten grafischen Referenzniveau. Insbesondere Architektur, Licht, Landschaft und Figuren benötigen weiterhin viel Arbeit.
-- Die 3-Schritte-Aktivitäten bieten aktuell keine visuellen Animationen der Möbel oder Hände. Das wäre ein späterer Qualitätsdurchgang.
-- Werkstattfortschritte werden im Browser und optional in **V23-Backups** gespeichert; sie werden nicht in ältere JSON-Sicherungen rückwirkend geschrieben.
-
-## Laufzeitdateien
-
-`index.html`, `styles.css`, `game.js`, `README.md`.
-
-Die Testskripte, Mockup-Bilder, Baselines und interne Arbeitsdateien sind nicht Teil des vierteiligen Laufzeitpakets.
+Dieses ZIP besteht aus **`index.html`, `styles.css`, `game.js`, `README.md`**. Vor dem Austausch V23 und die persönliche Welt sichern. **Zuerst einen separaten Testbranch verwenden; `main` nicht blind überschreiben.** Erst nach einem echten iPhone-Spieltest anhand Screenshots über eine Veröffentlichung entscheiden.

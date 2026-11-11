@@ -1,4 +1,4 @@
-// BLOCKWELT V23 LABOR — Sonnen-Dorf: vier echte, leichte Werkstatt-Aktivitäten.
+// BLOCKWELT V24 LABOR — Sonnen-Dorf: geprüfte Bewohnerwege, maßstäbliche Dächer, ruhiger Dorfplatz.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
 // Die Geländeform und Spieler-Speicherschlüssel bleiben unverändert.
@@ -662,10 +662,10 @@ function makeSunVillageDetails(){
       // Observatory lantern atop the Kartenstube: slim cupola rim, very small
       // compared with the watch house's stone lookout. The solid roof is below.
       for(const side of [-1,1]){
-        add('oak',hx+side*1.10,15.35,hz+1.00,.12,1.64,.13);
+        add('oak',hx+side*1.10,15.70,hz+1.00,.12,.45,.13);
       }
-      add('sunGold',hx,17.72,hz+.5,.28,.34,.28);
-      add('oak',hx,17.35,hz+.5,.12,.32,.12);
+      add('sunGold',hx,16.12,hz+.5,.23,.24,.23);
+      add('oak',hx,15.85,hz+.5,.10,.37,.10);
     }else if(i===2){
       // Narrow greenhouse skylight mullions follow the stepped glass roof.
       for(const rx of [-2,-1,1,2]){
@@ -680,13 +680,13 @@ function makeSunVillageDetails(){
       // A slim timber cornice softens the lookout's raw stone shaft.
       // The original roof cap remains a single shared block geometry.
       for(const side of [-1,1]){
-        add('crossbeam',hx,18.48,hz+side*1.56,3.28,.14,.15);
-        add('crossbeam',hx+side*1.56,18.48,hz,.15,.14,3.28);
+        add('crossbeam',hx,16.51,hz+side*1.56,3.22,.12,.13);
+        add('crossbeam',hx+side*1.56,16.51,hz,.13,.12,3.22);
       }
-      // Blue hanging pennant sits above the new masonry roof tower.
-      add('iron',hx+.5,19.85,hz+.5,.11,1.18,.11);
-      add('bannerBlue',hx+.91,20.28,hz+.5,.72,.55,.09);
-      add('sunGold',hx+1.23,20.28,hz+.57,.10,.38,.10);
+      // Kurzer Wimpel passend zur niedrigen Wachstube.
+      add('iron',hx+.5,17.75,hz+.5,.10,.90,.10);
+      add('bannerBlue',hx+.88,18.05,hz+.5,.63,.46,.08);
+      add('sunGold',hx+1.18,18.05,hz+.56,.09,.33,.09);
     }
     // Ein kleiner Giebel-Akzent in Materialfarbe, statt vier identischer Dächer.
     add(i%2===0?'sunGold':'oak',hx+.5,13.98,hz+4.77,.32,.16,.26);
@@ -748,32 +748,20 @@ function makeSunVillageDetails(){
     add('oak',v.x+side*2.42+.5,7.45,v.z+.5,.14,2.15,.13);
     add('lamp',v.x+side*2.38+.5,8.56,v.z+.5,.22,.31,.22);
   }
-  // The market is detailed with baskets, a counter and colorful fruit.
-  // It is off the main central path, directly visible from the entrance.
-  for(const [mx,mz,small] of [[v.x-3,v.z-5,false],[v.x+4,v.z+5,true]]){
-    const base=6;
+  // V24: Nur EIN vollständiger Marktstand. V23 hatte direkt neben dem
+  // Brunnen ein zweites gestreiftes Stoffdach, das die Mitte zustellte.
+  // Der bestehende Marktstand aus dem Chunk-Renderer bleibt erhalten.
+  {
+    const mx=v.x-3,mz=v.z-5,base=6;
     add('oak',mx,base+.65,mz,.85,.21,1.82);
-    // V12 already draws a complete roof and posts at the original market.
-    // Do not stack a second canopy on those exact same coordinates.
-    if(small){
-      for(const side of [-1,1])for(const depth of [-1,1]){
-        add('oak',mx+side*1.28,base+1.26,mz+depth*.78,.12,2.50,.12);
-      }
-      for(let j=0;j<7;j++){
-        const px=mx-1.20+j*.40;
-        add(j%2===0?'roofRed':'clothCream',px,base+2.58,mz,.39,.13,2.01);
-      }
-    }
     for(let j=0;j<10;j++){
       const px=mx+((j%5)-2)*.21;
       const pz=mz+(j<5?-.36:.36);
       add(j%3===0?'fruitRed':j%3===1?'fruitGold':'fruitGreen',
           px,base+.86,pz,.20,.18,.19);
     }
-    if(!small){
-      add('sign',mx,base+1.60,mz-1.11,1.25,.38,.09);
-      add('lamp',mx,base+2.08,mz+.02,.30,.36,.30);
-    }
+    add('sign',mx,base+1.60,mz-1.11,1.25,.38,.09);
+    add('lamp',mx,base+2.08,mz+.02,.30,.36,.30);
   }
   // Four flower borders, away from both house walls and foot traffic.
   for(const [ox,oz] of [[-6,3],[-6,-3],[6,3],[6,-3]]){
@@ -1071,18 +1059,20 @@ function villageBlocks(x,z,y,chunkPut){
       if(v===VILLAGES[0]&&ax<=1&&az<=1){
         const roofTop=sunRoofY(i,ax);
         if(i===1){
-          // Kartenstube: timber-and-glass chart room with low hip cap.
-          if(y>roofTop&&y<=16&&(ax===1||az===1))
-            chunkPut(x,y,z,y===15?'glass':'planks');
-          if(y===17)chunkPut(x,y,z,'planks');
+          // V24: niedriger Karten-Ausguck statt eines freistehenden Turms.
+          // Die zwei Fenster sitzen direkt über der Dachschräge.
+          if(y>roofTop&&y<=14&&(ax===1||az===1))
+            chunkPut(x,y,z,y===14&&((rx===0)!==(rz===0))?'glass':'planks');
+          if(y===15)chunkPut(x,y,z,'planks');
         }
         if(i===3){
-          // Wachhaus: squat square watch turret, corner crenellations and
-          // light-filled slits. It is never a solid column through a room.
-          if(y>roofTop&&y<=17&&(ax===1||az===1))
-            chunkPut(x,y,z,(y===15||y===16)&&((rx===0) !== (rz===0))?'glass':(y===17?'planks':'cobble'));
-          if(y===18)chunkPut(x,y,z,'planks');
-          if(y===19&&ax===1&&az===1)chunkPut(x,y,z,'cobble');
+          // V24: kompakter Wach-Ausguck. Der ursprüngliche 19-Blöcke-Turm
+          // überragte das Dorf auf dem iPhone unverhältnismäßig stark.
+          // Ein niedriger Turmkopf mit Lichtschlitzen bleibt wiedererkennbar.
+          if(y>roofTop&&y<=15&&(ax===1||az===1))
+            chunkPut(x,y,z,y===14&&((rx===0)!==(rz===0))?'glass':'cobble');
+          if(y===16)chunkPut(x,y,z,'planks');
+          if(y===17&&ax===1&&az===1)chunkPut(x,y,z,'cobble');
         }
       }
       // Kleine Eingangsstufe und hölzerner Vorbau.
@@ -2525,12 +2515,15 @@ for(const [vi,v] of VILLAGES.entries()){
     // Die Sonnen-Dorf-Bewohner sind ihren Handwerksorten zugeordnet.
     // Dadurch begegnet man der Bäckerin bei der Bäckerei und nicht zufällig
     // vor dem Brunnen. Das Birken-Dorf behält das frühere Bewegungsmuster.
+    // V24: Alle fünf Ankunftspunkte liegen auf geprüftem, ebenem Pflaster.
+    // In V23 standen Forscher und Bäckerin auf 3 Blöcke hohen Zugangsstufen;
+    // auf einem iPhone wirkten sie wie Figuren auf Podesten.
     const sunnyHomes=[
-      [v.x-3,v.z-5],   // Händlerin am Markt
-      [v.x-11,v.z+2],  // Gärtner am neuen Dorfplatz-Eingang der Gärtnerei
-      [v.x+7,v.z-2],   // Forscher vor der Kartenstube
-      [v.x-8,v.z-1],   // Bäckerin vor der Backstube
-      [v.x+10,v.z+3]  // Wächterin am neuen Dorfplatz-Eingang des Wachhauses
+      [v.x-3,v.z-4],  // Händlerin am einzigen Marktstand
+      [v.x-9,v.z+1],  // Gärtner am Westweg
+      [v.x+6,v.z+1],  // Forscher auf der Dorfstraße
+      [v.x-6,v.z+1],  // Bäckerin auf dem Weg, nicht auf der Terrasse
+      [v.x+9,v.z+2]  // Wächterin am Ostweg
     ];
     const [px,pz]=vi===0?sunnyHomes[i]:[v.x+Math.cos(angle)*5,v.z+Math.sin(angle)*5];
     const resident=makeCreature('villager',px,pz,number,vi===0?px:v.x,vi===0?pz:v.z);
@@ -2607,6 +2600,27 @@ function canNpcEnter(x,z,previousX,previousZ){
   }
   return true;
 }
+// V24: Bewohner dürfen auch nach eigenen Bauänderungen nicht auf plötzlich
+// erhöhten Säulen stehen oder mit den Füßen in einem neuen Block stecken.
+// Die Figur weicht auf einen freien Platz nahe ihres eigenen Arbeitsplatzes aus.
+// Wenn dort alles verbaut ist, wird sie vorübergehend ausgeblendet statt durch
+// Spielerbauwerke zu teleportieren. Andere Orte bleiben unverändert.
+function safeSunnyResidentSpot(x,z){
+  const height=npcSurface(x,z);
+  return height>=4.8&&height<=6.1&&!isInsideHouse(x,z)&&canNpcEnter(x,z,x,z);
+}
+function restoreSunnyResidentSpot(npc){
+  if(safeSunnyResidentSpot(npc.x,npc.z))return true;
+  for(const [dx,dz] of [[0,0],[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5],
+    [1.25,0],[-1.25,0],[0,1.25],[0,-1.25],
+    [1.75,.75],[-1.75,.75],[1.75,-.75],[-1.75,-.75]]){
+    const x=npc.homeX+dx,z=npc.homeZ+dz;
+    if(safeSunnyResidentSpot(x,z)){
+      npc.x=x;npc.z=z;npc.angle+=.7;return true;
+    }
+  }
+  return false;
+}
 function hasLineOfSight(npc){
   const dx=npc.x-camera.position.x;
   const dy=npc.group.position.y+1.45-camera.position.y;
@@ -2627,6 +2641,9 @@ function updateCreatures(dt){
     const active=showCreatures&&dist<(MOBILE?46:65);
     npc.group.visible=active;
     if(!active)continue;
+    if(npc.sunVillageRole&&!restoreSunnyResidentSpot(npc)){
+      npc.group.visible=false;continue;
+    }
     npc.turnTimer-=dt;
     if(npc.turnTimer<=0){
       npc.angle+=Math.sin(t*.45+npc.number*13)*2.2;
@@ -2645,10 +2662,12 @@ function updateCreatures(dt){
     }else if(grazing){speed=0;}
     const nx=npc.x+Math.cos(npc.angle)*speed*dt;
     const nz=npc.z+Math.sin(npc.angle)*speed*dt;
-    const wanderLimit=npc.sunVillageRole?3.8:npc.isAnimal?8:npc.kind==='villager'?8:7;
+    // Dorfberufe bleiben auf dem begehbaren Platz, nicht auf Dachstufen.
+    const wanderLimit=npc.sunVillageRole?2.2:npc.isAnimal?8:npc.kind==='villager'?8:7;
     const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
+    const safeSunStreet=!npc.sunVillageRole||safeSunnyResidentSpot(nx,nz);
     if(speed>0&&nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
-       !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
+       safeSunStreet&&!isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
       npc.x=nx;npc.z=nz;
     }else if(speed>0)npc.angle+=2.3*dt;
     const ground=npcSurface(npc.x,npc.z);
