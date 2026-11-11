@@ -1,4 +1,5 @@
-// BLOCKWELT V24 LABOR — Sonnen-Dorf: geprüfte Bewohnerwege, maßstäbliche Dächer, ruhiger Dorfplatz.
+// BLOCKWELT V25 LABOR — Sonnen-Dorf: höflich ausweichende Bewohner, Berufsgesten, geschlossene Dachziegel.
+// V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
 // Die Geländeform und Spieler-Speicherschlüssel bleiben unverändert.
@@ -417,7 +418,10 @@ function makeSunVillageDetails(){
       if(sunRoofType(i,rx,rz,'roof')==='glass')continue;
       const aged=pixelHash(hx+rx,hz+rz,3101);
       const tile=aged>.87?roof+'Light':aged<.19?roof+'Dark':roof;
-      add(tile,hx+rx,y,hz+rz,.90,.10,1.90);
+      // V25: 0.1 m Lücken zwischen den bisherigen Dachplatten sind auf
+      // dem iPhone als regelmäßige dunkle Schlitze zu sehen. Minimaler
+      // Überstand schließt diese, ohne das Dachprofil zu verändern.
+      add(tile,hx+rx,y,hz+rz,1.012,.10,2.012);
     }
     // Warm carpentry: doorway beams, solid little porch roof, sign and sills.
     // V14: Rahmen sitzt AUSSEN an der zweiblockhohen Tür statt versenkt
@@ -2390,6 +2394,42 @@ const npcSkin=new THREE.MeshLambertMaterial({color:'#e0af85'});
 const npcDark=new THREE.MeshLambertMaterial({color:'#213c32'});
 const npcWhite=new THREE.MeshLambertMaterial({color:'#f5eacd'});
 const villagerRobes=['#a97148','#577cba','#8d6596','#668c54','#b7884f'];
+// V25: Fünf kleine, original gestaltete Handwerks-Requisiten.
+// Bewusst keine Texturdownloads, Partikeleffekte oder zusätzlichen Lichter.
+const sunnyTradeMaterials={
+  wood:new THREE.MeshLambertMaterial({color:'#956b43'}),
+  paper:new THREE.MeshLambertMaterial({color:'#f4e8c8'}),
+  leaf:new THREE.MeshLambertMaterial({color:'#659a4c'}),
+  flower:new THREE.MeshLambertMaterial({color:'#e5a4b6'}),
+  bread:new THREE.MeshLambertMaterial({color:'#dba761'}),
+  blue:new THREE.MeshLambertMaterial({color:'#6289a6'}),
+  brass:new THREE.MeshLambertMaterial({color:'#e3c781'})
+};
+// Requisiten sind am Unterarm befestigt: sie folgen der tatsächlichen Bewegung.
+// Nur die fünf Sonnen-Dorf-Bewohner bekommen ein Berufswerkzeug.
+function equipSunnyTradeItem(resident,index){
+  const arm=resident.rightArm, m=sunnyTradeMaterials;
+  const a=(w,h,d,material,x,y,z)=>part(arm,w,h,d,material,x,y,z);
+  if(index===0){ // Händlerin – kleines Warenkörbchen
+    a(.39,.09,.33,m.wood,0,-.46,-.25);
+    a(.23,.15,.24,m.bread,0,-.36,-.25);
+    a(.07,.23,.07,m.brass,0,-.27,-.25);
+  }else if(index===1){ // Gärtner – Blumenstängel
+    a(.07,.31,.07,m.leaf,0,-.51,-.28);
+    a(.21,.14,.21,m.flower,0,-.70,-.28);
+    a(.15,.07,.12,m.leaf,-.09,-.48,-.28);
+  }else if(index===2){ // Forscher – kleines, geschlossenes Kartenbuch
+    a(.39,.08,.27,m.blue,0,-.45,-.29);
+    a(.32,.035,.21,m.paper,0,-.40,-.29);
+  }else if(index===3){ // Bäckerin – Brot auf einer Holzplatte
+    a(.44,.07,.31,m.wood,0,-.48,-.24);
+    a(.30,.16,.25,m.bread,0,-.36,-.24);
+  }else if(index===4){ // Wächterin – kleines Schild, keine Waffe
+    a(.33,.37,.09,m.blue,0,-.48,-.23);
+    a(.10,.23,.10,m.brass,0,-.48,-.29);
+    a(.22,.07,.10,m.brass,0,-.48,-.29);
+  }
+}
 // Materials and geometry are shared: villagers remain inexpensive on phones.
 const personStyles=[
   {role:'Bäckerin',coat:'#bd8555',hat:'#e9c58b',accent:'#f7e5c4',line:'Die Brötchen sind gerade fertig! Sieh dich auf dem Marktplatz um.'},
@@ -2529,6 +2569,8 @@ for(const [vi,v] of VILLAGES.entries()){
     const resident=makeCreature('villager',px,pz,number,vi===0?px:v.x,vi===0?pz:v.z);
     if(vi===0){
       resident.sunVillageRole=true;
+      resident.sunTradeIndex=i;
+      equipSunnyTradeItem(resident,i);
       const names=['Händlerin Tilda','Gärtner Bo','Forscher Emil','Bäckerin Leni','Wächterin Mia'];
       const greetings=[
         'Willkommen im Sonnen-Dorf! Auf unserem Markt gibt es immer etwas Neues zu entdecken.',
@@ -2609,13 +2651,30 @@ function safeSunnyResidentSpot(x,z){
   const height=npcSurface(x,z);
   return height>=4.8&&height<=6.1&&!isInsideHouse(x,z)&&canNpcEnter(x,z,x,z);
 }
+// V25: Bewohner teilen keine Standfläche miteinander. Bei einer Blockänderung
+// wird ein neuer sicherer Standort gesucht, statt Figuren übereinanderzusetzen.
+function residentHasSpace(npc,x,z,space=.70){
+  for(const other of creatures){
+    if(other!==npc&&other.sunVillageRole&&
+       Math.hypot(other.x-x,other.z-z)<space)return false;
+  }
+  return true;
+}
+function residentGiveWay(npc,px,pz,enabled){
+  const dx=npc.x-px,dz=npc.z-pz,dist=Math.hypot(dx,dz);
+  if(!enabled||!npc.sunVillageRole||dist>=1.55)return null;
+  // Sanft seitlich ausweichen statt direkt in die Kamera zu laufen.
+  const angle=Math.atan2(dz,dx)+(npc.number%2===0?.38:-.38);
+  return {angle,speed:.76};
+}
 function restoreSunnyResidentSpot(npc){
-  if(safeSunnyResidentSpot(npc.x,npc.z))return true;
+  if(safeSunnyResidentSpot(npc.x,npc.z)&&residentHasSpace(npc,npc.x,npc.z))return true;
   for(const [dx,dz] of [[0,0],[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5],
     [1.25,0],[-1.25,0],[0,1.25],[0,-1.25],
     [1.75,.75],[-1.75,.75],[1.75,-.75],[-1.75,-.75]]){
     const x=npc.homeX+dx,z=npc.homeZ+dz;
-    if(safeSunnyResidentSpot(x,z)){
+    if(safeSunnyResidentSpot(x,z)&&residentHasSpace(npc,x,z)&&
+       Math.hypot(player.x-x,player.z-z)>.9){
       npc.x=x;npc.z=z;npc.angle+=.7;return true;
     }
   }
@@ -2650,37 +2709,59 @@ function updateCreatures(dt){
       npc.turnTimer=1.1+pixelHash(npc.number,Math.floor(t/2),83)*3.2;
     }
     const baseSpeed=npc.kind==='villager'?.48:npc.isAnimal?.25:.33;
-    // Villagers acknowledge a nearby visitor rather than wandering straight past.
-    const greeting=npc.kind==='villager'&&dist<3.9&&gameRunning;
+    const courtesy=residentGiveWay(npc,player.x,player.z,gameRunning);
+    // Besucher freundlich ansehen – bei sehr geringem Abstand jedoch Platz machen.
+    const greeting=npc.kind==='villager'&&dist<3.9&&gameRunning&&!courtesy;
     const grazing=npc.isAnimal&&pixelHash(npc.number,Math.floor(t/9),306)>.69;
     let speed=baseSpeed;
-    if(greeting){
+    if(courtesy){
+      const diff=Math.atan2(Math.sin(courtesy.angle-npc.angle),Math.cos(courtesy.angle-npc.angle));
+      npc.angle+=diff*Math.min(1,dt*5);
+      speed=courtesy.speed;
+    }else if(greeting){
       const targetAngle=Math.atan2(player.z-npc.z,player.x-npc.x);
       const difference=Math.atan2(Math.sin(targetAngle-npc.angle),Math.cos(targetAngle-npc.angle));
       npc.angle+=difference*Math.min(1,dt*2.7);
       speed=0;
     }else if(grazing){speed=0;}
-    const nx=npc.x+Math.cos(npc.angle)*speed*dt;
-    const nz=npc.z+Math.sin(npc.angle)*speed*dt;
-    // Dorfberufe bleiben auf dem begehbaren Platz, nicht auf Dachstufen.
-    const wanderLimit=npc.sunVillageRole?2.2:npc.isAnimal?8:npc.kind==='villager'?8:7;
-    const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
-    const safeSunStreet=!npc.sunVillageRole||safeSunnyResidentSpot(nx,nz);
-    if(speed>0&&nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
-       safeSunStreet&&!isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
-      npc.x=nx;npc.z=nz;
-    }else if(speed>0)npc.angle+=2.3*dt;
+    // Nur tatsächlich freier Weg zählt als Bewegung. Verhindert die frühere
+    // Laufanimation direkt vor einer Wand und das Ineinanderlaufen zweier NPCs.
+    const wanderLimit=npc.sunVillageRole?(courtesy?3.25:2.2):npc.isAnimal?8:npc.kind==='villager'?8:7;
+    let didMove=false;
+    if(speed>0){
+      const headings=courtesy?[npc.angle,npc.angle+.95,npc.angle-.95]:[npc.angle];
+      for(const heading of headings){
+        const nx=npc.x+Math.cos(heading)*speed*dt;
+        const nz=npc.z+Math.sin(heading)*speed*dt;
+        const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
+        if(nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
+           (!npc.sunVillageRole||(safeSunnyResidentSpot(nx,nz)&&residentHasSpace(npc,nx,nz)))&&
+           !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
+          npc.x=nx;npc.z=nz;didMove=true;
+          if(courtesy)npc.angle=heading;
+          break;
+        }
+      }
+      if(!didMove)npc.angle+=2.3*dt;
+    }
     const ground=npcSurface(npc.x,npc.z);
-    npc.group.position.set(npc.x,ground+(speed?Math.sin(t*2.3+npc.number)*.025:0),npc.z);
+    npc.group.position.set(npc.x,ground+(didMove?Math.sin(t*2.3+npc.number)*.025:0),npc.z);
     npc.group.rotation.y=-npc.angle-Math.PI/2;
-    npc.walkTimer+=dt*speed*11;
-    const sway=speed?Math.sin(npc.walkTimer)*.27:0;
+    npc.walkTimer+=dt*(didMove?speed:0)*11;
+    const sway=didMove?Math.sin(npc.walkTimer)*.27:0;
     npc.leftLeg.rotation.x=sway;npc.rightLeg.rotation.x=-sway;
     npc.leftArm.rotation.x=sway;npc.rightArm.rotation.x=npc.isAnimal?sway:sway*.65;
     if(npc.kind==='villager'){
       const wave=npc.waveUntil&&ms<npc.waveUntil;
-      npc.rightArm.rotation.z=wave?.30+Math.sin(t*10+npc.number)*.33:greeting?.13:0;
+      // Die fünf Berufe führen in ruhigen Momenten jeweils eine kleine Geste
+      // aus. Die Handwerks-Requisite bewegt sich mit dem Unterarm.
+      const working=npc.sunVillageRole&&!wave&&!greeting&&!courtesy&&!didMove;
+      const beat=working?Math.sin(t*(1.1+npc.sunTradeIndex*.16)+npc.number):0;
+      npc.rightArm.rotation.x+=working?-.13+beat*.22:0;
+      npc.leftArm.rotation.x+=working?-.04-beat*.09:0;
+      npc.rightArm.rotation.z=wave?.30+Math.sin(t*10+npc.number)*.33:greeting?.13:working?.07:0;
       npc.head.rotation.z=greeting?Math.sin(t*1.2+npc.number)*.035:0;
+      npc.head.rotation.x=working?Math.sin(t*.95+npc.number)*.042:0;
     }else if(npc.isAnimal){
       npc.head.rotation.x=grazing?.18+Math.sin(t*1.7+npc.number)*.12:0;
     }

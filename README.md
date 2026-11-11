@@ -1,36 +1,53 @@
-# Blockwelt V24 — Sonnen-Dorf, Qualitätslabor
+# Blockwelt V25 — Sonnen-Dorf: Bewohner & Dachqualität (Labor)
 
-**Nicht als fertig freigegeben.** Ausgangspunkt ist die auf iPhone getestete V23-Fassung. Diese V24 wurde nur lokal geändert; die bisher veröffentlichte Version wurde nicht automatisch bearbeitet.
+**Status: TECHNISCH GEPRÜFTE TESTFASSUNG, NICHT VISUELL FREIGEGEBEN.**
 
-## Ziel: Ein Ort statt neuer Funktionen
+Basis ist das interne **V24-Laborpaket**, nicht ein neuer Weltgenerator. Dieses Paket enthält ausschließlich die vier austauschbaren Dateien `index.html`, `styles.css`, `game.js`, `README.md`. Die veröffentlichte GitHub-Version wird durch das Erstellen dieses Pakets nicht verändert.
 
-Die fünf echten iPhone-Screenshots von V23 zeigten drei konkrete Probleme: erhöht stehende Bewohner, zu hohe aufgesetzte Dachaufbauten und einen überladenen zentralen Dorfplatz. V24 setzt an diesen Ursachen an, ohne das ganze Spiel umzubauen.
+## Gezielte Verbesserungen in V25
 
-### Änderungen
+1. **Höflich ausweichende Bewohner:** Einwohner des Sonnen-Dorfs versuchen bei weniger als 1,55 Blöcken Abstand zum Spieler, auf einen freien benachbarten Platz auszuweichen. Zusätzlich werden alternative seitliche Bewegungsrichtungen geprüft.
+2. **Abstand zwischen Bewohnern:** Die fünf handplatzierten Einwohner sollen nicht ineinanderlaufen oder nach einer Baublockänderung auf demselben Punkt erscheinen. Bei einer versperrten Standfläche werden sichere Ersatzpositionen gesucht.
+3. **Fünf Berufe mit kleinen 3D-Gegenständen:** Händlerwaren, eine Blume, ein Kartenbuch, ein Brotlaib und ein kleines Schild. Die Gegenstände hängen an den Armbewegungen der jeweiligen Figur. Ausschließlich originale, programmatisch erzeugte geometrische Formen und Materialien.
+4. **Subtile berufstypische Gesten:** Im Stillstand bewegen die fünf Dorfbewohner Hände und Kopf vorsichtig. Beim Ansprechen ist eine Begrüßung weiterhin vorrangig.
+5. **Glaubwürdigere Bewegung:** Steht eine Figur vor einer Wand, werden nicht länger Laufanimationen simuliert, obwohl sie sich nicht bewegt.
+6. **Dachflächen ohne regelmäßige Fugen:** Die dekorativen Platten überlappen jetzt minimal (1,012 × 2,012 statt 0,90 × 1,90 Einheiten). Die **massiven** Dachblöcke bleiben identisch.
+7. **Cache-/Versionskennzeichnung:** V25-Labor im Header, neu versionierte CSS/JS-Adressen.
 
-1. **Fünf Dorfbewohner auf niedrigeren Plätzen**: Die Berufsfiguren starten nicht länger auf den erhöhten Terrassen der Hauszugänge. Sie laufen nur in einem engeren Bereich auf einer freien Gehfläche auf Dorfhöhe. Wenn eigene Bauwerke einen Standort blockieren, wird ein geeigneter freier Platz beim Arbeitsplatz gesucht; sonst ist die Figur vorübergehend unsichtbar, statt in einer Mauer oder hoch auf einer Säule zu stehen.
-2. **Kartenstube und Wachhaus**: Die blockbasierten Dachaufbauten wurden verkleinert. Die Kartenstube hat nun einen niedrigeren Ausguck (maximales Dach-Zellniveau 15); das Wachhaus einen kompakten Aufsatz mit Fenstern und Dachkante (maximales Dach-Zellniveau 17). Auch Dachdekoration, Wimpel und Geländer wurden entsprechend neu gesetzt.
-3. **Ruhigerer Dorfplatz**: Der zweite dekorative Marktstand neben dem Brunnen ist entfernt. Der vorhandene vollständige Marktstand bleibt erhalten. Brunnen, zentrale Straßen und die vier Werkstätten bleiben am selben Ort.
-4. **Keine neuen Bildschirmknöpfe**: Interaktion, Entdeckerbuch, vier Werkstatt-Abenteuer und sieben Entdeckungsorte bleiben erhalten. Beibehalten sind die Speicherschlüssel `blockwelt-kleine-baumeister-v1`, `blockwelt-entdeckerbuch-v10` und `blockwelt-sonnendorf-werkstaetten-v23`.
-5. **Cache-/Versionskennzeichnung**: `index.html` nennt V24-Labor und verlangt per Query-Parameter eine neue CSS- und JS-Ressource.
+## Technischer Prüfstand
 
-### Durchgeführte Prüfungen (11. November 2026)
+- `node --check game.js`: erfolgreich.
+- `node test_v25.cjs`: **8 Testgruppen bestanden**. Darunter vollständiger Vergleich aller **36.864 Geländehöhen** mit V24, unveränderte `villageBlocks`, `sunRoofY` und `sunRoofType`, Prüfung der neuen Berufswerkzeuge und des Ausweichverhaltens, unveränderte Speicherformate, 49 eindeutige HTML-IDs.
+- `python test_ui_v25.py`: statische Browseroberfläche bei **375 × 667**, **393 × 852** und **844 × 390** ohne horizontalen Dokumentüberlauf; Hauptmenü und Steuerungselemente vorhanden.
+- Der alte Welt-Speicherschlüssel `blockwelt-kleine-baumeister-v1` und der Werkstatt-Schlüssel `blockwelt-sonnendorf-werkstaetten-v23` sind unverändert. Eigene Bauwerke und Werkstattstempel sollen damit kompatibel bleiben.
+- Die HTML/CSS-Prüfung ist **kein** Nachweis erfolgreicher Three.js-/WebGL-Darstellung.
 
-- JavaScript: `node --check game.js` erfolgreich.
-- Welt: `node test_v24.cjs`: acht Regressionstestgruppen erfolgreich, darunter unveränderte **36.864 Gelände-Höhen**, unveränderte Birken-Dorf-Voxel und ausschließlich **68 geänderte erzeugte Dachblockpositionen** im Sonnen-Dorf.
-- Wege: `node test_house_paths_v23.cjs`: alle vier Werkstattwege und die freie Innenraumhöhe geprüft. Sechs Hauseingänge bleiben frei.
-- NPCs: `node test_npc_v24.cjs`: alle fünf neuen Bewohner-Standorte auf passierbarer Dorfhöhe; Ausweichposition nach selbst platziertem zweistöckigem Block geprüft.
-- Aktivitäten: `node test_workshops_v23.cjs`: 31 Interaktions- und Fortschrittsprüfungen erfolgreich.
-- Speicher: `node test_backup_v23.cjs`: fünf Import- und Exportfälle erfolgreich.
-- Handy-UI: `python test_ui_v24.py`: 375×667, 393×852, 844×390 ohne horizontale Überläufe, 49 eindeutige HTML-IDs.
-- Technische Vorschau: `V24_Dorf_Ueberblick_Codedaten.png` und `V24_Dorf_Dorfstrasse_Codedaten.png`, gerendert aus erzeugten Voxelpositionen und Dekorationsmaßen **mit einem separaten Prüf-Renderer**, nicht aus Safari/Three.js.
+## Nicht geprüft / Grenzen
 
-## Grenzen
+- Kein vollständiger Live-3D-Test im echten Safari auf einem iPhone.
+- Keine belastbare Messung der Bildrate oder der zusätzlichen Grafikaufrufe auf dem Mobilgerät. Die neuen Handwerksgegenstände verursachen zusätzliche kleine 3D-Meshes; entsprechend kann die Leistung abweichen.
+- Kein visuelles Urteil, dass das Sonnen-Dorf den Anspruch einer fertigen Premium-Welt bereits erfüllt.
 
-- **Nicht geprüft:** tatsächliche Three.js-Laufzeit-/Bildrate mit WebGL auf einem iPhone, reale Material- und Lichtwirkung, Interaktionsgefühl beim Spielen mit Berührung.
-- **Nicht garantiert:** dass alle vorhandenen, selbst platzierten Bauwerke perfekt zu neuen Dachformen passen. Eigene gespeicherte Bearbeitungen haben bei der Weltgenerierung weiterhin Vorrang; daher vor jedem Test die Ingame-Funktion „Welt sichern“ verwenden.
-- Die Grafik entspricht weiterhin nicht der detaillierten Konzeptillustration und darf nicht als fertig bezeichnet werden.
+## Sichere Installation
 
-## Testen
+1. Eigene Bauwerke über **Welt sichern** exportieren und die bisherige funktionierende Version sichern.
+2. **Neuen Testbranch** `test/blockwelt-v25` auf Basis der aktuellen Version anlegen (GitHub-Upload: *Create a new branch for this commit and start a pull request*).
+3. Die vier Dateien im Repository-Stamm austauschen.
+4. Vor einer Veröffentlichung im `main`-Branch: das Sonnen-Dorf in Safari auf dem iPhone prüfen, insbesondere den Abstand der Figuren, Gesprächs-Button, die Dachoberflächen, alle vier Werkstatt-Aktionen, Spielstandimport und Leistung.
+5. `Force Push` bleibt **aus**. Es wurde kein automatischer GitHub-Commit vorgenommen.
 
-Dieses ZIP besteht aus **`index.html`, `styles.css`, `game.js`, `README.md`**. Vor dem Austausch V23 und die persönliche Welt sichern. **Zuerst einen separaten Testbranch verwenden; `main` nicht blind überschreiben.** Erst nach einem echten iPhone-Spieltest anhand Screenshots über eine Veröffentlichung entscheiden.
+## GitHub-Texte
+
+**Zusammenfassung:** `Blockwelt V25 – Sonnen-Dorf: lebendige Bewohner & Dachfeinschliff (Labor)`
+
+**Detaillierte Informationen:**
+
+- Bewohner weichen dem Spieler aus und halten Abstand zueinander.
+- Handwerksfiguren tragen kleine eigene 3D-Werkzeuge und bewegen sich natürlicher.
+- Laufanimationen stoppen an Hindernissen.
+- Dekorative Dachplatten haben keine regelmäßigen Zwischenräume mehr.
+- Gelände, feste Dorfblöcke und Speicherformate sind unverändert.
+- Technische Regressionen und mobile Layouttests bestanden.
+- Teststand; iPhone-WebGL-Abnahme und Leistungsprüfung offen.
+
+**Testbranch:** `refs/heads/test/blockwelt-v25` · `Force Push: Aus`.
