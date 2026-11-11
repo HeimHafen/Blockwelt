@@ -6,16 +6,16 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V12: kinderfreundliche 3D-Abenteuerwelt mit Dörfern, Burg, Wasserfall, Entdeckerkompass und lebendiger Natur.">
-  <title>Blockwelt V12 · Natur &amp; Präzision · Test</title>
-  <link rel="stylesheet" href="styles.css?v=12-test">
+  <meta name="description" content="Blockwelt V23: kinderfreundliche 3D-Abenteuerwelt mit Dörfern, Burg, Wasserfall, Entdeckerkompass und lebendiger Natur.">
+  <title>Blockwelt V23 · Sonnen-Dorf · Labor</title>
+  <link rel="stylesheet" href="styles.css?v=23-werkstatt-aktionen-labor">
 </head>
 <body>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Legendenwelt · V12 – Test</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small>Legendenwelt · V23 – Labor</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -116,10 +116,15 @@
       <div class="discovery-heading"><div><span>DEIN ABENTEUER</span><h2>🧭 Entdeckerbuch</h2></div><button id="closeDiscovery" type="button" aria-label="Entdeckerbuch schließen">×</button></div>
       <p>Entdecke die geheimen Orte deiner Blockwelt. Jeder besuchte Ort bleibt in deinem Entdeckerbuch.</p>
       <p id="relicCount" class="relic-progress">✨ Geheimnisse: 0/3 gefunden</p>
+      <div class="workshop-section" aria-label="Sonnen-Dorf-Werkstätten">
+        <div class="workshop-title"><strong>🏘️ Sonnen-Dorf · Werkstätten</strong><span id="workshopCount">0/4</span></div>
+        <p>Besuche die vier Werkstätten und probiere ihre Aufgaben aus.</p>
+        <div id="workshopList" class="workshop-list"></div>
+      </div>
       <div id="discoveryList" class="discovery-list"></div>
     </div>
   </section>
 
-  <script type="module" src="game.js?v=12-test"></script>
+  <script type="module" src="game.js?v=23-werkstatt-aktionen-labor"></script>
 </body>
 </html>

@@ -1,4 +1,7 @@
-// BLOCKWELT V12 — präzise Voxeltreffer, bessere iPhone-Leistung und differenzierte Natur. V3–V11-Spielstände bleiben kompatibel.
+// BLOCKWELT V23 LABOR — Sonnen-Dorf: vier echte, leichte Werkstatt-Aktivitäten.
+// Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
+// Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
+// Die Geländeform und Spieler-Speicherschlüssel bleiben unverändert.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
 
@@ -267,6 +270,740 @@ function biomeAt(x,z){
 }
 // Houses, pathways and trees are deterministic across chunk boundaries.
 const HOUSE_OFFSETS=[[-8,-8],[7,-9],[-10,7],[9,8]];
+// V23: A tiny, self-contained experience inside each Sonnen-Dorf workshop.
+// Children can use the existing interaction button instead of learning a new HUD.
+// Nothing here changes the voxel world, player inventory or the V9 save format.
+const SUN_WORKSHOPS=[
+  {id:'bakery',name:'Bäckerei',emoji:'🥖',actions:['Teig kneten','Brot formen','Brot fertigstellen'],
+    replies:['Du knetest den weichen Brotteig.','Du formst einen kleinen Brotlaib.','Dein erstes Dorf-Brot ist fertig!']},
+  {id:'maps',name:'Kartenstube',emoji:'🗺️',actions:['Karte ausrollen','Weg markieren','Kompass prüfen'],
+    replies:['Du rollst die große Karte aus.','Du markierst den Weg durch das Dorf.','Der Kompass zeigt dir den Heimweg!']},
+  {id:'garden',name:'Gärtnerei',emoji:'🌱',actions:['Samen aussuchen','Pflanze gießen','Blüte pflegen'],
+    replies:['Du wählst einen kleinen Samen aus.','Du gibst deiner Pflanze Wasser.','Du hast die Blüte liebevoll gepflegt!']},
+  {id:'guard',name:'Wachhaus',emoji:'🛡️',actions:['Wappen anschauen','Weg beobachten','Wache begrüßen'],
+    replies:['Du entdeckst das blaue Dorfwappen.','Du hältst die Dorfstraße im Blick.','Die Wächterin freut sich über deine Hilfe!']}
+];
+const SUN_WORKSHOP_KEY='blockwelt-sonnendorf-werkstaetten-v23';
+// Workstations are placed at the V22 furniture, not at an imaginary point on a wall.
+// The interaction area is INSIDE the building (the wall is at ~3 blocks).
+function sunWorkshopAt(pos,edited=edits,ray=traceVoxel){
+  if(Math.hypot(pos.x-VILLAGES[0].x,pos.z-VILLAGES[0].z)>23||pos.y<5.65||pos.y>8.25)return null;
+  for(let i=0;i<SUN_WORKSHOPS.length;i++){
+    const [ox,oz]=HOUSE_OFFSETS[i],hx=VILLAGES[0].x+ox,hz=VILLAGES[0].z+oz;
+    const cx=hx+.5,cz=hz+.5;
+    if(Math.abs(pos.x-cx)>2.48||Math.abs(pos.z-cz)>2.48)continue;
+    const benchX=cx-2.08,benchZ=cz-.62;
+    if(Math.hypot(pos.x-benchX,pos.z-benchZ)>2.32)continue;
+    // Building over the workbench removes the action instead of a phantom prompt.
+    let altered=false;
+    for(let x=Math.floor(benchX-.2);x<=Math.floor(benchX+.2);x++)
+      for(let z=Math.floor(benchZ-.7);z<=Math.floor(benchZ+.7);z++)
+        for(let y=6;y<=7;y++)if(edited.has(`${x},${y},${z}`))altered=true;
+    if(altered)continue;
+    // Check the actual solid-voxel map: a custom wall across a room must
+    // block interaction, even though the player is within touching distance.
+    const origin={x:pos.x,y:pos.y+1.50,z:pos.z};
+    const direction={x:benchX-origin.x,y:6.94-origin.y,z:benchZ-origin.z};
+    const distance=Math.hypot(direction.x,direction.y,direction.z);
+    if(distance>.27&&ray(origin,direction,distance-.22))continue;
+    return SUN_WORKSHOPS[i];
+  }
+  return null;
+}
+
+// V21: Only the four roofs in the Sonnen-Dorf are architecturally revised.
+// This helper is shared by the solid voxel world and decorative roof tiles.
+// Other villages retain their exactly original generated roof shapes.
+function sunRoofY(houseIndex,absX){
+  const oldY=9+(4-absX);
+  return houseIndex===0&&absX<=1?oldY+1:oldY;
+}
+function sunRoofType(houseIndex,rx,rz,normalType){
+  // Real skylights, not painted blue squares on a solid stone surface.
+  // Keep roof edges, ridge and gables opaque for a clear greenhouse outline.
+  if(houseIndex===2&&[1,2].includes(Math.abs(rx))&&Math.abs(rz)<=2)
+    return 'glass';
+  return normalType;
+}
+
+// V22: Interiors should be recognizable as different places, not four empty
+// copies of the same cabin. All objects use the EXISTING batched material
+// families. They are strictly visual, deliberately along the room perimeter,
+// and never in the 1.2 m wide entry / central walking corridor. The original
+// structural voxels, save format and player edits remain untouched.
+function addSunHouseInterior(i,hx,hz,add){
+  // Rendered voxel centers are (integer + .5), not the voxel array indices.
+  const a=(kind,dx,y,dz,w,h,d)=>add(kind,hx+.5+dx,y,hz+.5+dz,w,h,d);
+  // Floor is a solid y=5 block, with its upper surface at y=6.0. A very thin
+  // wool-coloured runner is purely visual; every house gets its own hue.
+  a(['clothCream','mapPaper','moss','bannerBlue'][i],0,6.017,0,1.10,.028,3.82);
+  // A readable low counter at the left wall, never across either doorway.
+  a('oak',-2.08,6.54,-.62,.74,.15,2.05);
+  for(const dz of [-1.32,.13]){
+    a('oak',-2.35,6.26,dz,.12,.53,.12);
+    a('oak',-1.80,6.26,dz,.12,.53,.12);
+  }
+  // Built-in shelf along the rear wall gives every room a coherent silhouette.
+  // Existing corner furniture is at (x=+-2,z=-2,y=6); these shelves sit ABOVE.
+  for(const y of [7.12,7.78])a('oak',1.95,y,-2.42,1.27,.10,.28);
+  if(i===0){
+    // Bäckerei: rising bread, stone oven and hanging warm lantern.
+    for(let n=0;n<4;n++)
+      a('bread',-2.35+(n%2)*.54,6.77,-1.20+Math.floor(n/2)*.75,.32,.23,.29);
+    a('stoneTrim',2.12,6.56,.53,.86,.84,.95);
+    a('iron',2.12,6.64,.02,.53,.40,.095);
+    a('lamp',2.12,6.54,-.04,.30,.20,.10);
+    a('bread',1.75,7.27,-2.43,.32,.23,.24);
+    a('bread',2.20,7.27,-2.43,.32,.23,.24);
+    a('lamp',0,8.35,-.65,.30,.39,.30);
+  }else if(i===1){
+    // Kartenstube: survey table, wall map, three book stacks and compass mark.
+    a('mapPaper',-2.08,6.64,-.60,.56,.026,1.30);
+    a('sunGold',-2.07,6.66,-.61,.22,.028,.22);
+    for(let n=0;n<5;n++)
+      a('bookSpine',1.52+(n%3)*.33,7.26+Math.floor(n/3)*.66,-2.42,.23,.34,.20);
+    a('mapPaper',.0,7.28,-2.43,1.46,1.12,.10);
+    a('crossbeam',0,7.93,-2.39,1.66,.10,.15);
+    a('crossbeam',0,6.63,-2.39,1.66,.10,.15);
+    a('lamp',2.12,8.37,-.15,.25,.32,.25);
+  }else if(i===2){
+    // Gärtnerei: potting bench, hanging herbs and a glass-roofed green space.
+    for(let n=0;n<3;n++){
+      const z=-1.28+n*.78;
+      a('flowerpot',-2.06,6.75,z,.52,.27,.49);
+      a('forestLeaf',-2.06,7.10,z,.41,.46,.41);
+      a(n===1?'petalPink':'petalYellow',-2.06,7.39,z,.20,.19,.20);
+    }
+    for(let n=0;n<3;n++){
+      const z=-1.65+n*.83;
+      a('forestLeaf',1.79,7.32,z,.28,.36,.30);
+      a('oak',1.79,7.78,z,.075,.56,.08);
+    }
+    a('oak',1.98,6.55,.90,.77,.12,1.26);
+    a('flowerpot',1.98,6.77,.85,.46,.27,.40);
+    a('bloomWhite',1.98,7.07,.85,.20,.23,.19);
+  }else{
+    // Wachhaus: duty table, blue standards, ironwork and an equipment rack.
+    a('bannerBlue',-2.35,7.69,-2.48,.23,1.06,.14);
+    a('sunGold',-2.35,8.17,-2.23,.16,.15,.14);
+    a('iron',1.62,7.61,-2.42,.11,1.62,.18);
+    a('iron',2.28,7.61,-2.42,.11,1.62,.18);
+    a('crossbeam',1.95,8.37,-2.42,1.04,.10,.19);
+    a('stoneTrim',2.08,6.52,.42,.86,.65,.83);
+    a('mapPaper',-2.07,6.66,-.62,.51,.028,.83);
+    a('lamp',1.95,8.43,-.30,.27,.33,.27);
+  }
+}
+
+// V13 authored scenery data: one carefully composed village, separate from
+// solid voxels. All dimensions are in world units. Grouping by material and
+// chunk allows one instanced draw per material rather than hundreds of meshes.
+// The same data can be exported for an independent code-data preview.
+function makeSunVillageDetails(){
+  const v=VILLAGES[0],p=[];
+  const add=(kind,x,y,z,w,h,d)=>p.push([kind,x,y,z,w,h,d]);
+  const roofPalette=['roofRed','roofWarm','roofGrey','roofRed'];
+  for(const [i,[ox,oz]] of HOUSE_OFFSETS.entries()){
+    const hx=v.x+ox,hz=v.z+oz,roof=roofPalette[i];
+    addSunHouseInterior(i,hx,hz,add);
+    // Wall faces are at hz ±3.5; eaves at hz ±4.5.
+    // V17 front-window and shop signs projected ~0.6m into empty air.
+    const front=hz+3.58;
+    // Dacheindeckung: bewusst kleine, gedeckte Tonabweichungen pro Reihe,
+    // statt vier perfekt einfarbiger Dächer. Keine zusätzlichen Kollisionen.
+    for(let rx=-4;rx<=4;rx++)for(let rz=-4;rz<=4;rz+=2){
+      const y=sunRoofY(i,Math.abs(rx))+.52;
+      // V21: leave transparent greenhouse panes visible; no opaque tiles on top.
+      if(sunRoofType(i,rx,rz,'roof')==='glass')continue;
+      const aged=pixelHash(hx+rx,hz+rz,3101);
+      const tile=aged>.87?roof+'Light':aged<.19?roof+'Dark':roof;
+      add(tile,hx+rx,y,hz+rz,.90,.10,1.90);
+    }
+    // Warm carpentry: doorway beams, solid little porch roof, sign and sills.
+    // V14: Rahmen sitzt AUSSEN an der zweiblockhohen Tür statt versenkt
+    // in die tragenden Wände oder weit oberhalb des Türsturzes.
+    add('oak',hx-.62,7.23,front+.045,.15,2.38,.20);
+    add('oak',hx+.62,7.23,front+.045,.15,2.38,.20);
+    add('oak',hx,8.47,front+.045,1.38,.17,.22);
+    add('sign',hx+2.92,7.86,front+.055,.67,.52,.12);
+    add('oak',hx+2.92,8.23,front+.055,.08,.24,.10);
+    // Blickfang aus der Hauptstraße: schmale Leuchtfenster am Erdgeschoss.
+    for(const fx of [-1,1]){
+      // Actual existing front glass blocks are at x=±1, y=7, z=+3.
+      add('window',hx+fx,7.00,front+.04,.57,.67,.06);
+      add('oak',hx+fx,7.39,front+.06,.73,.11,.12);
+      add('oak',hx+fx,6.61,front+.06,.73,.11,.12);
+      add('oak',hx+fx-.37,7.00,front+.06,.10,.87,.12);
+      add('oak',hx+fx+.37,7.00,front+.06,.10,.87,.12);
+      add('crossbeam',hx+fx,7.00,front+.085,.07,.69,.065);
+    }
+    // Dunkle Giebelstreben definieren die Silhouette, ohne neue Kollisions-
+    // voxels anzulegen oder den Dachfirst künstlich zu erhöhen.
+    for(let gx=-3;gx<=3;gx++){
+      const roofH=sunRoofY(i,Math.abs(gx));
+      add('oak',hx+gx,roofH+.57,hz+4.53,.90,.12,.13);
+    }
+    add('roofRidge',hx,i===0?14.57:13.57,hz,.31,.23,8.40);
+    // Fassaden an der Rückseite: Wiederholung desselben Formenspiels.
+    add('crossbeam',hx+.5,8.19,hz-3.59,5.90,.15,.13);
+    add('crossbeam',hx+.5,6.05,hz-3.59,5.90,.15,.13);
+    add('flowerpot',hx-1,6.51,front+.18,.77,.18,.33);
+    add('flowerpot',hx+1,6.51,front+.18,.77,.18,.33);
+    for(const side of [-1,1]){
+      add('oak',hx+side*1.15,7.50,hz+3.67,.10,1.14,.15);
+      add('oak',hx+side*1.15,8.13,hz+3.67,.18,.12,.16);
+      // Flower blooms above each box, with real color variation.
+      for(let c=0;c<3;c++){
+        const fx=hx+side*1.0+(c-1)*.23;
+        add((c+i)%3===0?'petalPink':(c+i)%3===1?'bloomWhite':'petalYellow',fx,6.74,front+.20,.17,.19,.19);
+      }
+    }
+    // Side windows receive slim timber frames rather than black rectangles.
+    for(const side of [-1,1]){
+      const xx=hx+side*3.70;
+      add('oak',xx,7.52,hz-.86,.12,1.03,.12);
+      add('oak',xx,7.52,hz+.86,.12,1.03,.12);
+      add('flowerpot',xx,7.00,hz,.26,.20,1.02);
+    }
+    // Sichtbare Laternen MIT Aufhängung und dunklem Metallrahmen.
+    for(const dir of [-1,1]){
+      const fx=hx+dir*2.55;
+      add('iron',fx,8.91,front+.06,.11,.11,.38);
+      add('iron',fx,8.48,front+.27,.10,.78,.10);
+      add('lamp',fx,8.48,front+.28,.29,.48,.30);
+      add('iron',fx,8.77,front+.28,.37,.08,.38);
+      add('iron',fx,8.17,front+.28,.37,.08,.38);
+    }
+    // Handwerkliche Querbalken in den Gebäudeecken, sichtbares Fachwerk.
+    for(const side of [-1,1]){
+      add('crossbeam',hx+side*3.61,6.30,hz+.5,.12,.17,5.90);
+      add('crossbeam',hx+side*3.61,8.54,hz+.5,.12,.17,5.90);
+      for(const rz of [-2.55,2.55])
+        add('oak',hx+side*3.66,7.48,hz+rz,.19,2.50,.19);
+    }
+    // Eine warme Dorf-Fahne macht die Häuser aus der Ferne unterscheidbar.
+    if(i!==2){
+      add('oak',hx-2.55,9.47,hz+4.61,.09,.98,.09);
+      add(i===1?'bannerGreen':'bannerBlue',hx-2.55,9.11,hz+4.69,.60,.64,.075);
+      add('sunGold',hx-2.55,8.83,hz+4.75,.17,.10,.08);
+    }
+    // Zwei horizontale Fachwerkbänder gliedern die Fassaden ohne neue
+    // Kollision. Zierleisten folgen der echten Wand, nicht der Spielspur.
+    add('crossbeam',hx+.5,8.68,front+.025,6.91,.13,.12);
+    add('oak',hx-3.38,7.67,front+.035,.15,2.03,.15);
+    add('oak',hx+3.38,7.67,front+.035,.15,2.03,.15);
+    // V15: Jede Fassade bekommt eine unverwechselbare Geschichte. Die kleinen
+    // Objekte sind ZIERDE und liegen an der Hauswand, nie auf der Laufspur.
+    // 0 Bäckerei, 1 Kartenstube, 2 Gärtnerei, 3 Tor-/Wachhaus.
+    if(i===0){
+      // Brotauslage und kleine rotbraune Markise vor dem Bäckerfenster.
+      add('oak',hx-2.16,6.63,front+.30,1.25,.14,.52);
+      for(let n=0;n<3;n++){
+        add('bread',hx-2.55+n*.37,6.82,front+.36,.29,.19,.35);
+      }
+      add('clothCream',hx-2.12,8.54,front+.33,1.68,.10,.65);
+      add('roofRed',hx-2.88,8.47,front+.33,.15,.12,.66);
+      add('roofRed',hx-1.36,8.47,front+.33,.15,.12,.66);
+      add('iron',hx+2.20,8.00,front+.19,.41,.08,.08);
+      add('sunGold',hx+2.20,7.74,front+.21,.23,.43,.10);
+    }else if(i===1){
+      // Die Kartenstube: gerahmte Ausstellungsstücke und Sternensymbol.
+      add('mapPaper',hx-2.23,7.42,front+.12,.62,.57,.075);
+      add('oak',hx-2.23,7.77,front+.15,.78,.11,.10);
+      add('oak',hx-2.23,7.08,front+.15,.78,.11,.10);
+      add('sunGold',hx+2.23,7.63,front+.12,.34,.34,.09);
+      add('oak',hx+2.23,7.63,front+.17,.08,.54,.08);
+      add('oak',hx+2.23,7.63,front+.17,.52,.08,.08);
+      for(let k=0;k<3;k++)add('bookSpine',hx-2.63+k*.24,6.55,front+.39,.15,.32,.19);
+    }else if(i===2){
+      // Die Gärtnerei: gezielte grüne Fassadenelemente, Kräuter und Blüten.
+      for(const sx of [-2.47,2.47]){
+        for(let j=0;j<4;j++){
+          add('forestLeaf',hx+sx,6.65+j*.44,front+.15,.40,.30,.25);
+        }
+        add('bloomWhite',hx+sx,8.07,front+.28,.25,.26,.22);
+      }
+      for(let k=0;k<4;k++){
+        add('flowerpot',hx-2.37+k*.40,6.20,front+.33,.34,.25,.35);
+        add(k%2?'petalPink':'petalYellow',hx-2.37+k*.40,6.49,front+.36,.24,.23,.25);
+      }
+      add('bannerGreen',hx+2.12,8.17,front+.17,.48,.66,.09);
+    }else{
+      // Das Wachhaus: robuste Stein-/Holzdetails und ein blaues Wappen.
+      add('stoneTrim',hx-2.20,6.13,front+.10,1.02,.31,.35);
+      add('stoneTrim',hx+2.20,6.13,front+.10,1.02,.31,.35);
+      add('bannerBlue',hx+2.27,8.18,front+.21,.59,.78,.10);
+      add('sunGold',hx+2.27,8.26,front+.31,.17,.22,.07);
+      for(const sx of [-2.76,2.76]){
+        add('iron',hx+sx,6.54,front+.28,.11,.70,.12);
+        add('sunGold',hx+sx,6.96,front+.28,.18,.13,.18);
+      }
+    }
+    // V19: NORD-Fassaden der beiden südlichen Häuser. Zum Dorfplatz
+    // stehen jetzt zwei einladende Werkstätten statt nur geschlossene Rückwände.
+    // Alle Elemente sitzen an der realen rückwärtigen Wand z=hz-3.5.
+    if(i>=2){
+      const north=hz-3.61;
+      // Zwei frei bleibende Türpfosten und ein kleiner, flacher Wetterschutz.
+      for(const side of [-1,1]){
+        add('oak',hx+side*.62,7.23,north-.05,.15,2.38,.19);
+      }
+      add('oak',hx,8.48,north-.07,1.39,.17,.22);
+      for(let k=0;k<5;k++){
+        const ax=hx-1.10+k*.55;
+        add((k+i)%2?'clothCream':i===2?'bannerGreen':'bannerBlue',
+            ax,8.65,north-.64,.54,.10,1.10);
+      }
+      add('oak',hx-1.15,8.57,north-.69,.11,.10,1.19);
+      add('oak',hx+1.15,8.57,north-.69,.11,.10,1.19);
+      for(const fx of [-1,1]){
+        // Vorhandene rückwärtige Glasfenster liegen bei x=±1,y=7,z=hz-3.
+        add('window',hx+fx,7.00,north-.07,.57,.67,.06);
+        add('oak',hx+fx,7.39,north-.10,.72,.11,.11);
+        add('oak',hx+fx,6.61,north-.10,.72,.11,.11);
+        add('oak',hx+fx-.37,7.0,north-.10,.10,.86,.12);
+        add('oak',hx+fx+.37,7.0,north-.10,.10,.86,.12);
+        add('crossbeam',hx+fx,7.0,north-.12,.07,.66,.06);
+        add('flowerpot',hx+fx,6.52,north-.30,.67,.18,.31);
+        add('windowGlow',hx+fx,7.0,north-.19,.38,.45,.068);
+      }
+      add('crossbeam',hx+.50,8.68,north-.04,6.90,.13,.12);
+      for(const side of [-1,1])
+        add('oak',hx+side*3.36,7.67,north-.05,.15,2.06,.14);
+      // Die Gärtnerei zeigt grüne Ranken; am Wachhaus hängt das blaue Wappen.
+      if(i===2){
+        for(const side of [-2.7,2.7])for(let k=0;k<4;k++)
+          add('forestLeaf',hx+side,6.45+k*.46,north-.27,.28,.35,.25);
+        for(const sx of [-2.7,2.7])
+          add('bloomWhite',hx+sx,8.40,north-.37,.26,.24,.23);
+      }else{
+        add('bannerBlue',hx+2.28,8.04,north-.28,.60,.77,.09);
+        add('sunGold',hx+2.28,8.10,north-.37,.18,.22,.075);
+        for(const side of [-2.8,2.8])
+          add('stoneTrim',hx+side,6.40,north-.20,.30,.62,.29);
+      }
+    }
+    // V20: Ein geschlossenes Ensemble statt vier gleichartiger Hauskörper.
+    // Handwerksspezifische Fassaden sind an den ECHTEN Wänden befestigt.
+    // Die Vorbauten bleiben flach und lassen x = hx an beiden Türen frei.
+    // Neu sind NUR nicht-kollidierende Instanzen, keine Spieler-Baublöcke.
+    const plazaFacing=i>=2;
+    const facadeZ=plazaFacing?hz-3.62:hz+3.62;
+    const facadeDir=plazaFacing?-1:1;
+    const outward=(distance)=>facadeZ+facadeDir*distance;
+    // Ein durchgehender Steinsockel gibt dem Holzhaus ein ruhiges Fundament.
+    // Fenster, Türen und Wege bleiben durch die Segmentierung unverdeckt.
+    for(const side of [-1,1]){
+      add('stoneTrim',hx+side*2.08,6.15,outward(.045),2.18,.18,.17);
+      // Abgesetzte Fachwerk-Lisenen und oberer durchlaufender Ringbalken.
+      add('oak',hx+side*2.70,8.06,outward(.075),.12,1.01,.15);
+      add('crossbeam',hx+side*2.11,8.66,outward(.08),2.60,.12,.14);
+    }
+    // Dunkle Dachunterseite: beim Blick entlang der Gasse ist nun klar,
+    // wo der Dachkörper auf der Fassade sitzt.
+    add('roofRidge',hx,9.72,outward(.88),7.74,.16,.14);
+    // Ein kleiner zweiter Giebelrahmen auf der tatsächlich zum Platz
+    // zeigenden Seite. Kein kopierter Massen-Balken über dem Dorfweg.
+    for(const sx of [-2.25,2.25]){
+      add('oak',hx+sx,10.55,outward(.90),.13,1.13,.13);
+      add('oak',hx+sx*.64,11.43,outward(.92),.11,.67,.13);
+    }
+    if(i===0){
+      // BÄCKEREI: zusammenhängende rot-elfenbeinfarbene Stoffmarkise,
+      // rustikale Warenbretter und ein kleiner heller Brot-Aufsteller.
+      for(let strip=0;strip<5;strip++){
+        add(strip%2===0?'roofRed':'clothCream',hx-2.28+strip*.29,
+          8.78,outward(.44),.285,.10,.80);
+      }
+      add('oak',hx-2.28,8.73,outward(.86),1.54,.09,.12);
+      for(let b=0;b<3;b++){
+        add('oak',hx+1.70,6.51+b*.34,outward(.22),1.35,.08,.28);
+        if(b===2)for(let loaf=0;loaf<3;loaf++)
+          add('bread',hx+1.27+loaf*.42,6.66+b*.34,outward(.25),.29,.15,.22);
+      }
+    }else if(i===1){
+      // KARTENSTUBE: hölzerner Aushang mit eingerollter Karte,
+      // eingerahmt wie ein Handwerksladen und kein zweites Fenster.
+      add('oak',hx-2.04,8.01,outward(.16),1.38,1.03,.15);
+      add('mapPaper',hx-2.04,8.01,outward(.258),1.06,.73,.065);
+      for(const side of [-1,1]){
+        add('sunGold',hx-2.04+side*.39,8.01,outward(.30),.06,.55,.08);
+        add('oak',hx-2.04+side*.65,8.08,outward(.23),.10,1.14,.12);
+      }
+      add('oak',hx+2.16,8.79,outward(.14),1.14,.12,.20);
+      for(let n=0;n<4;n++)add('bookSpine',hx+1.73+n*.28,8.58,outward(.23),.22,.34,.19);
+    }else if(i===2){
+      // GÄRTNEREI: offenes, begrüntes Vordach zur Nordfront.
+      // Alle Querleisten sind höher als der begehbare Türdurchgang.
+      for(const side of [-1,1]){
+        add('oak',hx+side*1.72,8.72,outward(.48),.13,.13,1.02);
+        add('forestLeaf',hx+side*1.62,8.92,outward(.37),.53,.28,.47);
+        add('flowerpot',hx+side*2.52,6.36,outward(.33),.54,.40,.51);
+        add('forestLeaf',hx+side*2.52,6.75,outward(.33),.44,.36,.44);
+      }
+      add('oak',hx,8.77,outward(.79),3.54,.13,.13);
+      for(let blossom=-2;blossom<=2;blossom++)
+        add(blossom%2?'petalPink':'bloomWhite',hx+blossom*.63,
+          9.06,outward(.44),.22,.22,.22);
+    }else{
+      // WACHHAUS: steinerne Laibung, blaues Bannerpaar und
+      // klarer Torakzent ohne bedrohlichen, unpassenden Wachturm.
+      for(const side of [-1,1]){
+        add('stoneTrim',hx+side*.79,7.58,outward(.15),.24,1.95,.23);
+        add('bannerBlue',hx+side*2.57,8.07,outward(.25),.39,.89,.07);
+        add('sunGold',hx+side*2.57,8.28,outward(.32),.12,.36,.06);
+      }
+      add('stoneTrim',hx,8.70,outward(.16),1.94,.23,.25);
+      add('sunGold',hx,8.92,outward(.19),.24,.17,.21);
+    }
+
+    // V21: pro house one intentional skyline, not four copies of the same ridge.
+    if(i===1){
+      // Observatory lantern atop the Kartenstube: slim cupola rim, very small
+      // compared with the watch house's stone lookout. The solid roof is below.
+      for(const side of [-1,1]){
+        add('oak',hx+side*1.10,15.35,hz+1.00,.12,1.64,.13);
+      }
+      add('sunGold',hx,17.72,hz+.5,.28,.34,.28);
+      add('oak',hx,17.35,hz+.5,.12,.32,.12);
+    }else if(i===2){
+      // Narrow greenhouse skylight mullions follow the stepped glass roof.
+      for(const rx of [-2,-1,1,2]){
+        const beamY=sunRoofY(i,Math.abs(rx))+.59;
+        add('oak',hx+rx,beamY,hz,.10,.10,5.00);
+      }
+      for(const rz of [-2.55,2.55])for(const rx of [-2,-1,1,2]){
+        const beamY=sunRoofY(i,Math.abs(rx))+.59;
+        add('oak',hx+rx,beamY,hz+rz,.83,.12,.09);
+      }
+    }else if(i===3){
+      // A slim timber cornice softens the lookout's raw stone shaft.
+      // The original roof cap remains a single shared block geometry.
+      for(const side of [-1,1]){
+        add('crossbeam',hx,18.48,hz+side*1.56,3.28,.14,.15);
+        add('crossbeam',hx+side*1.56,18.48,hz,.15,.14,3.28);
+      }
+      // Blue hanging pennant sits above the new masonry roof tower.
+      add('iron',hx+.5,19.85,hz+.5,.11,1.18,.11);
+      add('bannerBlue',hx+.91,20.28,hz+.5,.72,.55,.09);
+      add('sunGold',hx+1.23,20.28,hz+.57,.10,.38,.10);
+    }
+    // Ein kleiner Giebel-Akzent in Materialfarbe, statt vier identischer Dächer.
+    add(i%2===0?'sunGold':'oak',hx+.5,13.98,hz+4.77,.32,.16,.26);
+    // V16: Kleine, pro Handwerksrolle unterschiedliche Dach-Silhouetten.
+    // Alles hängt oberhalb der begehbaren Ebene als rein visuelles Detail;
+    // kein Türdurchgang wird geschlossen und kein Nutzerblock überschrieben.
+    if(i===0){
+      // Bäckerei: niedrige gemauerte Schornsteinkrone über dem Ofen.
+      add('stoneTrim',hx+2.50,13.56,hz-1.48,1.04,.14,1.04);
+      for(const sx of [-.42,.42])
+        add('roofRed',hx+2.50+sx,13.68,hz-1.48,.16,.26,.83);
+      for(const sz of [-.38,.38])
+        add('roofRed',hx+2.50,13.68,hz-1.48+sz,.76,.26,.16);
+    }else if(i===1){
+      // Kartenstube: kleiner Sternengucker am Giebel, als klare Fernsilhouette.
+      add('oak',hx+.5,14.77,hz+1.6,.12,1.34,.12);
+      add('sunGold',hx+.5,15.53,hz+1.6,.52,.10,.11);
+      add('sunGold',hx+.5,15.53,hz+1.6,.10,.52,.11);
+      add('bannerBlue',hx+.82,14.91,hz+1.6,.62,.55,.075);
+    }else if(i===2){
+      // Gärtnerei: niedrige rankende Dachkante, ohne zusätzliche Kollision.
+      for(let k=-2;k<=2;k++){
+        add('forestLeaf',hx+k*.64,10.18,hz+4.82,.41,.21,.27);
+        if(k%2===0)add('petalPink',hx+k*.64,10.43,hz+4.82,.20,.18,.18);
+      }
+    }else{
+      // V21: flag is placed above the new tower earlier in this function.
+    }
+    // V17: Die Dachlinien haben nun kleine, klar gefasste Gauben. Sie sitzen
+    // auf der Vorderkante der vorhandenen Dachschräge, sind rein visuell und
+    // verdecken weder Eingang noch Fenster im Erdgeschoss.
+    // Je Haus unterschiedliche Position/Materialfarbe – kein zweiter Kubus.
+    const gaubeX=hx+(i%2===0?-2:2);
+    const gaubeY=11.95,gaubeZ=hz+4.70;
+    add('oak',gaubeX,gaubeY,gaubeZ,.78,.82,.22);
+    add('windowGlow',gaubeX,gaubeY,gaubeZ+.128,.42,.50,.075);
+    add('oak',gaubeX-.47,gaubeY,gaubeZ+.04,.13,.92,.24);
+    add('oak',gaubeX+.47,gaubeY,gaubeZ+.04,.13,.92,.24);
+    add('oak',gaubeX,gaubeY+.51,gaubeZ,.99,.15,.34);
+    // Ein warmes Licht hinter dem ursprünglichen Fensterglas wird nachts
+    // sichtbar; tagsüber bleibt es transparent und zurückhaltend.
+    for(const fx of [-1,1])
+      add('windowGlow',hx+fx,7.00,front+.115,.39,.46,.068);
+    // Simple chimney cap and two drifting vapor squares, not solid obstacles.
+    if(i===0){
+      add('smoke',hx+2.5,14.12,hz-1.5,.38,.30,.39);
+      add('smoke',hx+2.79,14.67,hz-1.30,.31,.26,.34);
+    }
+  }
+  // Centerpiece: a stone well made to look intentionally built, not just a
+  // collection of exposed cubes. Keep the outer footpath clear.
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    if(Math.max(Math.abs(dx),Math.abs(dz))===2&&
+      (dx===0||dz===0||Math.abs(dx)===2&&Math.abs(dz)===2)){
+      add('stoneTrim',v.x+dx+.5,6.05,v.z+dz+.5,.78,.16,.78);
+    }
+  }
+  for(const side of [-1,1]){
+    add('oak',v.x+side*2.42+.5,7.45,v.z+.5,.14,2.15,.13);
+    add('lamp',v.x+side*2.38+.5,8.56,v.z+.5,.22,.31,.22);
+  }
+  // The market is detailed with baskets, a counter and colorful fruit.
+  // It is off the main central path, directly visible from the entrance.
+  for(const [mx,mz,small] of [[v.x-3,v.z-5,false],[v.x+4,v.z+5,true]]){
+    const base=6;
+    add('oak',mx,base+.65,mz,.85,.21,1.82);
+    // V12 already draws a complete roof and posts at the original market.
+    // Do not stack a second canopy on those exact same coordinates.
+    if(small){
+      for(const side of [-1,1])for(const depth of [-1,1]){
+        add('oak',mx+side*1.28,base+1.26,mz+depth*.78,.12,2.50,.12);
+      }
+      for(let j=0;j<7;j++){
+        const px=mx-1.20+j*.40;
+        add(j%2===0?'roofRed':'clothCream',px,base+2.58,mz,.39,.13,2.01);
+      }
+    }
+    for(let j=0;j<10;j++){
+      const px=mx+((j%5)-2)*.21;
+      const pz=mz+(j<5?-.36:.36);
+      add(j%3===0?'fruitRed':j%3===1?'fruitGold':'fruitGreen',
+          px,base+.86,pz,.20,.18,.19);
+    }
+    if(!small){
+      add('sign',mx,base+1.60,mz-1.11,1.25,.38,.09);
+      add('lamp',mx,base+2.08,mz+.02,.30,.36,.30);
+    }
+  }
+  // Four flower borders, away from both house walls and foot traffic.
+  for(const [ox,oz] of [[-6,3],[-6,-3],[6,3],[6,-3]]){
+    for(let i=0;i<4;i++){
+      const fx=v.x+ox+(i%2)*.60+.2,fz=v.z+oz+Math.floor(i/2)*.60;
+      add('leaf',fx,5.28,fz,.36,.31,.38);
+      add(i%2?'petalPink':'petalYellow',fx,5.60,fz,.23,.23,.22);
+    }
+  }
+  // V14: Straßen- und Platzgestaltung. Die Pflasterfugen liegen als sehr
+  // flache, nicht kollidierende Instanzen direkt auf dem bereits vorhandenen
+  // Boden. Wege bleiben 2 Blöcke breit und für Kinder leicht passierbar.
+  for(let ox=-13;ox<=13;ox++)for(let oz=-13;oz<=13;oz++){
+    const onCross=Math.abs(ox)<=1||Math.abs(oz)<=1;
+    const closeToWell=Math.abs(ox)<=3&&Math.abs(oz)<=3;
+    if(!onCross||closeToWell)continue;
+    const wx=v.x+ox,wz=v.z+oz;
+    if(Math.abs(ox)>11&&Math.abs(oz)>11)continue;
+    const top=terrainHeight(wx,wz);
+    // Positionen auf einem Raster versetzt: kein wildes Steinchaos.
+    if((Math.abs(ox*7+oz*11)%5)===0)
+      add((ox+oz)%3===0?'cobbleWarm':'cobbleLight',wx+.5,top+.018,wz+.5,.34,.035,.43);
+  }
+  // V20: Die Kreuzung bekommt sichtbare Wegkanten. Dünne, niedrige
+  // Pflastersteine markieren die Straßen, OHNE eine neue Kollision einzubauen.
+  // Die Hauptstraße bleibt frei und wird nicht mit Deko zugestellt.
+  for(let n=-13;n<=13;n+=2){
+    if(Math.abs(n)<=3)continue; // Brunnen bleibt der ruhige Mittelpunkt.
+    for(const side of [-1,1]){
+      const xx=v.x+n, zz=v.z+side*1.46;
+      const hA=terrainHeight(Math.floor(xx),Math.floor(zz));
+      add(n%4?'cobbleWarm':'cobbleLight',xx+.50,hA+.035,zz,.62,.045,.16);
+      const xx2=v.x+side*1.46,zz2=v.z+n;
+      const hB=terrainHeight(Math.floor(xx2),Math.floor(zz2));
+      add(n%4?'cobbleLight':'cobbleWarm',xx2,hB+.035,zz2+.50,.16,.045,.62);
+    }
+  }
+
+  // Kuratierte, kleine Gärten an Gebäudeseiten und dem Südplatz.
+  for(const [ox,oz] of [[-11,-4],[11,-4],[-12,5],[12,5],[-6,10],[5,-11]]){
+    const bx=v.x+ox,bz=v.z+oz,th=terrainHeight(bx,bz);
+    for(let k=0;k<3;k++){
+      const px=bx+(k%2)*.38,pz=bz+Math.floor(k/2)*.44;
+      add('moss',px,th+.17,pz,.44,.34,.47);
+      add(k%3===0?'bloomWhite':k%3===1?'petalPink':'petalYellow',px,th+.50,pz,.22,.27,.24);
+    }
+  }
+  // Ein weit abseits des Blickkorridors platzierter Blumenbogen statt des
+  // schweren V13-Pavillons: offen, nicht kollidierend, visuell durchlässig.
+  const archX=v.x-5,archZ=v.z+10;
+  for(const sx of [-1,1]){
+    add('oak',archX+sx*1.05,6.52,archZ,.18,2.85,.19);
+    add('leaf',archX+sx*1.10,8.08,archZ,.70,.49,.55);
+    add('petalPink',archX+sx*1.08,8.18,archZ+.30,.25,.22,.25);
+  }
+  add('oak',archX,8.11,archZ,.18,.13,.18);
+  add('leaf',archX,8.08,archZ,.90,.43,.55);
+  // V19: Der Brunnen soll WIRKLICH sichtbar sein. Bisher hielten vier
+  // hohe Pfosten und zwei Querbalken das Bild aus der Straße zu. Nur auf der
+  // Nordseite bleibt die niedrige Winde mit zwei schlanken Stützen stehen.
+  // Alle Teile sind nicht kollidierende Dekoration; der Wasserblock bleibt.
+  for(const sx of [-1.35,1.35]){
+    add('oak',v.x+sx,6.80,v.z-1.62,.18,1.55,.18);
+    add('iron',v.x+sx,7.58,v.z-1.62,.27,.09,.27);
+  }
+  add('oak',v.x,7.56,v.z-1.62,2.85,.15,.20);
+  add('iron',v.x,7.14,v.z-1.62,.11,.72,.12);
+  add('oak',v.x+.35,6.92,v.z-1.62,.28,.33,.27);
+  add('iron',v.x+.35,6.92,v.z-1.88,.12,.11,.55);
+  add('sunGold',v.x+.5,6.20,v.z+.5,.64,.035,.64);
+  // Bänke werden durch kurze Wege und einen klaren Blick zum Brunnen ergänzt.
+  for(const side of [-1,1]){
+    add('lamp',v.x+side*6.6,6.49,v.z+2.75,.25,.35,.27);
+    add('iron',v.x+side*6.6,6.75,v.z+2.75,.35,.07,.35);
+  }
+  // V18: A cozy dry herb drying rack in the gardener's side yard. All
+  // details non-solid and away from the entrance, with subtle height variety.
+  const garden=HOUSE_OFFSETS[2];
+  const gx=v.x+garden[0]-4.25,gz=v.z+garden[1]-.5;
+  for(const dx of [-.72,.72]){
+    add('oak',gx+dx,6.38,gz,.12,1.57,.13);
+    add('oak',gx+dx,7.24,gz,.22,.11,.22);
+  }
+  add('oak',gx,7.05,gz,1.64,.13,.15);
+  for(let i=0;i<4;i++){
+    add('forestLeaf',gx-.58+i*.39,6.74,gz+.045,.24,.43,.21);
+    if(i%2===0)add('petalYellow',gx-.58+i*.39,6.50,gz+.045,.12,.15,.12);
+  }
+  // Floor-level lanterns frame the two side lanes, never the main crossroad.
+  for(const [dx,dz] of [[-8,3],[8,-3]]){
+    add('stoneTrim',v.x+dx+.5,5.36,v.z+dz+.5,.31,.18,.31);
+    add('lamp',v.x+dx+.5,5.68,v.z+dz+.5,.22,.35,.22);
+  }
+  // V19: Bänke standen in V18 direkt auf der Ost-West-Sichtachse.
+  // Jetzt sind sie in seitlichen Nischen, links/rechts der Hauptstraße.
+  for(const side of [-1,1]){
+    const bx=v.x+side*6.8,bz=v.z+side*3.7+.5;
+    add('oak',bx,5.58,bz,.62,.15,1.60);
+    add('oak',bx+side*.29,5.93,bz,.14,.69,1.62);
+    for(const zOff of [-.53,.53])add('oak',bx,5.32,bz+zOff,.11,.50,.12);
+  }
+  // V15: Ein kleiner, bewusst komponierter Terrassenhang NÖRDLICH des
+  // Sonnen-Dorfs. Die bisherigen Geländehöhen/Blöcke werden nicht verändert.
+  // Gedämpfte Sträucher und Mauerbegrünung statt kahler, gleichförmiger Stufen.
+  // Nur feste Koordinaten; Dekorationen entfallen im Bereich eigener Edits.
+  let slopeProps=0;
+  for(let dx=-20;dx<=20;dx++)for(let dz=-29;dz<=-16;dz++){
+    const x=v.x+dx,z=v.z+dz;
+    const hh=terrainHeight(x,z);
+    if(hh<5||hh>27||inLegacy(x,z)||HOUSE_OFFSETS.some(([ox,oz])=>Math.abs(x-v.x-ox)<4.5&&Math.abs(z-v.z-oz)<4.5))continue;
+    const distance=Math.hypot(dx,dz);
+    if(distance<18||distance>33)continue;
+    const r=pixelHash(x,z,2501);
+    if(r>.79){
+      const scale=.43+pixelHash(x,z,2502)*.39;
+      add(r>.969?'bloomWhite':'forestLeaf',x+.52,hh+.12+scale*.28,z+.5,
+        scale,scale*.65,scale);
+      slopeProps++;
+      if(r>.92)add('forestLeaf',x+.76,hh+.19,z+.29,.34,.29,.37);
+    }else if(r<.031){
+      add('stoneTrim',x+.5,hh+.09,z+.5,.43,.21,.43);
+      slopeProps++;
+    }
+    // Nur auf tatsächlich sichtbaren südlichen Hangwänden Klettergrün.
+    const southHeight=terrainHeight(x,z+1);
+    if(hh-southHeight>=2&&pixelHash(x,z,2511)>.61){
+      add('forestLeaf',x+.5,hh-.48,z+.94,.27,.88,.14);
+      if(pixelHash(x,z,2512)>.70)
+        add('petalPink',x+.5,hh-.21,z+1.04,.17,.18,.16);
+      slopeProps++;
+    }
+  }
+  return p;
+}
+const SUN_VILLAGE_DETAILS=makeSunVillageDetails();
+// Original, self-contained pixel-art icon atlas: loaf, map, sprout, shield.
+// Four quads share a single geometry, texture and draw call. Nothing is solid,
+// mineable, or saved as a user block; the sign disappears where edited.
+function makeSunVillageSignMesh(){
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  const icons=['bread','map','flower','shield'];
+  for(let i=0;i<4;i++){
+    const ox=i*64;
+    ctx.fillStyle='#9c673d';ctx.fillRect(ox,0,64,64);
+    ctx.fillStyle='#e4c392';ctx.fillRect(ox+4,4,56,56);
+    ctx.fillStyle='#69472d';ctx.fillRect(ox+9,9,46,46);
+    ctx.fillStyle='#f2dcae';ctx.fillRect(ox+11,11,42,42);
+    if(icons[i]==='bread'){
+      ctx.fillStyle='#a56832';ctx.fillRect(ox+16,31,32,12);
+      ctx.fillStyle='#e6aa53';ctx.fillRect(ox+19,23,26,17);
+      ctx.fillStyle='#fff2bd';for(const j of [24,32,40])ctx.fillRect(ox+j,25,3,7);
+    }else if(icons[i]==='map'){
+      ctx.fillStyle='#f6eee1';ctx.fillRect(ox+17,17,30,30);
+      ctx.fillStyle='#8ab6a1';ctx.fillRect(ox+20,20,24,24);
+      ctx.fillStyle='#bd7655';ctx.fillRect(ox+22,34,18,4);
+      ctx.fillStyle='#ffefc6';ctx.fillRect(ox+33,22,5,18);
+    }else if(icons[i]==='flower'){
+      ctx.fillStyle='#4c7d43';ctx.fillRect(ox+30,26,5,22);
+      ctx.fillRect(ox+24,36,7,5);ctx.fillRect(ox+35,32,7,5);
+      ctx.fillStyle='#ce7f99';for(const [x,y] of [[23,23],[35,23],[29,17],[29,29]])ctx.fillRect(ox+x,y,9,8);
+      ctx.fillStyle='#f9d479';ctx.fillRect(ox+31,25,5,5);
+    }else{
+      ctx.fillStyle='#527e99';ctx.fillRect(ox+20,18,24,24);
+      ctx.fillRect(ox+24,42,16,5);ctx.fillRect(ox+28,47,8,4);
+      ctx.fillStyle='#f9e3b0';ctx.fillRect(ox+30,23,4,19);ctx.fillRect(ox+23,30,18,4);
+    }
+  }
+  const map=new THREE.CanvasTexture(canvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.magFilter=THREE.NearestFilter;
+  map.minFilter=THREE.NearestMipmapNearestFilter;
+  // One mesh with four icon quads. It is intentionally outside chunk meshes;
+  // visibility is checked in updateSunVillageSigns against near edits/distance.
+  const pos=[],uv=[],indices=[];
+  for(let i=0;i<4;i++){
+    const [ox,oz]=HOUSE_OFFSETS[i],hx=VILLAGES[0].x+ox,hz=VILLAGES[0].z+oz;
+    const x=hx+2.92,y=7.86,z=i>=2?hz-3.80:hz+3.77,w=.56,h=.46;
+    const n=pos.length/3;
+    pos.push(x-w/2,y-h/2,z, x+w/2,y-h/2,z, x+w/2,y+h/2,z, x-w/2,y+h/2,z);
+    const u0=i/4+.004,u1=(i+1)/4-.004;
+    uv.push(u0,0,u1,0,u1,1,u0,1);
+    indices.push(n,n+1,n+2,n,n+2,n+3);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  geo.setIndex(indices);geo.computeVertexNormals();
+  const material=new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide,transparent:false});
+  const mesh=new THREE.Mesh(geo,material);
+  mesh.frustumCulled=true;
+  scene.add(mesh);
+  return mesh;
+}
+const sunVillageSignMesh=makeSunVillageSignMesh();
+// Keep one GPU draw call for four signs, while retaining per-house edit safety.
+// A custom block at ONE shop must never hide the signs at the other shops.
+const originalSignVertices=Float32Array.from(sunVillageSignMesh.geometry.attributes.position.array);
+let sunVillageSignMask=-1;
+function updateSunVillageSignVisibility(isNear){
+  sunVillageSignMesh.visible=isNear;
+  if(!isNear)return;
+  let newMask=0;
+  for(let i=0;i<HOUSE_OFFSETS.length;i++){
+    const [ox,oz]=HOUSE_OFFSETS[i],hx=VILLAGES[0].x+ox,hz=VILLAGES[0].z+oz;
+    const centerZ=i>=2?hz-3:hz+3;
+    let edited=false;
+    for(let x=hx+1;x<=hx+3&&!edited;x++)
+    for(let y=7;y<=9&&!edited;y++)
+    for(let z=centerZ-1;z<=centerZ+1;z++)
+      if(edits.has(key(x,y,z))){edited=true;break;}
+    if(!edited)newMask|=1<<i;
+  }
+  if(newMask===sunVillageSignMask)return;
+  sunVillageSignMask=newMask;
+  const position=sunVillageSignMesh.geometry.attributes.position;
+  for(let i=0;i<4;i++)for(let vertex=0;vertex<4;vertex++){
+    const j=i*12+vertex*3;
+    if(newMask&(1<<i))position.setXYZ(i*4+vertex,
+      originalSignVertices[j],originalSignVertices[j+1],originalSignVertices[j+2]);
+    // Collapse onto the sign's OWN first vertex, not world origin: this
+    // prevents edited signs from inflating the mesh bounding sphere.
+    else position.setXYZ(i*4+vertex,originalSignVertices[i*12],
+      originalSignVertices[i*12+1],originalSignVertices[i*12+2]);
+  }
+  position.needsUpdate=true;
+  sunVillageSignMesh.geometry.computeBoundingSphere();
+}
+
 function villageBlocks(x,z,y,chunkPut){
   for(const v of VILLAGES){
     if(Math.abs(x-v.x)>21||Math.abs(z-v.z)>21)continue;
@@ -279,8 +1016,21 @@ function villageBlocks(x,z,y,chunkPut){
     for(let i=0;i<HOUSE_OFFSETS.length;i++){
       const [dx,dz]=HOUSE_OFFSETS[i],hx=v.x+dx,hz=v.z+dz;
       const rx=x-hx,rz=z-hz,ax=Math.abs(rx),az=Math.abs(rz);
-      if(ax>5||az>5)continue;
+      // Das Sonnen-Dorf braucht einen gut begehbaren Vorplatz vor jedem Haus.
+      // Der Kern der anderen Dörfer bleibt geometrisch exakt unangetastet.
+      if(ax>5||az>(v===VILLAGES[0]?7:5))continue;
       const floor=5;
+      // V16: Alle vier Hauszugänge besitzen einen drei Felder breiten
+      // Zugangskorridor. Kleine Terrassen mit maximal einer Stufe je Feld
+      // statt einer unerwarteten natürlichen Erdwand vor der Haustür.
+      // Spieleränderungen werden durch generateChunkData() DANACH angewandt.
+      if(v===VILLAGES[0]&&ax<=1&&rz>=5&&rz<=7){
+        const pathY=floor+(rz-5);
+        const natural=terrainHeight(x,z);
+        if(y===pathY)chunkPut(x,y,z,'path');
+        if(y<pathY&&y>=natural)chunkPut(x,y,z,'dirt');
+        if(y>pathY)chunkPut(x,y,z,null);
+      }
       // A stable foundation even when the surrounding hill dips below the house.
       if(ax<=3&&az<=3&&y>=terrainHeight(x,z)&&y<floor)chunkPut(x,y,z,'cobble');
       // Level and clear the actual walkable interior; natural hills must never
@@ -306,13 +1056,34 @@ function villageBlocks(x,z,y,chunkPut){
       // Individuelle Giebeldächer statt vier identischer Kubus-Häuser.
       const roofBlock=['bricks','planks','cobble','bricks'][i];
       if(az<=4&&ax<=4){
-        const roofY=floor+4+(4-ax);
-        if(y===roofY)chunkPut(x,y,z,roofBlock);
+        const roofY=v===VILLAGES[0]?sunRoofY(i,ax):floor+4+(4-ax);
+        if(y===roofY)chunkPut(x,y,z,
+          v===VILLAGES[0]?sunRoofType(i,rx,rz,roofBlock):roofBlock);
         if(az===3&&ax<=2&&y>=floor+4&&y<roofY)chunkPut(x,y,z,'planks');
         if(az===4&&ax<=3&&y===floor+3)chunkPut(x,y,z,'wood');
         // Eaves project beyond the walls, but never close the front door.
         if(az===4&&ax<=4&&y===roofY)chunkPut(x,y,z,roofBlock);
         if(az===4&&ax===4&&y===floor+3)chunkPut(x,y,z,'wood');
+      }
+      // V21: genuine small rooftop extensions, not floating decoration meshes.
+      // All new solids are ABOVE the existing second floor/door clearance.
+      // Sky-facing shape changes affect only Sonnen-Dorf houses #1 and #3.
+      if(v===VILLAGES[0]&&ax<=1&&az<=1){
+        const roofTop=sunRoofY(i,ax);
+        if(i===1){
+          // Kartenstube: timber-and-glass chart room with low hip cap.
+          if(y>roofTop&&y<=16&&(ax===1||az===1))
+            chunkPut(x,y,z,y===15?'glass':'planks');
+          if(y===17)chunkPut(x,y,z,'planks');
+        }
+        if(i===3){
+          // Wachhaus: squat square watch turret, corner crenellations and
+          // light-filled slits. It is never a solid column through a room.
+          if(y>roofTop&&y<=17&&(ax===1||az===1))
+            chunkPut(x,y,z,(y===15||y===16)&&((rx===0) !== (rz===0))?'glass':(y===17?'planks':'cobble'));
+          if(y===18)chunkPut(x,y,z,'planks');
+          if(y===19&&ax===1&&az===1)chunkPut(x,y,z,'cobble');
+        }
       }
       // Kleine Eingangsstufe und hölzerner Vorbau.
       if(rz===4&&rx===0&&y===floor)chunkPut(x,y,z,'path');
@@ -323,20 +1094,67 @@ function villageBlocks(x,z,y,chunkPut){
       // Simple illuminated frames and short window sills, not giant block awnings.
       if((ax===3&&az===1||az===3&&ax===1)&&y===floor+2)chunkPut(x,y,z,'glass');
       if(rz===4&&rx===0&&y===floor+4)chunkPut(x,y,z,'lantern');
+      // V19: Beide südlichen Häuser erhalten einen Platz-Eingang nach NORDEN.
+      // Bis V18 lag die einzige Tür nach Süden, vom Dorfplatz weg. Den alten
+      // Ausgang behalten wir als Gartenausgang; die Welt bleibt begehbar.
+      // Nur diese zwei Sonnen-Dorf-Wände werden geöffnet; persönliche Edits
+      // überlagern wie bisher die gesamte Standard-Weltgeneration.
+      if(v===VILLAGES[0]&&i>=2&&rx===0&&rz===-3&&y>=floor+1&&y<=floor+2)
+        chunkPut(x,y,z,null);
+      // Nordseitiger, 3 Felder breiter Zugang auf Höhe des Hausfußbodens.
+      // Der freie, anschließende Dorfweg liegt bereits auf Terrainhöhe 5.
+      if(v===VILLAGES[0]&&i>=2&&ax<=1&&rz>=-7&&rz<=-4){
+        const pathY=rz>=-5?floor:terrainHeight(x,z)-1;
+        if(y===pathY)chunkPut(x,y,z,'path');
+        if(y>pathY&&y<=pathY+3)chunkPut(x,y,z,null);
+        if(y<pathY&&y>=terrainHeight(x,z))chunkPut(x,y,z,'dirt');
+      }
       // Ein schmaler dekorativer Schornstein über dem Dachrand.
-      if(i%2===0&&rx===2&&rz===-2&&y>=floor+6&&y<=floor+8)chunkPut(x,y,z,'cobble');
+      if((v!==VILLAGES[0]||i===0)&&i%2===0&&rx===2&&rz===-2&&y>=floor+6&&y<=floor+8)chunkPut(x,y,z,'cobble');
     }
     // Beleuchtete Wege und kleine Gartenbeete.
     if((crossX===5&&crossZ===5)||(crossX===13&&crossZ===3)){
       if(y>=5&&y<=6)chunkPut(x,y,z,'wood');
       if(y===7)chunkPut(x,y,z,'lantern');
     }
+    // V14: Den V13-Pavillon bewusst wieder ENTFERNT.
+    // Auf Augenhöhe blockierte er die südliche Einfahrt und den Blick auf den
+    // Brunnen. Das Sonnen-Dorf erhält stattdessen offene Gartendetails als
+    // schlanke Instanzmeshes (siehe makeSunVillageDetails). Kein zusätzlicher
+    // Kollisionsblock wird in die zentrale Straße geschrieben.
+    // V13: Vier kleine Obst- und Blütenbäume rahmen das Sonnen-Dorf ein.
+    // Sie wachsen ausschließlich an festen, handgeprüften Randpositionen;
+    // Hauptwege, Häuser, Brunnen, Markt und Einstiegspunkte bleiben frei.
+    if(v===VILLAGES[0]){
+      const orchard=[[-14,-1,'blossom'],[14,-2,'leaves'],[-2,-16,'blossom'],[-4,16,'leaves']];
+      for(const [ox,oz,leaf] of orchard){
+        const tx=v.x+ox,tz=v.z+oz,dx=x-tx,dz=z-tz;
+        if(Math.abs(dx)>2||Math.abs(dz)>2)continue;
+        const gh=terrainHeight(tx,tz),dy=y-gh;
+        if(dx===0&&dz===0&&dy>=0&&dy<=4)chunkPut(x,y,z,'wood');
+        if(dy>=3&&dy<=7){
+          const layer=dy-3;
+          const r=[1,2,2,1,0][layer];
+          if(Math.abs(dx)<=r&&Math.abs(dz)<=r&&
+            (Math.abs(dx)+Math.abs(dz)<=r*2-((layer===0||layer===4)?0:1))&&
+            !(dx===0&&dz===0&&dy<=4))chunkPut(x,y,z,leaf);
+        }
+      }
+    }
     // Dorfbrunnen bleibt unverändert benutzbar und interaktiv.
     if(crossX<=2&&crossZ<=2){
       if(y===5&&(crossX===2||crossZ===2))chunkPut(x,y,z,'cobble');
       if(y===5&&crossX<2&&crossZ<2)chunkPut(x,y,z,'water');
-      if(y>=6&&y<=8&&crossX===2&&crossZ===2)chunkPut(x,y,z,'wood');
-      if(y===9&&crossX<=2&&crossZ<=2)chunkPut(x,y,z,'planks');
+      if(v===VILLAGES[0]){
+        // V14: DAS BRUNNENDACH IST OFFEN. Der V13-Holzklotz verdeckte die
+        // gesamte Dorfstraße vom echten Augenstandpunkt aus. Nur niedrige
+        // Sockel bleiben massive Bauvoxels; dünne Stützen und Querbalken
+        // kommen als ressourcenschonende sichtbare Dekoration hinzu.
+        if(y===6&&crossX===2&&crossZ===2)chunkPut(x,y,z,'wood');
+      }else{
+        if(y>=6&&y<=8&&crossX===2&&crossZ===2)chunkPut(x,y,z,'wood');
+        if(y===9&&crossX<=2&&crossZ<=2)chunkPut(x,y,z,'planks');
+      }
     }
   }
 }
@@ -606,7 +1424,7 @@ function generateChunkData(cx,cz){
     if(village.x<xmin-20||village.x>xmax+20||village.z<zmin-20||village.z>zmax+20)continue;
     for(let x=xmin;x<=xmax;x++)for(let z=zmin;z<=zmax;z++){
       if(Math.hypot(x-village.x,z-village.z)>20)continue;
-      for(let y=3;y<=15;y++)villageBlocks(x,z,y,put);
+      for(let y=3;y<=(village===VILLAGES[0]?24:15);y++)villageBlocks(x,z,y,put);
     }
   }
   // Two adventure landmarks outside the original V3 64×64 region.
@@ -976,6 +1794,47 @@ const foliageMaterial=new THREE.MeshLambertMaterial({
 });
 const scatterRockGeometry=new THREE.DodecahedronGeometry(.46,0);
 const scatterRockMaterial=new THREE.MeshLambertMaterial({color:'#ffffff',flatShading:true});
+// V13: one white instanced material per ordinary color palette (via per-instance
+// tint), plus separate emissive and translucent passes. This avoids up to
+// 16 additional draw calls per village chunk on an iPhone.
+const sunDetailColors={
+  roofRed:'#ad6650',roofWarm:'#c19c66',roofGrey:'#87938b',roofRidge:'#79553d',
+  roofRedLight:'#bc7356',roofRedDark:'#935241',roofWarmLight:'#d1ab7a',roofWarmDark:'#a78354',
+  roofGreyLight:'#9caa9c',roofGreyDark:'#6e7d74',
+  oak:'#8e643b',crossbeam:'#9a653a',iron:'#3e4849',sign:'#d2ab70',flowerpot:'#b56b4b',window:'#9bd7e4',bannerBlue:'#466889',bannerGreen:'#477764',sunGold:'#efd28b',
+  petalPink:'#ee98b5',petalYellow:'#f3d57b',bloomWhite:'#f4dfcd',moss:'#619254',cobbleWarm:'#b6a187',cobbleLight:'#d6c4a0',
+  stoneTrim:'#c3b8a0',clothCream:'#f8e2c2',
+  bread:'#dbac69',mapPaper:'#e5d8b4',bookSpine:'#617d89',forestLeaf:'#598e57',
+  fruitRed:'#d66b51',fruitGold:'#f4c956',fruitGreen:'#7cad65',leaf:'#69a45e'
+};
+// V16: Die V15-Dorfdetails waren alle einfarbig. Die bestehenden ORIGINALEN
+// Pixeltexturen des Spieles werden hier ohne neue Canvas/Downloads wiederverwendet.
+// Nur drei Instanzgruppen pro Chunk (Ziegel, Holz, Naturstein) plus die bisherige
+// Farbgruppe: die Kosten wachsen nicht mit der Zahl der Dachziegel.
+const sunTextureFamilies={
+  masonry:new THREE.MeshLambertMaterial({map:materialByType.bricks[0].map,color:'#ffffff'}),
+  timber:new THREE.MeshLambertMaterial({map:materialByType.planks[0].map,color:'#ffffff'}),
+  stone:new THREE.MeshLambertMaterial({map:materialByType.cobble[0].map,color:'#ffffff'})
+};
+// Per-Instance-Tints sind bewusst hell: Pixeltexturen dürfen nicht doppelt
+// abgedunkelt werden. Auf diese Weise bleibt die originale Textur erkennbar.
+const sunTexturedDetailTypes={
+  roofRed:['masonry','#ffffff'],roofRedLight:['masonry','#fff0e6'],roofRedDark:['masonry','#dfd4c9'],
+  roofWarm:['timber','#fff0df'],roofWarmLight:['timber','#ffffff'],roofWarmDark:['timber','#ded2bd'],
+  roofGrey:['stone','#ffffff'],roofGreyLight:['stone','#f2f5f0'],roofGreyDark:['stone','#d8e0d8'],
+  roofRidge:['timber','#c8b59e'],oak:['timber','#ffffff'],crossbeam:['timber','#ebd7bd'],
+  stoneTrim:['stone','#fff4df']
+};
+// Shared emissive pane pass: two normal windows and one small dormer per house.
+// No extra per-window point lights or shadow maps. Day/night switch reuses
+// the very same material; no chunk mesh has to be rebuilt.
+const sunWindowGlowMaterial=new THREE.MeshLambertMaterial({
+  color:'#ffe6b7',emissive:'#ffa95a',emissiveIntensity:.08,
+  transparent:true,opacity:.07,depthWrite:false
+});
+const sunOpaqueMaterial=new THREE.MeshLambertMaterial({color:'#ffffff'});
+const sunLampMaterial=new THREE.MeshLambertMaterial({color:'#fff2aa',emissive:'#ffb948',emissiveIntensity:.70});
+const sunSmokeMaterial=new THREE.MeshLambertMaterial({color:'#f1efdc',transparent:true,opacity:.54,depthWrite:false});
 const stonePalette=['#87948a','#a2aa9b','#b9b6a5','#91877c'];
 const forestPlantPalette=['#6da34b','#8abd63','#629c56','#a3b66c'];
 const shadowPlantPalette=['#788872','#9276a4','#608677','#ab8b9a'];
@@ -990,6 +1849,28 @@ function rebuildDecoration(cx,cz){
   const marketPosts=[],marketReds=[],marketWhites=[],marketCrates=[],marketLanterns=[],runeCrystals=[];
   const villageFireflies=[],forestFireflies=[],mushroomStems=[],mushroomCaps=[];
   const groundFoliage=[],rockScatter=[];
+  const specialMaterials=Object.fromEntries([...Object.keys(sunDetailColors),'lamp','smoke','windowGlow'].map(k=>[k,[]]));
+  // Coordinates are stable across chunk boundaries; owner edits are applied
+  // above default scenery. Decorative extras disappear locally around an edit,
+  // so an old custom building is not visually covered by new props.
+  for(const [kind,x,y,z,w,h,d] of SUN_VILLAGE_DETAILS){
+    if(Math.floor(x/CHUNK)!==cx||Math.floor(z/CHUNK)!==cz)continue;
+    let edited=false;
+    for(let ix=Math.floor(x-w/2);ix<=Math.floor(x+w/2)&&!edited;ix++)
+    for(let iy=Math.floor(y-h/2);iy<=Math.floor(y+h/2)&&!edited;iy++)
+    for(let iz=Math.floor(z-d/2);iz<=Math.floor(z+d/2);iz++){
+      if(edits.has(key(ix,iy,iz))){edited=true;break;}
+    }
+    // Für Tür- und Fensterdetails reicht unmittelbare Kollision aus, während
+    // neue Bodendekorationen auch bei Nachbar-Edits ausgeblendet werden.
+    if(!edited&&(kind==='cobbleWarm'||kind==='cobbleLight'||kind==='moss')){
+      for(let ix=Math.floor(x)-1;ix<=Math.floor(x)+1&&!edited;ix++)
+      for(let iz=Math.floor(z)-1;iz<=Math.floor(z)+1&&!edited;iz++)
+      for(let iy=Math.floor(y)-1;iy<=Math.floor(y)+1;iy++)
+        if(edits.has(key(ix,iy,iz))){edited=true;break;}
+    }
+    if(!edited)specialMaterials[kind].push([x,y,z,w,h,d]);
+  }
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     const h=terrainHeight(x,z);
     // Small-scale terrain variation with no solid voxel edits. Keep homes,
@@ -1143,13 +2024,40 @@ function rebuildDecoration(cx,cz){
       dummy.rotation.set(0,0,0);dummy.scale.set(w,h,d);dummy.updateMatrix();
       mesh.setMatrixAt(i,dummy.matrix);
     }
-    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+    mesh.instanceMatrix.needsUpdate=true;
+    if(material===sunWindowGlowMaterial)mesh.renderOrder=3;
+    mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
   }
   addTrim(trimBlocks,trimMaterial);addTrim(shutters,shutterMaterial);
   addTrim(flowerBoxes,flowerBoxMaterial);addTrim(roofBands,roofAccentMaterial);
   addTrim(marketPosts,trimMaterial);addTrim(marketReds,marketRedMaterial);
   addTrim(marketWhites,marketWhiteMaterial);addTrim(marketCrates,flowerBoxMaterial);
   addTrim(marketLanterns,marketGoldMaterial);addTrim(runeCrystals,ruinGlowMaterial);
+  // Texture reuse: three stable families. Ordinary flowers, banners, small
+  // metal details and other colors stay in one cheap color-instanced batch.
+  const villageBatches={plain:[],masonry:[],timber:[],stone:[]};
+  for(const kind of Object.keys(sunDetailColors)){
+    const family=sunTexturedDetailTypes[kind]?.[0]||'plain';
+    for(const item of specialMaterials[kind])villageBatches[family].push([kind,item]);
+  }
+  for(const family of ['plain','masonry','timber','stone']){
+    const items=villageBatches[family];
+    if(!items.length)continue;
+    const mat=family==='plain'?sunOpaqueMaterial:sunTextureFamilies[family];
+    const mesh=new THREE.InstancedMesh(farmFenceGeometry,mat,items.length);
+    for(let i=0;i<items.length;i++){
+      const [kind,[x,y,z,w,h,d]]=items[i];
+      dummy.position.set(x,y,z);dummy.rotation.set(0,0,0);
+      dummy.scale.set(w,h,d);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+      const tint=family==='plain'?sunDetailColors[kind]:sunTexturedDetailTypes[kind][1];
+      mesh.setColorAt(i,new THREE.Color(tint));
+    }
+    mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;
+    mesh.computeBoundingSphere();scene.add(mesh);meshes.push(mesh);
+  }
+  addTrim(specialMaterials.lamp,sunLampMaterial);
+  addTrim(specialMaterials.smoke,sunSmokeMaterial);
+  addTrim(specialMaterials.windowGlow,sunWindowGlowMaterial);
   addTrim(mushroomStems,mushroomStemMaterial);addTrim(mushroomCaps,mushroomCapMaterial);
   spawn(fireflyGeo,fireflyGold,villageFireflies,false);
   spawn(fireflyGeo,fireflyViolet,forestFireflies,false);
@@ -1285,6 +2193,15 @@ const sunSprite=skyDisk(true),moonSprite=skyDisk(false);
 moonSprite.visible=false;
 const villageGlow=new THREE.PointLight('#ffc375',0,14,2);
 scene.add(villageGlow);
+// Sonnen-Dorf: two localized, low-cost fill lights near the busy facades.
+// Other villages and the rest of the world keep their existing illumination.
+const sunnyVillageLights=[
+  new THREE.PointLight('#ffbb71',0,12,2),
+  new THREE.PointLight('#ffd28c',0,12,2)
+];
+sunnyVillageLights[0].position.set(VILLAGES[0].x-8,8.5,VILLAGES[0].z-4.5);
+sunnyVillageLights[1].position.set(VILLAGES[0].x+8,8.5,VILLAGES[0].z+5.5);
+for(const l of sunnyVillageLights)scene.add(l);
 const shadowGlow=new THREE.PointLight('#ae80ff',0,19,2);
 scene.add(shadowGlow);
 // Only visible when a developer explicitly opens the page with ?debug=1.
@@ -1383,7 +2300,7 @@ function updateTarget(){
   if(pointed){
     highlight.position.set(pointed.x+.5,pointed.y+.5,pointed.z+.5);
     $('targetLabel').textContent=LABELS[pointed.type]||'';
-  }else $('targetLabel').textContent='Schau einen Block an';
+  }else $('targetLabel').textContent=(Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<27?'':'Schau einen Block an');
 }
 function intersectsPlayer(x,y,z){
   return Math.abs((x+.5)-player.x)<PLAYER_R+.5&&Math.abs((z+.5)-player.z)<PLAYER_R+.5&&y<player.y+PLAYER_H&&y+1>player.y;
@@ -1431,7 +2348,9 @@ function setFlying(next){
   toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
 }
 function exportWorld(){
-  const data={format:'blockwelt',version:7,savedAt:new Date().toISOString(),edits:[...edits.values()]};
+  // Optional V23 metadata; old game versions continue reading `edits` normally.
+  const data={format:'blockwelt',version:7,savedAt:new Date().toISOString(),
+    edits:[...edits.values()],workshops:[...workshopProgress]};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
@@ -1455,6 +2374,14 @@ async function importWorld(file){
     if(!confirm('Die bisherige Welt durch diese Sicherung ersetzen?'))return;
     baseWorld();edits.clear();undoStack.length=0;
     for(const [k,edit] of incoming){const [x,y,z,type]=edit;if(inLegacy(x,z))put(x,y,z,type);edits.set(k,edit);}
+    // Legacy world backups have no workshop section: do not erase their
+    // independently stored stamps. V23 backups can restore stamps as well.
+    if(Array.isArray(data.workshops)){
+      const valid=new Set(SUN_WORKSHOPS.map(place=>place.id));
+      workshopProgress.clear();
+      for(const id of data.workshops)if(valid.has(id))workshopProgress.add(id);
+      workshopSteps.clear();saveSet(SUN_WORKSHOP_KEY,workshopProgress);updateBook();
+    }
     saveEdits();rebuild();respawn();syncUndo();
     toast('Deine gesicherte Welt wurde geladen!');
   }catch(e){console.warn('Ungültige Blockwelt-Sicherung',e);toast('Diese Sicherung kann nicht geladen werden');}
@@ -1590,9 +2517,39 @@ campGuide.dialogue='Willkommen im Waldlager! Folge dem Kompass zu geheimen Orten
 for(const [vi,v] of VILLAGES.entries()){
   for(let i=0;i<v.people;i++){
     const angle=i*Math.PI*2/v.people;
-    makeCreature('villager',v.x+Math.cos(angle)*5,v.z+Math.sin(angle)*5,i+1+vi*7,v.x,v.z);
+    // Im Sonnen-Dorf passende Persönlichkeiten statt zufälliger Berufe:
+    // Händler am Osten, Gärtner südlich, Forscher am Brunnen, Bäckerin
+    // auf der Marktseite und Wächterin nahe der nördlichen Dorfstraße.
+    const sunnyRoles=[3,1,4,0,2];
+    const number=vi===0?sunnyRoles[i%sunnyRoles.length]:i+1+vi*7;
+    // Die Sonnen-Dorf-Bewohner sind ihren Handwerksorten zugeordnet.
+    // Dadurch begegnet man der Bäckerin bei der Bäckerei und nicht zufällig
+    // vor dem Brunnen. Das Birken-Dorf behält das frühere Bewegungsmuster.
+    const sunnyHomes=[
+      [v.x-3,v.z-5],   // Händlerin am Markt
+      [v.x-11,v.z+2],  // Gärtner am neuen Dorfplatz-Eingang der Gärtnerei
+      [v.x+7,v.z-2],   // Forscher vor der Kartenstube
+      [v.x-8,v.z-1],   // Bäckerin vor der Backstube
+      [v.x+10,v.z+3]  // Wächterin am neuen Dorfplatz-Eingang des Wachhauses
+    ];
+    const [px,pz]=vi===0?sunnyHomes[i]:[v.x+Math.cos(angle)*5,v.z+Math.sin(angle)*5];
+    const resident=makeCreature('villager',px,pz,number,vi===0?px:v.x,vi===0?pz:v.z);
+    if(vi===0){
+      resident.sunVillageRole=true;
+      const names=['Händlerin Tilda','Gärtner Bo','Forscher Emil','Bäckerin Leni','Wächterin Mia'];
+      const greetings=[
+        'Willkommen im Sonnen-Dorf! Auf unserem Markt gibt es immer etwas Neues zu entdecken.',
+        'Siehst du die Blütenbäume? Hinter den Häusern liegt unser kleiner Garten.',
+        'Im Brunnen glitzert das Wasser. Vielleicht findest du auch ein Geheimnis an der Himmelswarte!',
+        'Schön, dass du da bist! Meine Backstube liegt gleich am Dorfplatz.',
+        'Hier im Dorf bist du sicher. Wenn du ein Abenteuer möchtest, folge später dem Entdecker-Kompass.'
+      ];
+      resident.role=names[i];resident.dialogue=greetings[i];
+    }
   }
-  for(let i=0;i<2;i++)makeCreature('sneaker',v.x+13+i*3,v.z+13-i*3,i+vi*2,v.x+13,v.z+12);
+  // Das freundliche Sonnen-Dorf ist kein Monster-Spawn. Schleicher bleiben
+  // in anderen Wildnisgebieten und kündigen ein sanftes Abenteuer an.
+  if(vi!==0)for(let i=0;i<2;i++)makeCreature('sneaker',v.x+13+i*3,v.z+13-i*3,i+vi*2,v.x+13,v.z+12);
 }
 makeCreature('sneaker',11,14,5,11,14);
 makeCreature('sneaker',-19,6,6,-19,6);
@@ -1624,14 +2581,26 @@ for(const [vi,v] of VILLAGES.entries()){
 }
 makeAnimal('sheep',12,13,11,12,13);
 const npcTargetBtn=$('npcBtn');
-let selectedNpc=null,lastNpcTargetCheck=0;
+let selectedNpc=null,selectedWorkshop=null,lastNpcTargetCheck=0;
+const workshopSteps=new Map();
+function npcSurface(x,z){
+  const ix=Math.floor(x),iz=Math.floor(z),h=terrainHeight(ix,iz);
+  // In der Sonnen-Dorf-Werkstatt sind einige Hauszugänge bewusst terrassiert.
+  // Vor V16 benutzten Bewohner ausschließlich die natürliche Geländehöhe und
+  // konnten dadurch bis zur Hüfte in der neuen Zugangsstufe stecken.
+  if(!inVillage(ix,iz)||Math.hypot(ix-VILLAGES[0].x,iz-VILLAGES[0].z)>22)return h;
+  for(let y=Math.min(MAX_Y,h+3);y>=Math.max(0,h-4);y--){
+    const type=get(ix,y,iz);
+    if(type&&!['water','glass','leaves','blossom','lantern'].includes(type))return y+1;
+  }
+  return h;
+}
 function canNpcEnter(x,z,previousX,previousZ){
-  const ix=Math.floor(x),iz=Math.floor(z);
-  if(Math.abs(terrainHeight(ix,iz)-terrainHeight(Math.floor(previousX),Math.floor(previousZ)))>1)return false;
-  const floor=terrainHeight(ix,iz);
+  const floor=npcSurface(x,z),oldFloor=npcSurface(previousX,previousZ);
+  if(Math.abs(floor-oldFloor)>1)return false;
   for(const ox of [-.25,.25])for(const oz of [-.25,.25]){
     const bx=Math.floor(x+ox),bz=Math.floor(z+oz);
-    for(let y=floor;y<=floor+1;y++){
+    for(let y=Math.floor(floor);y<=Math.floor(floor+1);y++){
       const type=get(bx,y,bz);
       if(type&&type!=='water')return false;
     }
@@ -1676,13 +2645,13 @@ function updateCreatures(dt){
     }else if(grazing){speed=0;}
     const nx=npc.x+Math.cos(npc.angle)*speed*dt;
     const nz=npc.z+Math.sin(npc.angle)*speed*dt;
-    const wanderLimit=npc.isAnimal?8:npc.kind==='villager'?8:7;
+    const wanderLimit=npc.sunVillageRole?3.8:npc.isAnimal?8:npc.kind==='villager'?8:7;
     const nearHome=Math.hypot(nx-npc.homeX,nz-npc.homeZ)<wanderLimit;
     if(speed>0&&nearHome&&nx>-HALF+2&&nx<HALF-2&&nz>-HALF+2&&nz<HALF-2&&
        !isInsideHouse(nx,nz)&&lakeDistance(nx,nz)>0&&canNpcEnter(nx,nz,npc.x,npc.z)){
       npc.x=nx;npc.z=nz;
     }else if(speed>0)npc.angle+=2.3*dt;
-    const ground=terrainHeight(Math.floor(npc.x),Math.floor(npc.z));
+    const ground=npcSurface(npc.x,npc.z);
     npc.group.position.set(npc.x,ground+(speed?Math.sin(t*2.3+npc.number)*.025:0),npc.z);
     npc.group.rotation.y=-npc.angle-Math.PI/2;
     npc.walkTimer+=dt*speed*11;
@@ -1703,8 +2672,14 @@ function updateCreatures(dt){
       if(npcRay.z>=-1&&npcRay.z<=1&&screenDist<best&&hasLineOfSight(npc)){best=screenDist;selectedNpc=npc;}
     }
   }
-  npcTargetBtn.classList.toggle('visible',!!selectedNpc&&gameRunning);
-  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?`👋 ${selectedNpc.role} ansprechen`: selectedNpc?.kind==='cow'?'🐮 Kuh streicheln':selectedNpc?.kind==='sheep'?'🐑 Schaf streicheln':'🌿 Schleicher ansehen';
+  // A single contextual action button serves both residents and workshops.
+  // Workshop detection is only four short proximity checks; no new raycaster.
+  selectedWorkshop=gameRunning&&!selectedNpc?sunWorkshopAt(player):null;
+  npcTargetBtn.classList.toggle('visible',gameRunning&&!!(selectedNpc||selectedWorkshop));
+  npcTargetBtn.textContent=selectedNpc?.kind==='villager'?`👋 ${selectedNpc.role} ansprechen`:
+    selectedNpc?.kind==='cow'?'🐮 Kuh streicheln':selectedNpc?.kind==='sheep'?'🐑 Schaf streicheln':
+    selectedNpc?'🌿 Schleicher ansehen':selectedWorkshop?
+      `${selectedWorkshop.emoji} ${selectedWorkshop.actions[workshopSteps.get(selectedWorkshop.id)||0]}`:'';
 }
 function isInsideHouse(x,z){
   for(const v of VILLAGES)for(const [ox,oz] of HOUSE_OFFSETS){
@@ -1712,10 +2687,57 @@ function isInsideHouse(x,z){
   }
   return false;
 }
+// A reusable 12-voxel particle burst gives tactile feedback without per-frame
+// scene creation, extra image downloads, or additional UI clutter.
+const workshopSparkleGeometry=new THREE.BoxGeometry(.12,.12,.12);
+const workshopSparkleMaterial=new THREE.MeshBasicMaterial({color:'#ffe28e',transparent:true,opacity:.9,depthWrite:false});
+const workshopSparkles=new THREE.InstancedMesh(workshopSparkleGeometry,workshopSparkleMaterial,12);
+workshopSparkles.visible=false;workshopSparkles.frustumCulled=false;scene.add(workshopSparkles);
+const sparkleTransform=new THREE.Object3D();
+let sparkleStart=-10000,sparkleOrigin={x:0,y:0,z:0};
+function startWorkshopSparkles(place){
+  const i=SUN_WORKSHOPS.indexOf(place);
+  const [ox,oz]=HOUSE_OFFSETS[i];
+  sparkleOrigin={x:VILLAGES[0].x+ox-1.58,y:6.8,z:VILLAGES[0].z+oz-.12};
+  sparkleStart=performance.now();workshopSparkles.visible=true;
+}
+function animateWorkshopSparkles(now){
+  if(!workshopSparkles.visible)return;
+  const age=(now-sparkleStart)/1000;
+  if(age>=1.15){workshopSparkles.visible=false;return;}
+  const fade=Math.max(0,1-age/1.15);
+  workshopSparkleMaterial.opacity=fade*.89;
+  for(let i=0;i<workshopSparkles.count;i++){
+    const angle=i*Math.PI*2/workshopSparkles.count;
+    sparkleTransform.position.set(sparkleOrigin.x+Math.cos(angle)*(.15+age*.66),
+      sparkleOrigin.y+age*.96+Math.sin(i*7.7)*.20,
+      sparkleOrigin.z+Math.sin(angle)*(.15+age*.66));
+    sparkleTransform.rotation.set(age*2.7+i*.4,age*1.7+i*.35,0);
+    sparkleTransform.scale.setScalar(Math.max(.02,fade));
+    sparkleTransform.updateMatrix();workshopSparkles.setMatrixAt(i,sparkleTransform.matrix);
+  }
+  workshopSparkles.instanceMatrix.needsUpdate=true;
+}
+function useSunWorkshop(place){
+  if(!gameRunning||sunWorkshopAt(player)!==place)return;
+  const phase=workshopSteps.get(place.id)||0;
+  toast(`${place.emoji} ${place.replies[phase]}`);
+  startWorkshopSparkles(place);
+  if(phase+1===place.actions.length){
+    workshopSteps.set(place.id,0);
+    if(!workshopProgress.has(place.id)){
+      workshopProgress.add(place.id);saveSet(SUN_WORKSHOP_KEY,workshopProgress);updateBook();
+      if(workshopProgress.size===SUN_WORKSHOPS.length)
+        toast('✨ Alle vier Werkstätten entdeckt! Schau ins Entdeckerbuch.');
+    }
+  }else workshopSteps.set(place.id,phase+1);
+}
 npcTargetBtn.addEventListener('click',()=>{
-  if(!gameRunning||!selectedNpc)return;
-  selectedNpc.waveUntil=performance.now()+1600;
-  toast(selectedNpc.kind==='villager'?selectedNpc.dialogue:selectedNpc.kind==='cow'?'Muh! Die Kuh freut sich über deinen Besuch!':selectedNpc.kind==='sheep'?'Mäh! Das Schaf ist ganz freundlich.':'Der grüne Schleicher ist ganz friedlich!');
+  if(!gameRunning)return;
+  if(selectedNpc){
+    selectedNpc.waveUntil=performance.now()+1600;
+    toast(selectedNpc.kind==='villager'?selectedNpc.dialogue:selectedNpc.kind==='cow'?'Muh! Die Kuh freut sich über deinen Besuch!':selectedNpc.kind==='sheep'?'Mäh! Das Schaf ist ganz freundlich.':'Der grüne Schleicher ist ganz friedlich!');
+  }else if(selectedWorkshop)useSunWorkshop(selectedWorkshop);
 });
 function faceTowards(x,z){
   // V9 Kamera: look direction = (-sin(yaw), -cos(yaw)).
@@ -1732,7 +2754,9 @@ function teleportTo(x,z,label,targetX=x,targetZ=z){
 }
 function visitVillage(){
   const v=VILLAGES[0];
-  teleportTo(v.x+2,v.z+14,'Willkommen im Sonnen-Dorf!',v.x,v.z);
+  // V19: Ankunft auf der OST-WEST-Straße. Von dort stehen die vier
+  // Werkstätten links und rechts der Sichtachse statt hinter dem Spieler.
+  teleportTo(v.x+13,v.z,'Willkommen im Sonnen-Dorf!',v.x-3,v.z);
 }
 $('villageBtn').addEventListener('click',visitVillage);
 $('mobsBtn').addEventListener('click',()=>{
@@ -1749,6 +2773,10 @@ function applyLighting(){
   const p=options[lightMode];scene.background.set(p.sky);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
   rimLight.intensity=lightMode===2?.16:.31;
+  // Day: barely visible. Dusk: amber windows. Night: lit, still voxel-like.
+  sunWindowGlowMaterial.opacity=[.08,.36,.78][lightMode];
+  sunWindowGlowMaterial.emissiveIntensity=[.08,.39,.85][lightMode];
+  sunLampMaterial.emissiveIntensity=[.38,.85,1.15][lightMode];
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
   skyDome.material.map=skyTextures[lightMode];
@@ -1813,6 +2841,7 @@ $('campBtn').addEventListener('click',()=>{
 });
 const discovered=new Set();
 const collectedRelics=new Set();
+const workshopProgress=new Set();
 function loadSet(storageKey,valid){
   try{
     const input=JSON.parse(localStorage.getItem(storageKey)||'[]');
@@ -1824,10 +2853,20 @@ const knownIds=new Set(DISCOVERIES.map(item=>item.id));
 const knownRelics=new Set(RELIC_PLACES.map(item=>item.id));
 for(const id of loadSet(DISCOVERY_KEY,knownIds))discovered.add(id);
 for(const id of loadSet(RELICS_KEY,knownRelics))collectedRelics.add(id);
+for(const id of loadSet(SUN_WORKSHOP_KEY,new Set(SUN_WORKSHOPS.map(w=>w.id))))workshopProgress.add(id);
 function saveSet(key,values){try{localStorage.setItem(key,JSON.stringify([...values]));}catch(_){}}
 function updateBook(){
   $('discoveryCount').textContent=`${discovered.size}/${DISCOVERIES.length}`;
   $('relicCount').textContent=`✨ Geheimnisse: ${collectedRelics.size}/${RELIC_PLACES.length} gefunden`;
+  $('workshopCount').textContent=`${workshopProgress.size}/${SUN_WORKSHOPS.length}`;
+  const stamps=$('workshopList');stamps.replaceChildren();
+  for(const place of SUN_WORKSHOPS){
+    const done=workshopProgress.has(place.id);
+    const item=document.createElement('div');item.className='workshop-stamp'+(done?' done':'');
+    const badge=document.createElement('span');badge.textContent=done?'✓':place.emoji;
+    const name=document.createElement('span');name.textContent=place.name;
+    item.append(badge,name);stamps.appendChild(item);
+  }
   const panel=$('discoveryList');
   panel.replaceChildren();
   for(const place of DISCOVERIES){
@@ -2028,6 +3067,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);
+  animateWorkshopSparkles(now);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
   sunSprite.position.set(player.x-39,player.y+51,player.z-55);
@@ -2038,6 +3078,15 @@ function animate(now){
   const baseFog=lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
   scene.fog.color.set(baseFog).lerp(shadowFogColor,mystery*.4);
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
+  const inSunVillage=Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<25;
+  // Masked per-house in one mesh: a custom facade suppresses only its own sign.
+  updateSunVillageSignVisibility(inSunVillage);
+  const sunNightPower=[.0,.46,1.05][lightMode];
+  // One scene-wide pair only, switched off outside the village.
+  for(const light of sunnyVillageLights){
+    light.visible=inSunVillage&&sunNightPower>0;
+    light.intensity=light.visible?sunNightPower:0;
+  }
   shadowGlow.intensity=shadowRange<22?(lightMode===2?1.0:.64):0;
   if(shadowGlow.intensity)shadowGlow.position.set(RUIN.x+.5,terrainHeight(RUIN.x,RUIN.z)+6,RUIN.z+.5);
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);

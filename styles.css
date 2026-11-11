@@ -196,3 +196,18 @@ html,body{touch-action:auto}
 @media(max-width:390px){.compass-guide{left:12px}}
 /* The new destination is clearly visible even on narrow phones. */
 .option-grid #campBtn{grid-column:1/-1}
+
+/* V23: Sonnen-Dorf workshop stamps stay inside the existing explorer book. */
+.workshop-section{margin:9px 0 15px;padding:11px;border:1px solid #dae6d1;
+  border-radius:14px;background:#f7f7ec}
+.workshop-title{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-size:12px;color:#345e47}
+.workshop-title span{font-variant-numeric:tabular-nums;color:#2d9467;font-weight:900}
+.workshop-section>p{margin:5px 0 9px;font-size:11px;line-height:1.35;color:#6f8573}
+.workshop-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.workshop-stamp{display:flex;align-items:center;gap:6px;min-width:0;min-height:33px;
+  border:1px solid #dce8d6;border-radius:9px;padding:6px 8px;
+  color:#87998a;background:#fffefa;font-size:11px;font-weight:800}
+.workshop-stamp span:first-child{flex:0 0 20px;text-align:center}
+.workshop-stamp.done{color:#276b4e;background:#e5f4e3;border-color:#9fcfab}
+@media(max-width:360px){.workshop-stamp{font-size:10px;padding:6px 5px}}

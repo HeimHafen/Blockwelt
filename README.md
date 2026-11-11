@@ -1,63 +1,46 @@
-# Blockwelt V12 – Natur & Präzision
+# Blockwelt V23 – Sonnen-Dorf: Lebendige Werkstätten (internes Labor)
 
-**Status: interner, technisch geprüfter Teststand vom 10. November 2026. Nicht als grafisch abgenommene Vollversion freigegeben.**
+**NICHT VERÖFFENTLICHT – nicht auf `main` hochladen.**
 
-Blockwelt ist eine eigenständige, kinderfreundliche, frei begehbare Blockwelt als Web-App. Die 3D-Technik basiert auf Three.js. Sämtliche Blocktexturen und die neuen Pflanzenformen werden zur Laufzeit selbst erzeugt; keine Minecraft-Grafiken, Modelle oder fremden Spielinhalte werden übernommen.
+Arbeitsbasis ist die lokal gesicherte V22-Innenraumfassung. Die auf GitHub veröffentlichte V12 wurde nicht bearbeitet.
 
-## Änderungen gegenüber V11
+## Ziel dieses Schritts
 
-### Präzise Interaktion und geringere Rechenlast
+Die vier sorgfältig eingerichteten Werkstätten des Sonnen-Dorfs sollen **spielerisch erforschbar** sein, nicht nur aus dekorativen Möbeln bestehen. Die bereits recht volle Touch-Oberfläche soll dabei ruhig bleiben; fremde Orte und bestehende Bauwerke bleiben unangetastet.
 
-- Die bisherige Raycaster-Suche durch zahlreiche InstancedMesh-Würfel wurde durch einen eigenen **3D-DDA-Blockstrahl** ersetzt. Er folgt dem festen Voxelraster, berechnet die getroffene Blockseite und erlaubt weiterhin Abbauen und Setzen am richtigen Nachbarblock.
-- Bewohner dürfen weiterhin nur angesprochen werden, wenn keine massiven Blöcke die Blicklinie verdecken. Diese Prüfung nutzt denselben leichten Rasterstrahl statt einer zusätzlichen 3D-Mesh-Raycaster-Abfrage.
-- Die Reichweite von 5,6 Blockeinheiten bleibt gleich. Diese Änderung optimiert *nur die Auswahl/Interaktion*, nicht das eigentliche Rendering.
+## Neu in V23
 
-### Differenziertere Natur ohne neue Baublöcke
+- Vier kindgerechte Mini-Aktivitäten in den echten V22-Gebäuden: **Brot backen, Karte lesen, Pflanze pflegen und Wache halten**. Pro Aktivität drei kurze, aufeinander aufbauende Schritte.
+- Die **bereits vorhandene NPC-Interaktionstaste** wird in Innenräumen kontextabhängig als Werkstattaktion verwendet. Kein zusätzlicher dauerhafter Bildschirmknopf.
+- Die Aktion ist nur aus dem jeweiligen **Innenraum**, auf richtiger Fußhöhe, in Reichweite des Arbeitsplatzes und mit freier Sichtlinie durch die festen Blöcke möglich. Benutzeränderungen im Bereich des Arbeitsplatzes deaktivieren das Angebot.
+- Sichtbare Rückmeldung als kurzer Text und als kleiner, maximal 1,15 Sekunden dauernder Partikeleffekt. Die **12 Würfelpartikel** verwenden ein einziges wiederverwendetes `InstancedMesh` und keine neue Bilddatei.
+- Nach drei Schritten wird eine **Werkstattmarke** verliehen. Die vier Marken erscheinen im bestehenden Entdeckerbuch, in einem dezenten 2×2-Raster. Sie sind bewusst **nicht** Teil der bestehenden sieben Ortsentdeckungen.
+- Werkstattfortschritte werden unabhängig von den gebauten Blöcken unter `blockwelt-sonnendorf-werkstaetten-v23` gespeichert. Eine erneute Durchführung erzeugt keine doppelten Marken.
+- Neue Welt-Backups enthalten den **optionalen** Eintrag `workshops`, zusätzlich zum unveränderten `edits`-Format (`format: blockwelt`, `version: 7`). Beim Import aus älteren Backupdateien bleiben bereits vorhandene Marken erhalten; ein V23-Backup kann die Marken wiederherstellen. Andere Spielversionen können den optionalen Eintrag ignorieren.
+- Versions- und Cache-Parameter für das lokale V23-Labor aktualisiert.
 
-- Selbst erzeugte, pixelartig texturierte Pflanzen, zwei gekreuzte Ebenen pro Pflanze sowie kleine polygonale Steine ergänzen geeignete Flächen.
-- Die Details sind deterministisch nach Weltkoordinaten verteilt und werden in gemeinsam gerenderten InstancedMeshes pro Chunk gruppiert.
-- Sie sind **keine** festen Baublöcke, beeinflussen Kollisionen und Weltbearbeitung nicht und erscheinen nicht auf Häuserböden oder bebauten Flächen.
-- Im Modus **„Grafik: Flüssig“** werden die zusätzlichen 3D-Pflanzen und Steine ausgeblendet, um mobile Geräte zu entlasten. Der Modus **„Grafik: Schön“** zeigt sie an.
+**Wichtig:** Die Aktionen sind momentan text- und effektgestützte Abläufe, **keine physisch animierten Arbeitsmaschinen und keine vollwertigen Minispiele**. Sie sind ein funktionierender erster Interaktionsbaustein.
 
-### Begehbare Dorfhäuser
+## Technische Prüfungen
 
-- Die Innenräume und Türen werden beim Generieren freigeräumt, auch wenn die natürliche Geländehöhe unter dem Haus höher liegt. Der Boden wird bei Bedarf abgestützt.
-- Wenige kleine Einrichtungsblöcke und eine Deckenlaterne beleben den Innenraum. Die Hauptgänge und Türen bleiben frei.
-- **Wichtig:** Diese Änderungen an den automatisch generierten Dorfgebäuden befinden sich außerhalb des ursprünglichen 64×64-Weltausschnitts. Spielerbearbeitungen werden nach der Generierung wieder darübergelegt.
+Ausgeführt am 11. November 2026:
 
-### Unverändert
+- `node --check game.js` – bestanden.
+- `node test_v23.cjs` – **8 Welt-Regressionsgruppen bestanden:** Alle 36.864 Geländehöhen identisch mit V22; feste generierte Blöcke beider Dörfer identisch; alle sechs Hauseingänge frei; unveränderte Innenraum- und Dekorationsdaten (1.161 Elemente); Speicher- und Weltfunktionen erhalten.
+- `node test_house_paths_v23.cjs` – alle **vier Innenräume** besitzen von der Tür aus eine freie Zwei-Block-hohe Route zum benutzbaren Arbeitsplatz.
+- `node test_workshops_v23.cjs` – **31 Assertionen** zu korrektem Raum, Reichweite, Höhenbereich, Sichtlinien-Sperre, eigenen Bauänderungen, drei Arbeitsschritten, einmaliger Belohnung und Wiederholbarkeit.
+- `node test_backup_v23.cjs` – **fünf Szenarien** für Altsicherungen, neue Marken, Importabbruch und ungültige Baukoordinaten.
+- `python test_ui_v23.py` – Menü und Stempelbereich bei 375 × 667, 393 × 852, 844 × 390 Pixeln ohne horizontale Überläufe. 49 einzigartige HTML-IDs. Die Bilder aus diesem Test sind statische DOM/CSS-Prüfungen.
 
-- Alle 36.864 Höhenwerte des 192×192-Geländegenerators.
-- Alle 21.556 generierten Baublöcke im ursprünglichen 64×64-Ausschnitt.
-- Bisheriger Speicherschlüssel `blockwelt-kleine-baumeister-v1`, Welt-Import und -Export. Bauwerke werden **nicht** durch den Versionswechsel zurückgesetzt.
-- Entdeckerbuch, Kompass, Waldlager, Schattenruine, Himmelswarte, Wasserfall und sämtliche bisherigen Orte.
-- Die vier Dateien für GitHub bleiben: `index.html`, `styles.css`, `game.js`, `README.md`.
+## Grenzen / noch offen
 
-## Durchgeführte Tests
+- Kein vollständiger Live-Test der originalen Three.js-WebGL-Szene auf iPhone/Safari in dieser Umgebung. Echte Performance, Touch-Feeling und Effektwirkung sind noch nicht visuell abgenommen.
+- Das Sonnen-Dorf ist noch nicht auf dem angestrebten grafischen Referenzniveau. Insbesondere Architektur, Licht, Landschaft und Figuren benötigen weiterhin viel Arbeit.
+- Die 3-Schritte-Aktivitäten bieten aktuell keine visuellen Animationen der Möbel oder Hände. Das wäre ein späterer Qualitätsdurchgang.
+- Werkstattfortschritte werden im Browser und optional in **V23-Backups** gespeichert; sie werden nicht in ältere JSON-Sicherungen rückwirkend geschrieben.
 
-Die reproduzierbaren Tests liegen im Entwicklungsordner, nicht im vierteiligen Austausch-ZIP:
+## Laufzeitdateien
 
-- `node --check game.js` – JavaScript-Syntax OK.
-- `node raycast_qa.cjs` – sechs Richtungen, äußere Flächennormale, Reichweitengrenze und **1.867** Vergleiche gegen einen unabhängigen Ray/AABB-Schnitt. Im Messfall durchschnittlich **acht Blockabfragen** pro Strahl. Das sind keine FPS-Messwerte.
-- `node houses_qa.cjs` – begehbare Innenräume und Türöffnungen bei **sieben** Geländehöhen.
-- `node world_qa.cjs` – **36.864** Höhen identisch; Waldlager und Konfliktschutz überprüft.
-- `node compat_qa.cjs` – **21.556** ursprüngliche Blöcke identisch; Import/Export-Routinen und Speicherschlüssel verglichen.
-- `node movement_qa.cjs` – Schwimmen über 300 Simulationsschritte stabil.
-- `python ui_review.py` – Chromium-HTML/CSS-Kontrolle bei 375 × 667, 393 × 852 und 844 × 390 Pixel. Keine Überlappung zwischen Entdeckerbuch und Kompass; Menü erreichbar.
-- Prüfung auf doppelte HTML-IDs und fehlende DOM-Referenzen – OK.
+`index.html`, `styles.css`, `game.js`, `README.md`.
 
-### Noch offen
-
-Die vollständige Web-App konnte in dieser Umgebung mangels lokaler Three.js-Bibliothek und wegen gesperrter Browsernavigation **nicht** mit originalem WebGL gerendert werden. Deshalb sind die tatsächliche 3D-Bildqualität, die iPhone-FPS, die Touchsteuerung und die Grafikleistung mit vielen Pflanzen **noch nicht geprüft**. Ein Test mit dem originalen Spiel auf einem echten Gerät bleibt erforderlich. Es wurden keine künstlichen Livebilder zur Freigabe herangezogen.
-
-## Sichere Testinstallation
-
-1. Auf deinem bisherigen Blockwelt-Stand **„Welt sichern“** benutzen; die heruntergeladene JSON-Datei aufbewahren.
-2. Das bisherige Repository sichern. V12 zunächst in einem **Testbranch** ausprobieren, nicht ungeprüft auf `main` übernehmen.
-3. Vier Projektdateien an gleicher Stelle austauschen.
-4. In Safari oder Chrome das Starten, Bewegen, Abbauen, Setzen, Schwimmen und die Speicherfunktion prüfen. Dorfhäuser betreten und prüfen, ob die Naturdetails in beiden Grafikmodi korrekt erscheinen.
-5. Bei Problemen auf den unveränderten Live-Stand zurückgehen und die JSON-Sicherung bereithalten.
-
-**Commit-Zusammenfassung:** `Blockwelt V12 – Natur, präzise Blockauswahl und begehbare Häuser (Test)`
-
-**Remote-Referenz für einen gesonderten Testbranch:** `refs/heads/test/blockwelt-v12-natur-praezision` (Branch im Repository anlegen bzw. auswählen; Force Push aus).
+Die Testskripte, Mockup-Bilder, Baselines und interne Arbeitsdateien sind nicht Teil des vierteiligen Laufzeitpakets.
