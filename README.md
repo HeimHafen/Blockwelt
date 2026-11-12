@@ -1,53 +1,65 @@
-# Blockwelt V25 — Sonnen-Dorf: Bewohner & Dachqualität (Labor)
+# Blockwelt V26 – Große Wiese (Labor-Testversion)
 
-**Status: TECHNISCH GEPRÜFTE TESTFASSUNG, NICHT VISUELL FREIGEGEBEN.**
+**Basis:** V25 Sonnen-Dorf. Neu: zweite eigenständige Welt **„Große Wiese“**.
 
-Basis ist das interne **V24-Laborpaket**, nicht ein neuer Weltgenerator. Dieses Paket enthält ausschließlich die vier austauschbaren Dateien `index.html`, `styles.css`, `game.js`, `README.md`. Die veröffentlichte GitHub-Version wird durch das Erstellen dieses Pakets nicht verändert.
+## Was ist neu?
 
-## Gezielte Verbesserungen in V25
+Die Blockwelt hat jetzt **zwei getrennte Welten**, umschaltbar im Start-/Spielmenü unter **„🌍 Welten auswählen“**:
 
-1. **Höflich ausweichende Bewohner:** Einwohner des Sonnen-Dorfs versuchen bei weniger als 1,55 Blöcken Abstand zum Spieler, auf einen freien benachbarten Platz auszuweichen. Zusätzlich werden alternative seitliche Bewegungsrichtungen geprüft.
-2. **Abstand zwischen Bewohnern:** Die fünf handplatzierten Einwohner sollen nicht ineinanderlaufen oder nach einer Baublockänderung auf demselben Punkt erscheinen. Bei einer versperrten Standfläche werden sichere Ersatzpositionen gesucht.
-3. **Fünf Berufe mit kleinen 3D-Gegenständen:** Händlerwaren, eine Blume, ein Kartenbuch, ein Brotlaib und ein kleines Schild. Die Gegenstände hängen an den Armbewegungen der jeweiligen Figur. Ausschließlich originale, programmatisch erzeugte geometrische Formen und Materialien.
-4. **Subtile berufstypische Gesten:** Im Stillstand bewegen die fünf Dorfbewohner Hände und Kopf vorsichtig. Beim Ansprechen ist eine Begrüßung weiterhin vorrangig.
-5. **Glaubwürdigere Bewegung:** Steht eine Figur vor einer Wand, werden nicht länger Laufanimationen simuliert, obwohl sie sich nicht bewegt.
-6. **Dachflächen ohne regelmäßige Fugen:** Die dekorativen Platten überlappen jetzt minimal (1,012 × 2,012 statt 0,90 × 1,90 Einheiten). Die **massiven** Dachblöcke bleiben identisch.
-7. **Cache-/Versionskennzeichnung:** V25-Labor im Header, neu versionierte CSS/JS-Adressen.
+1. **🏰 Abenteuerwelt** – die bisherige 192 × 192 große Legendenwelt mit Dörfern, Werkstätten, Entdeckerbuch, Bergen, Ruinen und Tieren. Der vorhandene Bauwerks-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt exakt gleich.
+2. **🌿 Große Wiese** – eine eigene 192 × 192 große, völlig flache Grasfläche, auf der anfangs **keine Bäume, Blumen, Seen, Häuser, Figuren, Tiere oder Entdeckungsorte** stehen. Auf dem Gras kann man eigene Bauwerke frei errichten. Die Oberfläche liegt überall auf der gleichen Höhe; darunter befinden sich Erde und Stein. Baublöcke, die man selbst setzt, können die Wiese natürlich verändern.
 
-## Technischer Prüfstand
+Beide Welten verwenden denselben Baukasten, dieselbe mobile Steuerung und dieselben Grafikoptionen. In der Großen Wiese sind das Entdeckerbuch und der Abenteuer-Kompass ausgeblendet. Über das Menü lässt sich jederzeit zur Abenteuerwelt zurückwechseln.
 
-- `node --check game.js`: erfolgreich.
-- `node test_v25.cjs`: **8 Testgruppen bestanden**. Darunter vollständiger Vergleich aller **36.864 Geländehöhen** mit V24, unveränderte `villageBlocks`, `sunRoofY` und `sunRoofType`, Prüfung der neuen Berufswerkzeuge und des Ausweichverhaltens, unveränderte Speicherformate, 49 eindeutige HTML-IDs.
-- `python test_ui_v25.py`: statische Browseroberfläche bei **375 × 667**, **393 × 852** und **844 × 390** ohne horizontalen Dokumentüberlauf; Hauptmenü und Steuerungselemente vorhanden.
-- Der alte Welt-Speicherschlüssel `blockwelt-kleine-baumeister-v1` und der Werkstatt-Schlüssel `blockwelt-sonnendorf-werkstaetten-v23` sind unverändert. Eigene Bauwerke und Werkstattstempel sollen damit kompatibel bleiben.
-- Die HTML/CSS-Prüfung ist **kein** Nachweis erfolgreicher Three.js-/WebGL-Darstellung.
+## Spielstände & Sicherungen
 
-## Nicht geprüft / Grenzen
+- **Abenteuerwelt:** `blockwelt-kleine-baumeister-v1` (unverändert).
+- **Große Wiese:** `blockwelt-grosse-wiese-v26` (neu, getrennt).
+- Aktive Welt: `blockwelt-aktive-welt-v26` (nur die Auswahl wird gemerkt).
+- Bauwerke werden in jeder Welt separat automatisch im Browser gespeichert.
+- **„Welt sichern“** exportiert immer nur die aktuell ausgewählte Welt. Der Abenteuer-Export bleibt rückwärtskompatibel mit V25 (Formatversion 7). Der Wiesen-Export verwendet Formatversion 8 und die ausdrückliche Weltkennzeichnung `world: "wiese"`.
+- **„Welt laden“** verhindert, dass eine Sicherung versehentlich in die falsche Welt importiert wird.
+- **„Welt neu anfangen“** löscht ausdrücklich nur die aktuell ausgewählte Welt. Die andere wird nicht angetastet.
 
-- Kein vollständiger Live-3D-Test im echten Safari auf einem iPhone.
-- Keine belastbare Messung der Bildrate oder der zusätzlichen Grafikaufrufe auf dem Mobilgerät. Die neuen Handwerksgegenstände verursachen zusätzliche kleine 3D-Meshes; entsprechend kann die Leistung abweichen.
-- Kein visuelles Urteil, dass das Sonnen-Dorf den Anspruch einer fertigen Premium-Welt bereits erfüllt.
+**Vor jedem Austausch:** Alte Version sichern und im vorhandenen Spiel beide Welten bei Bedarf als JSON exportieren. Testversion zunächst in einem Testbranch prüfen. Ein GitHub-Branch wird nicht automatisch über die bestehende GitHub-Pages-Adresse veröffentlicht.
 
-## Sichere Installation
+## Bedienung
 
-1. Eigene Bauwerke über **Welt sichern** exportieren und die bisherige funktionierende Version sichern.
-2. **Neuen Testbranch** `test/blockwelt-v25` auf Basis der aktuellen Version anlegen (GitHub-Upload: *Create a new branch for this commit and start a pull request*).
-3. Die vier Dateien im Repository-Stamm austauschen.
-4. Vor einer Veröffentlichung im `main`-Branch: das Sonnen-Dorf in Safari auf dem iPhone prüfen, insbesondere den Abstand der Figuren, Gesprächs-Button, die Dachoberflächen, alle vier Werkstatt-Aktionen, Spielstandimport und Leistung.
-5. `Force Push` bleibt **aus**. Es wurde kein automatischer GitHub-Commit vorgenommen.
+1. Öffne das Blockwelt-Menü (`☰`).
+2. Öffne **„🌍 Welten auswählen“**.
+3. Wähle **„🌿 Große Wiese“** oder **„🏰 Abenteuerwelt“**.
+4. Tippe auf **„▶ Große Wiese betreten“** bzw. **„▶ Abenteuerwelt betreten“**.
+5. Baue wie gewohnt; deine Änderungen werden nur in dieser Welt gespeichert.
+
+## Technische Prüfungen
+
+- `node --check game.js`: bestanden.
+- Vergleich **aller 36.864 Geländepunkte und Biome** zwischen V25 und der V26-Abenteuerwelt: **identisch**.
+- Neue Wiese: alle 36.864 Geländehöhen = 5, Biom `wiese`.
+- Echte Wiesen-Chunkgeneratorfunktion separat getestet: nur ebene Grasschicht, Erde, Stein; keine automatisch erzeugten Bauwerke; selbst gesetzte/entfernte Blöcke bleiben erhalten.
+- Zwei getrennte Spielstände: Speichern, Wechsel und Wiedereinlesen in einer isolierten Testumgebung bestanden.
+- HTML-/CSS-Menü bei **375 × 667, 393 × 852 und 844 × 390** Pixeln geprüft. Weltwahl erreichbar; Wiesenmodus blendet Abenteuer-HUD aus.
+- 52 eindeutige HTML-IDs, keine fehlenden aus dem Skript referenzierten IDs.
+- ZIP-Integrität wird vor Übergabe geprüft.
+
+**Grenzen:** Die vollständige Three.js-WebGL-Welt und die Leistung auf einem echten iPhone wurden in dieser Umgebung noch nicht live geprüft. V26 ist deshalb eine **Labor-Testversion**, keine visuell abgenommene Veröffentlichung.
 
 ## GitHub-Texte
 
-**Zusammenfassung:** `Blockwelt V25 – Sonnen-Dorf: lebendige Bewohner & Dachfeinschliff (Labor)`
+**Zusammenfassung:**
+
+`Blockwelt V26 – Eigenständige Große Wiese mit getrennten Spielständen (Labor)`
 
 **Detaillierte Informationen:**
 
-- Bewohner weichen dem Spieler aus und halten Abstand zueinander.
-- Handwerksfiguren tragen kleine eigene 3D-Werkzeuge und bewegen sich natürlicher.
-- Laufanimationen stoppen an Hindernissen.
-- Dekorative Dachplatten haben keine regelmäßigen Zwischenräume mehr.
-- Gelände, feste Dorfblöcke und Speicherformate sind unverändert.
-- Technische Regressionen und mobile Layouttests bestanden.
-- Teststand; iPhone-WebGL-Abnahme und Leistungsprüfung offen.
+- Zweite, völlig ebene Bauwelt „Große Wiese“ (192 × 192 Felder) ergänzt.
+- Keine automatisch erzeugten Häuser, Bäume, Figuren, Seen oder Dekorationen auf der Wiese.
+- Umschaltung zwischen Abenteuerwelt und Großer Wiese direkt im Menü.
+- Getrennte automatische Speicherung, eigene Exporte und Importschutz pro Welt.
+- Die ursprüngliche Abenteuerwelt mit allen 36.864 Geländehöhen und bestehendem Speicherschlüssel unverändert.
+- HTML-/CSS- und Weltgenerator-Regressionstests bestanden.
+- Laborfassung: vollständiger Safari-WebGL-Test noch offen.
 
-**Testbranch:** `refs/heads/test/blockwelt-v25` · `Force Push: Aus`.
+**Branch:** `refs/heads/test/blockwelt-v26-grosse-wiese`
+
+**Force Push:** Aus.

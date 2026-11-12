@@ -1,4 +1,4 @@
-// BLOCKWELT V25 LABOR — Sonnen-Dorf: höflich ausweichende Bewohner, Berufsgesten, geschlossene Dachziegel.
+// BLOCKWELT V26 LABOR — neue unabhängige Bauwelt 'Große Wiese'; V25-Abenteuerwelt unverändert.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -27,7 +27,16 @@ const VILLAGES = [
 ];
 const LAKES = [{x:-61,z:41,r:14},{x:63,z:-49,r:12}];
 const OLD_MIN = -18, OLD_MAX = 17, CHUNK = 16, MAX_Y = 70;
-const KEY = 'blockwelt-kleine-baumeister-v1';
+// Separate world slots: the original adventure key MUST stay exactly unchanged.
+const ADVENTURE_KEY = 'blockwelt-kleine-baumeister-v1';
+const MEADOW_KEY = 'blockwelt-grosse-wiese-v26';
+const ACTIVE_WORLD_KEY = 'blockwelt-aktive-welt-v26';
+let activeWorld = 'abenteuer';
+try { if(localStorage.getItem(ACTIVE_WORLD_KEY)==='wiese')activeWorld='wiese'; }catch(_){}
+const isMeadow = () => activeWorld === 'wiese';
+const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
+const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
+
 const blocks = new Map();
 const edits = new Map();
 const chunkMeshes = new Map();
@@ -237,6 +246,7 @@ function inVillage(x,z){return VILLAGES.find(v=>Math.hypot(x-v.x,z-v.z)<19)||nul
 function inLegacy(x,z){return x>=-LEGACY_HALF && x<LEGACY_HALF && z>=-LEGACY_HALF && z<LEGACY_HALF;}
 function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
 function terrainHeight(x,z){
+  if(isMeadow())return MEADOW_HEIGHT;
   if(inLegacy(x,z))return legacyTerrainHeight(x,z);
   const lx=clamp(x,-LEGACY_HALF,LEGACY_HALF-1),lz=clamp(z,-LEGACY_HALF,LEGACY_HALF-1);
   const dist=Math.max(Math.abs(x-lx),Math.abs(z-lz));
@@ -260,6 +270,7 @@ function terrainHeight(x,z){
   return clamp(Math.round(legacyTerrainHeight(lx,lz)*(1-blend)+h*blend),2,36);
 }
 function biomeAt(x,z){
+  if(isMeadow())return 'wiese';
   if(inLegacy(x,z))return legacyBiomeAt(x,z);
   if(inVillage(x,z))return 'dorf';
   if(x<-65&&z<-63)return 'schattenwald';
@@ -1387,9 +1398,24 @@ function decorateChunkTree(ax,az,xmin,xmax,zmin,zmax){
     }
   }
 }
-function isLegacyChunk(cx,cz){return cx>=-2&&cx<=1&&cz>=-2&&cz<=1;}
+function isLegacyChunk(cx,cz){return !isMeadow()&&cx>=-2&&cx<=1&&cz>=-2&&cz<=1;}
 function generateChunkData(cx,cz){
   if(isLegacyChunk(cx,cz)||generatedChunks.has(chunkKey(cx,cz)))return;
+  if(isMeadow()){
+    // No adventuring terrain, trees, ruins, water, flowers, animals or houses.
+    // Chunks contain only grass / dirt / bedrock-like stone; saved builds win.
+    for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
+      for(let y=0;y<MEADOW_HEIGHT;y++)
+        put(x,y,z,y===MEADOW_HEIGHT-1?'grass':y>=MEADOW_HEIGHT-3?'dirt':'stone');
+    }
+    const xmin=cx*CHUNK,zmin=cz*CHUNK;
+    for(const edit of edits.values()){
+      const [x,y,z,type]=edit;
+      if(x>=xmin&&x<xmin+CHUNK&&z>=zmin&&z<zmin+CHUNK)put(x,y,z,type);
+    }
+    generatedChunks.add(chunkKey(cx,cz));
+    return;
+  }
   const xmin=cx*CHUNK,xmax=xmin+CHUNK-1,zmin=cz*CHUNK,zmax=zmin+CHUNK-1;
   for(let x=xmin;x<=xmax;x++)for(let z=zmin;z<=zmax;z++){
     const h=terrainHeight(x,z),biome=biomeAt(x,z);
@@ -1503,7 +1529,7 @@ function rebuildDistantLandscape(cx,cz){
   const elevation=(x,z)=>{
     if(x<-HALF||x>=HALF||z<-HALF||z>=HALF)return 0;
     const h=terrainHeight(x,z);
-    return lakeDistance(x,z)<0&&h<=WATER_LEVEL ? WATER_LEVEL+.07 : h-.035;
+    return !isMeadow()&&lakeDistance(x,z)<0&&h<=WATER_LEVEL ? WATER_LEVEL+.07 : h-.035;
   };
   for(let ox=-ring;ox<=ring;ox++)for(let oz=-ring;oz<=ring;oz++){
     if(Math.max(Math.abs(ox),Math.abs(oz))<=STREAM_RADIUS)continue;
@@ -1513,7 +1539,7 @@ function rebuildDistantLandscape(cx,cz){
     for(let x=xmin;x<xmin+CHUNK;x+=step)for(let z=zmin;z<zmin+CHUNK;z+=step){
       const midX=x+1,midZ=z+1;
       const h=terrainHeight(midX,midZ),biome=biomeAt(midX,midZ);
-      const water=lakeDistance(midX,midZ)<0&&h<=WATER_LEVEL;
+      const water=!isMeadow()&&lakeDistance(midX,midZ)<0&&h<=WATER_LEVEL;
       const y=water?WATER_LEVEL+.07:h-.035;
       const col=water?lodPalette.water:h>=27&&biome==='berge'?lodPalette.snow:
         biome==='berge'||biome==='fels'?lodPalette.stone:
@@ -1547,7 +1573,7 @@ function rebuildDistantLandscape(cx,cz){
       const ax=gx+Math.floor(pixelHash(gx,gz,51)*3)-1;
       const az=gz+Math.floor(pixelHash(gx,gz,52)*3)-1;
       if(Math.floor(ax/CHUNK)!==ccx||Math.floor(az/CHUNK)!==ccz)continue;
-      if(generatedTreeAt(ax,az)&&trees.length<320)trees.push([ax,terrainHeight(ax,az),az]);
+      if(!isMeadow()&&generatedTreeAt(ax,az)&&trees.length<320)trees.push([ax,terrainHeight(ax,az),az]);
     }
   }
   if(positions.length){
@@ -1603,6 +1629,7 @@ function tree(x,z,tall=false){
 }
 function baseWorld(){
   blocks.clear();generatedChunks.clear();
+  if(isMeadow())return; // Stream the entire flat meadow, including central chunks.
   for(let x=-LEGACY_HALF;x<LEGACY_HALF;x++)for(let z=-LEGACY_HALF;z<LEGACY_HALF;z++){
     const h=legacyTerrainHeight(x,z),biome=legacyBiomeAt(x,z);
     for(let y=0;y<h;y++){
@@ -1640,19 +1667,19 @@ function baseWorld(){
 }
 function loadEdits(){
   try{
-    const arr=JSON.parse(localStorage.getItem(KEY)||'[]');
+    const arr=JSON.parse(localStorage.getItem(currentSaveKey())||'[]');
     if(!Array.isArray(arr))return;
     for(const item of arr){
       if(!Array.isArray(item)||item.length!==4)continue;
       const [x,y,z,type]=item;
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
-      if(inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
+      if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
 function saveEdits(){
-  try{localStorage.setItem(KEY,JSON.stringify([...edits.values()]));}
+  try{localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));}
   catch(e){toast('Speichern ist auf diesem Gerät nicht möglich');}
 }
 // Chunked instanced rendering avoids reconstructing the entire world after each tap.
@@ -1836,6 +1863,7 @@ function farmPatch(x,z){
   return VILLAGES.some(v=>x>=v.x+12&&x<=v.x+17&&z>=v.z-6&&z<=v.z-1);
 }
 function rebuildDecoration(cx,cz){
+  if(isMeadow())return; // Intentionally empty. User-built blocks still render.
   const id=chunkKey(cx,cz);
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
   const stems=[],blooms=[],tufts=[],crops=[],fencePosts=[],fenceRails=[];
@@ -2275,7 +2303,7 @@ function updateMovement(dt){
   if(player.grounded&&player.vy<0)player.vy=0;
   if(player.y< -5){respawn();toast('Wieder sicher auf der Wiese!');}
 }
-function respawn(){player.x=.5;player.z=6.5;player.y=terrainHeight(0,6)+.08;player.vy=0;}
+function respawn(){player.x=.5;player.z=isMeadow()?.5:6.5;player.y=terrainHeight(0,Math.floor(player.z))+.08;player.vy=0;player.grounded=false;}
 function jump(){if(!gameRunning||flying)return;const inWater=get(Math.floor(player.x),Math.floor(player.y+.25),Math.floor(player.z))==='water';if(player.grounded||inWater){player.vy=inWater?4.5:JUMP;player.grounded=false;}}
 function updateCamera(){
   camera.position.set(player.x,player.y+1.57,player.z);
@@ -2294,7 +2322,7 @@ function updateTarget(){
   if(pointed){
     highlight.position.set(pointed.x+.5,pointed.y+.5,pointed.z+.5);
     $('targetLabel').textContent=LABELS[pointed.type]||'';
-  }else $('targetLabel').textContent=(Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<27?'':'Schau einen Block an');
+  }else $('targetLabel').textContent=(isMeadow()||Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<27?'':'Schau einen Block an');
 }
 function intersectsPlayer(x,y,z){
   return Math.abs((x+.5)-player.x)<PLAYER_R+.5&&Math.abs((z+.5)-player.z)<PLAYER_R+.5&&y<player.y+PLAYER_H&&y+1>player.y;
@@ -2342,12 +2370,13 @@ function setFlying(next){
   toast(flying?'Du kannst jetzt fliegen!':'Du läufst wieder!');
 }
 function exportWorld(){
-  // Optional V23 metadata; old game versions continue reading `edits` normally.
-  const data={format:'blockwelt',version:7,savedAt:new Date().toISOString(),
-    edits:[...edits.values()],workshops:[...workshopProgress]};
+  // Adventure backups keep the old v7 format. Meadow backups are v8 with
+  // an explicit world ID, so users cannot import blocks into the wrong world.
+  const data={format:'blockwelt',version:isMeadow()?8:7,savedAt:new Date().toISOString(),
+    edits:[...edits.values()],...(isMeadow()?{world:'wiese'}:{workshops:[...workshopProgress]})};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');link.href=url;link.download='Blockwelt-Meine-Welt.json';
+  const link=document.createElement('a');link.href=url;link.download=isMeadow()?'Blockwelt-Grosse-Wiese.json':'Blockwelt-Abenteuerwelt.json';
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),3000);
   toast('Deine Welt wurde als Datei gesichert');
@@ -2357,7 +2386,13 @@ async function importWorld(file){
   if(file.size>2_000_000){toast('Diese Datei ist zu groß');return;}
   try{
     const data=JSON.parse(await file.text());
-    if(data?.format!=='blockwelt'||![2,3,5,6,7].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    if(data?.format!=='blockwelt'||![2,3,5,6,7,8].includes(data.version)||!Array.isArray(data.edits)||data.edits.length>20000)throw new Error('format');
+    if(data.version===8&&data.world!=='wiese')throw new Error('world');
+    const sourceWorld=data.version===8&&data.world==='wiese'?'wiese':'abenteuer';
+    if(sourceWorld!==activeWorld){
+      toast('Diese Sicherung gehört zur anderen Welt. Bitte zuerst wechseln.');
+      return;
+    }
     const incoming=new Map();
     for(const edit of data.edits){
       if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
@@ -2367,10 +2402,10 @@ async function importWorld(file){
     }
     if(!confirm('Die bisherige Welt durch diese Sicherung ersetzen?'))return;
     baseWorld();edits.clear();undoStack.length=0;
-    for(const [k,edit] of incoming){const [x,y,z,type]=edit;if(inLegacy(x,z))put(x,y,z,type);edits.set(k,edit);}
+    for(const [k,edit] of incoming){const [x,y,z,type]=edit;if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(k,edit);}
     // Legacy world backups have no workshop section: do not erase their
     // independently stored stamps. V23 backups can restore stamps as well.
-    if(Array.isArray(data.workshops)){
+    if(!isMeadow()&&Array.isArray(data.workshops)){
       const valid=new Set(SUN_WORKSHOPS.map(place=>place.id));
       workshopProgress.clear();
       for(const id of data.workshops)if(valid.has(id))workshopProgress.add(id);
@@ -2690,6 +2725,12 @@ function hasLineOfSight(npc){
   return !traceVoxel(camera.position,{x:dx,y:dy,z:dz},distance-.24);
 }
 function updateCreatures(dt){
+  if(isMeadow()){
+    for(const npc of creatures)npc.group.visible=false;
+    selectedNpc=null;selectedWorkshop=null;
+    npcTargetBtn.classList.remove('visible');
+    return;
+  }
   const ms=performance.now();
   const t=ms*.001;
   const scanForSpeech=ms-lastNpcTargetCheck>125;
@@ -2979,6 +3020,7 @@ function updateBook(){
   }
 }
 function updateDiscoveries(){
+  if(isMeadow())return;
   let changed=false;
   for(const place of DISCOVERIES){
     if(!discovered.has(place.id)&&Math.hypot(player.x-place.x,player.z-place.z)<(place.id==='home'?11:15)){
@@ -3010,7 +3052,7 @@ function setCompass(next){
   try{localStorage.setItem(COMPASS_KEY,compassEnabled?'an':'aus');}catch(_){}
 }
 function updateCompass(){
-  if(!compassEnabled||!gameRunning)return;
+  if(isMeadow()||!compassEnabled||!gameRunning)return;
   const nextPlaces=DISCOVERIES.filter(d=>!discovered.has(d.id));
   let candidates=nextPlaces;
   let clue='Neuer Ort';
@@ -3128,7 +3170,40 @@ function selectBlock(type){
   });
 }
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
-function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';$('startBtn').textContent='▶ Weiterspielen';}
+function updateWorldSelector(){
+  const meadow=isMeadow();
+  document.body.classList.toggle('meadow-mode',meadow);
+  $('worldAdventureBtn').setAttribute('aria-pressed',String(!meadow));
+  $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
+  $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
+  $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V26 – Labor':'Legendenwelt · V26 – Labor';
+  $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
+  document.title=meadow?'Blockwelt V26 · Große Wiese':'Blockwelt V26 · Legendenwelt';
+  regionName='';updateRegion();
+  updateSunVillageSignVisibility(false);
+}
+function switchWorld(next){
+  if(next!== 'wiese' && next!== 'abenteuer')return;
+  if(next===activeWorld){updateWorldSelector();return;}
+  // Everything built so far is already saved in its own storage slot.
+  activeWorld=next;
+  try{localStorage.setItem(ACTIVE_WORLD_KEY,activeWorld);}catch(_){}
+  edits.clear();undoStack.length=0;syncUndo();
+  flying=false;document.body.classList.remove('flying');
+  $('flightBtn').setAttribute('aria-pressed','false');
+  $('flightBtn').textContent='✦ Flugmodus einschalten';
+  $('jumpBtn').querySelector('small').textContent='SPRINGEN';
+  jumpHeld=false;descendHeld=false;stick.x=0;stick.y=0;centerStick();
+  workshopSparkles.visible=false;selectedNpc=null;selectedWorkshop=null;
+  npcTargetBtn.classList.remove('visible');
+  baseWorld();loadEdits();respawn();yaw=.08;pitch=-.22;
+  rebuild();updateCamera();updateWorldSelector();updateTarget();
+  toast(isMeadow()?'Deine freie Wiese ist bereit!':'Willkommen zurück im Abenteuer!');
+}
+$('worldAdventureBtn').addEventListener('click',()=>switchWorld('abenteuer'));
+$('worldMeadowBtn').addEventListener('click',()=>switchWorld('wiese'));
+function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';updateWorldSelector();}
 $('menuBtn').addEventListener('click',openMenu);
 $('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
 $('undoBtn').addEventListener('click',undo);
@@ -3140,15 +3215,20 @@ $('startBtn').addEventListener('click',()=>{
   $('discoveryPanel').classList.add('hidden');$('overlay').classList.add('hidden');gameRunning=true;toast('Viel Spaß beim Bauen!');
 });
 $('resetBtn').addEventListener('click',()=>{
-  if(!confirm('Soll deine gebaute Welt wirklich gelöscht und neu begonnen werden?'))return;
-  try{localStorage.removeItem(KEY);}catch(e){console.warn(e);}
-  edits.clear();undoStack.length=0;syncUndo();baseWorld();rebuild();respawn();toast('Deine Welt ist wieder neu!');
+  if(!confirm(`Soll nur die Welt „${isMeadow()?'Große Wiese':'Abenteuerwelt'}“ neu begonnen werden? Die andere Welt bleibt erhalten.`))return;
+  try{localStorage.removeItem(currentSaveKey());}catch(e){console.warn(e);}
+  edits.clear();undoStack.length=0;syncUndo();baseWorld();rebuild();respawn();updateCamera();toast('Nur diese Welt wurde zurückgesetzt!');
 });
 
 // Small location indicator: no map, no extra complex menus for young players.
 const regions={schattenwald:'🌑 Schattenwald',dorf:'🏘️ Dorf',see:'🌊 See',wueste:'🏜️ Sandland',berge:'🏔️ Hochland',nadelwald:'🌲 Tannenwald',wiese:'🌿 Startwiese',wald:'🌲 Waldland',sand:'🏜️ Sandtal',fels:'⛰️ Felsenberg'};
 let regionName='';
 function updateRegion(){
+  if(isMeadow()){
+    const name='🌿 Große Wiese';
+    if(regionName!==name){regionName=name;$('regionLabel').textContent=name;}
+    return;
+  }
   let b=biomeAt(Math.floor(player.x),Math.floor(player.z));
   if(b==='fels'&&player.x>23&&player.z>=-11&&player.z<=-1&&player.y<11)b='hoehle';
   const name=Math.hypot(player.x-RUIN.x,player.z-RUIN.z)<17?'🗝️ Schattenruine':Math.hypot(player.x-CAMP.x,player.z-CAMP.z)<13?'⛺ Waldlager':Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
@@ -3160,7 +3240,7 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();
+baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();updateWorldSelector();
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){
@@ -3172,13 +3252,13 @@ function animate(now){
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
   sunSprite.position.set(player.x-39,player.y+51,player.z-55);
   moonSprite.position.set(player.x+38,player.y+53,player.z-48);
-  let near=0;for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
+  let near=0;if(!isMeadow())for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
   const shadowRange=Math.hypot(player.x-RUIN.x,player.z-RUIN.z);
-  const mystery=Math.max(0,Math.min(1,(34-shadowRange)/22));
+  const mystery=isMeadow()?0:Math.max(0,Math.min(1,(34-shadowRange)/22));
   const baseFog=lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
   scene.fog.color.set(baseFog).lerp(shadowFogColor,mystery*.4);
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
-  const inSunVillage=Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<25;
+  const inSunVillage=!isMeadow()&&Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<25;
   // Masked per-house in one mesh: a custom facade suppresses only its own sign.
   updateSunVillageSignVisibility(inSunVillage);
   const sunNightPower=[.0,.46,1.05][lightMode];
@@ -3187,7 +3267,7 @@ function animate(now){
     light.visible=inSunVillage&&sunNightPower>0;
     light.intensity=light.visible?sunNightPower:0;
   }
-  shadowGlow.intensity=shadowRange<22?(lightMode===2?1.0:.64):0;
+  shadowGlow.intensity=!isMeadow()&&shadowRange<22?(lightMode===2?1.0:.64):0;
   if(shadowGlow.intensity)shadowGlow.position.set(RUIN.x+.5,terrainHeight(RUIN.x,RUIN.z)+6,RUIN.z+.5);
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
