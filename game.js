@@ -1,4 +1,4 @@
-// BLOCKWELT V27 TEST — begehbare Netherfestung auf der Großen Wiese; Abenteuerwelt bleibt erhalten.
+// BLOCKWELT V28 LABOR — Netherfestung mit fliegendem Drachen, Zombies und Creepern. Keine Änderung am V27-Festungsbauplan.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3135,6 +3135,235 @@ function restoreSunnyResidentSpot(npc){
   }
   return false;
 }
+
+// V28 FESTUNGSWESEN: Originale Voxelmodelle aus gemeinsamen Würfelgeometrien.
+// Alle Figuren sind dekorative, bewegliche Meshes: keine fremden Modelldateien,
+// keine zerstörerischen Creeper-Explosionen und keine Änderung am Spielstand.
+const netherCreatureMaterials={
+  zombieSkin:new THREE.MeshLambertMaterial({color:'#6caa57'}),
+  zombieShade:new THREE.MeshLambertMaterial({color:'#456c44'}),
+  zombieShirt:new THREE.MeshLambertMaterial({color:'#4c8c94'}),
+  zombiePants:new THREE.MeshLambertMaterial({color:'#58476d'}),
+  creeperGreen:new THREE.MeshLambertMaterial({color:'#68a946'}),
+  creeperLight:new THREE.MeshLambertMaterial({color:'#8ac960'}),
+  creeperDark:new THREE.MeshLambertMaterial({color:'#2b5634'}),
+  black:new THREE.MeshLambertMaterial({color:'#171c20'}),
+  purple:new THREE.MeshLambertMaterial({color:'#654076',emissive:'#321648',emissiveIntensity:.23}),
+  dragon:new THREE.MeshLambertMaterial({color:'#242332'}),
+  dragonEdge:new THREE.MeshLambertMaterial({color:'#383044'}),
+  dragonWing:new THREE.MeshLambertMaterial({color:'#56336e',side:THREE.DoubleSide}),
+  dragonEye:new THREE.MeshBasicMaterial({color:'#ed83ff'}),
+  dragonSpine:new THREE.MeshLambertMaterial({color:'#8751ac',emissive:'#46216f',emissiveIntensity:.36})
+};
+const netherCreatureList=[];
+function netherBlockAt(x,y,z){
+  const ix=Math.floor(x),iz=Math.floor(z),k=key(ix,y,iz);
+  if(edits.has(k))return edits.get(k)[3]||null;
+  if(generatedChunks.has(chunkKey(Math.floor(ix/CHUNK),Math.floor(iz/CHUNK))))return get(ix,y,iz)||null;
+  return makeNetherPlan()&&netherPlanVoxels.get(k)||
+    (y===MEADOW_HEIGHT-1?'grass':y>=0&&y<MEADOW_HEIGHT?'dirt':null);
+}
+// Select an actual, unoccupied voxel floor on the nominated level.
+// Using the full fortress plan also works when the player is still far away.
+function netherWalkable(x,z,feetY){
+  for(const ox of [-.23,.23])for(const oz of [-.23,.23]){
+    const xx=x+ox,zz=z+oz;
+    const base=netherBlockAt(xx,feetY-1,zz);
+    if(!base||base==='water')return false;
+    if(netherBlockAt(xx,feetY,zz)||netherBlockAt(xx,feetY+1,zz))return false;
+  }
+  return true;
+}
+function makeNetherEnemy(type,x,z,feetY,idx){
+  const group=new THREE.Group(),m=netherCreatureMaterials;
+  const body=part(group,type==='creeper'?.66:.77,type==='creeper'?1.15:.85,.55,
+    type==='creeper'?m.creeperGreen:m.zombieShirt,0,type==='creeper'?.96:1.04,0);
+  const head=new THREE.Group();head.position.y=type==='creeper'?1.86:1.75;group.add(head);
+  part(head,type==='creeper'?.80:.75,.75,.71,type==='creeper'?m.creeperLight:m.zombieSkin,0,0,0);
+  // Eigene Pixel-Gesichter; Augen und Mund bleiben beim Drehen am Kopf.
+  if(type==='creeper'){
+    for(const side of [-1,1])part(head,.14,.15,.05,m.creeperDark,side*.21,.12,-.38);
+    part(head,.18,.28,.055,m.creeperDark,0,-.16,-.38);
+    for(const side of [-1,1])part(head,.13,.14,.06,m.creeperDark,side*.14,-.23,-.38);
+    part(group,.19,.12,.58,m.creeperDark,0,.73,-.03);
+  }else{
+    for(const side of [-1,1])part(head,.14,.14,.055,m.black,side*.20,.08,-.39);
+    part(head,.24,.045,.06,m.zombieShade,0,-.22,-.38);
+  }
+  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
+  let arms=[];
+  if(type==='creeper'){
+    for(const sx of [-1,1])for(const sz of [-1,1]){
+      const leg=new THREE.Group();leg.position.set(sx*.22,.43,sz*.25);group.add(leg);
+      part(leg,.25,.43,.25,m.creeperGreen,0,-.20,0);arms.push(leg);
+    }
+  }else{
+    for(const side of [-1,1]){
+      const leg=side<0?leftLeg:rightLeg;leg.position.set(side*.23,.56,0);group.add(leg);
+      part(leg,.29,.56,.36,m.zombiePants,0,-.27,0);
+      const arm=new THREE.Group();arm.position.set(side*.49,1.37,-.06);group.add(arm);
+      part(arm,.24,.70,.29,m.zombieSkin,0,-.27,0);arms.push(arm);
+    }
+  }
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.47,10),
+    new THREE.MeshBasicMaterial({color:'#121d1a',transparent:true,opacity:.2,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=.025;group.add(shadow);
+  group.visible=false;scene.add(group);
+  netherCreatureList.push({type,group,head,body,leftLeg,rightLeg,arms,
+    x:x+.5,z:z+.5,homeX:x+.5,homeZ:z+.5,y:feetY,
+    bearing:idx*.73,speed:type==='creeper'?.44:.32,seed:idx,phase:idx*1.9});
+}
+// Vor dem Tor, am Treppenaufgang, im Innenhof und auf zwei Wehrgängen.
+// Gezielt ausgesuchte begehbare Standflächen; weit entfernt werden alle Meshes verborgen.
+for(const [type,x,z,y] of [
+  ['zombie',-13,-14,5],['creeper',15,-16,5],
+  ['zombie',-8,-29,10],['creeper',9,-29,10],
+  ['zombie',-15,-53,13],['creeper',15,-53,13],
+  ['zombie',-28,-72,24],['creeper',23,-58,24],
+  ['zombie',0,-70,34],['creeper',35,-63,24]
+])makeNetherEnemy(type,x,z,y,netherCreatureList.length);
+
+// Dragon: zusammenhängendes, animiertes 3D-Wesen, keine Kulisse am Himmel.
+// Die Bewegung ist langsam und deterministisch, damit Kinder die Flugbahn
+// verstehen können. Keine Explosionen, kein Feuerschaden, keine Save-Schreibzugriffe.
+const netherDragon=new THREE.Group();scene.add(netherDragon);
+const dm=netherCreatureMaterials;
+part(netherDragon,2.9,2.4,5.2,dm.dragon,0,.1,0);
+part(netherDragon,2.35,1.7,3,dm.dragonEdge,0,.12,-2.1);
+part(netherDragon,1.95,1.55,2.15,dm.dragon,0,.10,-4.04);
+part(netherDragon,1.70,.55,1.4,dm.dragonEdge,0,-.56,-4.62); // Unterkiefer
+for(const side of [-1,1]){
+  part(netherDragon,.30,.28,.16,dm.dragonEye,side*.74,.42,-4.83);
+  part(netherDragon,.32,.25,.32,dm.dragonSpine,side*.55,.95,-3.78);
+  part(netherDragon,.6,1.4,.65,dm.dragon,side*.88,-1.32,1.45);
+  part(netherDragon,.45,.7,.55,dm.dragonEdge,side*.9,-2.08,1.30);
+}
+// Rückenstacheln und lange, segmentierte Schwanzsilhouette.
+for(let i=0;i<7;i++)part(netherDragon,.43,.45,.58,dm.dragonSpine,0,1.5-i*.12,-2.0+i*1.03);
+for(let i=0;i<7;i++){
+  const scale=1-i*.11;
+  part(netherDragon,1.1*scale,.87*scale,1.18,dm.dragon,0,.05-i*.08,3.0+i*1.12);
+}
+const netherWings=[];
+for(const side of [-1,1]){
+  const wing=new THREE.Group();wing.position.set(side*1.45,.8,.15);netherDragon.add(wing);
+  // Kräftige tragende Flügelstreben und dreifach gestaffelte violette Membran.
+  part(wing,5.5,.20,.44,dm.dragonEdge,side*2.65,.06,0);
+  part(wing,4.7,.17,.35,dm.dragonEdge,side*5.15,-.02,1.3);
+  part(wing,5.1,.13,2.8,dm.dragonWing,side*3.9,-.12,.96);
+  part(wing,3.2,.13,3.2,dm.purple,side*6.7,-.12,1.30);
+  part(wing,1.2,.30,.30,dm.dragonSpine,side*7.6,.04,1.05);
+  netherWings.push({wing,side});
+}
+// Sanfte violette Partikel vor dem Drachenmaul – nur in der schönen Grafik.
+// Ein einziges InstancedMesh statt separater Partikel-Objekte.
+const netherBreath=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,.22,.22),
+  new THREE.MeshBasicMaterial({color:'#d37cff',transparent:true,opacity:.73,depthWrite:false}),12);
+const netherBreathTransform=new THREE.Object3D();
+netherDragon.add(netherBreath);
+netherDragon.scale.setScalar(1.13);
+netherDragon.visible=false;
+
+// Banner und Feuerbecken: kleine, gemeinsam instanzierte Dekorationen;
+// die ursprünglichen V27-Mauern bleiben unverändert und abbaubar.
+const fortressAccentGroup=new THREE.Group();scene.add(fortressAccentGroup);
+const flagMat=new THREE.MeshLambertMaterial({color:'#873647',side:THREE.DoubleSide});
+const crestMat=new THREE.MeshLambertMaterial({color:'#e5a851'});
+const emberMat=new THREE.MeshBasicMaterial({color:'#ffb049'});
+const accentTransform=new THREE.Object3D();
+const bannerPlaces=[[-33,27,-39],[33,27,-39],[-17,25,-40],[17,25,-40],
+  [-69,25,-57],[69,25,-57],[-44,25,-70],[44,25,-70]];
+const bannerMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(2.4,4.6,.15),flagMat,bannerPlaces.length);
+const crestMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.82,1,.21),crestMat,bannerPlaces.length);
+for(let i=0;i<bannerPlaces.length;i++){
+  const [x,y,z]=bannerPlaces[i];accentTransform.position.set(x+.5,y+.5,z+.5);
+  accentTransform.rotation.set(0,0,0);accentTransform.scale.set(1,1,1);
+  accentTransform.updateMatrix();bannerMesh.setMatrixAt(i,accentTransform.matrix);
+  accentTransform.position.y=y+.2;accentTransform.position.z=z+.6;
+  accentTransform.updateMatrix();crestMesh.setMatrixAt(i,accentTransform.matrix);
+}
+bannerMesh.instanceMatrix.needsUpdate=true;crestMesh.instanceMatrix.needsUpdate=true;
+fortressAccentGroup.add(bannerMesh,crestMesh);
+const torchPlaces=[[-34,41,-46],[34,41,-46],[-44,37,-76],[44,37,-76],
+ [-69,36,-63],[69,36,-63],[-19,27,-41],[19,27,-41],[-8,26,-42],[8,26,-42]];
+const torchMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.65,1.05,.65),emberMat,torchPlaces.length);
+for(let i=0;i<torchPlaces.length;i++){
+  const [x,y,z]=torchPlaces[i];accentTransform.position.set(x+.5,y+.5,z+.5);
+  accentTransform.updateMatrix();torchMesh.setMatrixAt(i,accentTransform.matrix);
+}
+torchMesh.instanceMatrix.needsUpdate=true;fortressAccentGroup.add(torchMesh);
+fortressAccentGroup.visible=false;
+
+function updateNetherCreatures(dt,now){
+  const active=isMeadow()&&showCreatures;
+  const closeToFort=Math.hypot(player.x,player.z+55)<165;
+  fortressAccentGroup.visible=isMeadow()&&closeToFort;
+  netherDragon.visible=active&&closeToFort;
+  if(netherDragon.visible){
+    const t=now*.001, a=t*.115;
+    netherDragon.position.set(28*Math.cos(a),60+4*Math.sin(t*.67),-64+17*Math.sin(a));
+    // Der Kopf ist entlang der negativen lokalen Z-Richtung ausgerichtet.
+    const vx=-28*Math.sin(a),vz=17*Math.cos(a);
+    netherDragon.rotation.set(Math.sin(t*.39)*.055,Math.atan2(-vx,-vz),Math.sin(t*.42)*.065);
+    for(const {wing,side} of netherWings)
+      wing.rotation.z=side*(.10+Math.sin(t*2.05)*.36);
+    netherBreath.visible=graphicMode==='schoen';
+    if(netherBreath.visible){
+      for(let i=0;i<netherBreath.count;i++){
+        const phase=(t*.66+i/netherBreath.count)%1,spin=i*2.399+t*1.1;
+        netherBreathTransform.position.set(Math.sin(spin)*phase*.75,
+          -.17+Math.cos(spin)*phase*.62,-5.6-phase*4.1);
+        netherBreathTransform.rotation.set(phase*2,spin,phase*3);
+        netherBreathTransform.scale.setScalar((1-phase)*(.6+(i%3)*.25));
+        netherBreathTransform.updateMatrix();
+        netherBreath.setMatrixAt(i,netherBreathTransform.matrix);
+      }
+      netherBreath.instanceMatrix.needsUpdate=true;
+    }
+  }
+  for(const mob of netherCreatureList){
+    const dist=Math.hypot(player.x-mob.x,player.z-mob.z);
+    const visible=active&&dist<(MOBILE?43:60);
+    mob.group.visible=visible;
+    if(!visible)continue;
+    const t=now*.001;
+    const near=gameRunning&&dist<11&&Math.abs(player.y-mob.y)<4;
+    const chase=near&&dist>3.0;
+    const dx=player.x-mob.x,dz=player.z-mob.z;
+    let angle=chase?Math.atan2(dz,dx):mob.bearing;
+    if(!chase){
+      const home=Math.hypot(mob.x-mob.homeX,mob.z-mob.homeZ);
+      if(home>3.5)angle=Math.atan2(mob.homeZ-mob.z,mob.homeX-mob.x);
+      else if(Math.sin(t*.34+mob.seed)>.75)angle+=Math.sin(t*.49+mob.seed)*.66;
+    }
+    const moving=chase||Math.sin(t*.73+mob.seed*1.77)>.28;
+    if(moving){
+      const pace=mob.speed*dt;
+      const nx=mob.x+Math.cos(angle)*pace,nz=mob.z+Math.sin(angle)*pace;
+      let newY=null;
+      for(const h of [mob.y,mob.y+1,mob.y-1]){
+        if(netherWalkable(nx,nz,h)){newY=h;break;}
+      }
+      if(newY!==null&&Math.hypot(nx-mob.homeX,nz-mob.homeZ)<(near?8:4.5)){
+        mob.x=nx;mob.z=nz;mob.y=newY;mob.bearing=angle;
+      }else mob.bearing+=.9*dt;
+    }
+    mob.group.position.set(mob.x,mob.y+Math.sin(t*3.1+mob.phase)*.023,mob.z);
+    mob.group.rotation.y=-angle-Math.PI/2;
+    if(mob.type==='zombie'){
+      const sway=moving?Math.sin(t*4.0+mob.seed)*.26:0;
+      mob.leftLeg.rotation.x=sway;mob.rightLeg.rotation.x=-sway;
+      mob.arms[0].rotation.x=-.65+sway*.28;
+      mob.arms[1].rotation.x=-.65-sway*.28;
+    }else{
+      const sway=moving?Math.sin(t*5+mob.seed)*.15:0;
+      mob.arms.forEach((leg,i)=>leg.rotation.x=i%2?sway:-sway);
+      // Die Creeper werden bei Nähe neugierig, aber explodieren nicht.
+      mob.head.rotation.y=Math.sin(t*.85+mob.phase)*.08;
+    }
+  }
+}
+
 function hasLineOfSight(npc){
   const dx=npc.x-camera.position.x;
   const dy=npc.group.position.y+1.45-camera.position.y;
@@ -3322,7 +3551,7 @@ function visitVillage(){
 $('villageBtn').addEventListener('click',visitVillage);
 $('mobsBtn').addEventListener('click',()=>{
   showCreatures=!showCreatures;
-  $('mobsBtn').textContent=showCreatures?'✓ Tiere und Bewohner: an':'○ Tiere und Bewohner: aus';
+  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(isMeadow()?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   toast(showCreatures?'Die Welt ist lebendig!':'Die Figuren machen eine Pause.');
 });
 function applyLighting(){
@@ -3348,8 +3577,8 @@ function applyLighting(){
   applyView();
 }
 function applyView(){
-  const fogFar=farView?(MOBILE?178:220):(MOBILE?114:145);
-  scene.fog.near=farView?76:51;scene.fog.far=lightMode===2?fogFar*.83:fogFar;
+  const fogFar=isMeadow()?(farView?235:166):(farView?(MOBILE?178:220):(MOBILE?114:145));
+  scene.fog.near=isMeadow()?(farView?108:71):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));
@@ -3598,10 +3827,11 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V27 – Netherfestung':'Legendenwelt · V27 – Labor';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V28 – Drachenfestung':'Legendenwelt · V28 – Labor';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V27 · Netherfestung':'Blockwelt V27 · Legendenwelt';
+  document.title=meadow?'Blockwelt V28 · Drachenfestung':'Blockwelt V28 · Legendenwelt';
+  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
 }
@@ -3621,7 +3851,8 @@ function switchWorld(next){
   npcTargetBtn.classList.remove('visible');
   baseWorld();loadEdits();respawn();yaw=.08;pitch=-.22;
   rebuild();updateCamera();updateWorldSelector();updateTarget();
-  toast(isMeadow()?'Deine freie Wiese ist bereit!':'Willkommen zurück im Abenteuer!');
+  applyView();
+  toast(isMeadow()?'Die Drachenfestung wartet auf dich!':'Willkommen zurück im Abenteuer!');
 }
 $('worldAdventureBtn').addEventListener('click',()=>switchWorld('abenteuer'));
 $('worldMeadowBtn').addEventListener('click',()=>switchWorld('wiese'));
@@ -3652,7 +3883,7 @@ const regions={schattenwald:'🌑 Schattenwald',dorf:'🏘️ Dorf',see:'🌊 Se
 let regionName='';
 function updateRegion(){
   if(isMeadow()){
-    const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<NETHER_BOUNDS.maxX+5;
+    const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
     const name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
     if(regionName!==name){regionName=name;$('regionLabel').textContent=name;}
     return;
@@ -3674,7 +3905,7 @@ let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
-  updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);
+  updateMovement(dt);updateCamera();updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
