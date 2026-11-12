@@ -1,65 +1,61 @@
-# Blockwelt V26 – Große Wiese (Labor-Testversion)
+# BLOCKWELT V27 – Netherfestung auf der Großen Wiese
 
-**Basis:** V25 Sonnen-Dorf. Neu: zweite eigenständige Welt **„Große Wiese“**.
+## Status: TESTVERSION – WebGL/iPhone-Abnahme ausstehend
 
-## Was ist neu?
+Die Netherfestung ist **echte Spielgeometrie**, keine als Kulisse eingeblendete Grafik. Sie basiert auf Blockwelt V26 mit getrennten Welten. Die generierte Festung lehnt sich gestalterisch an die gezeigte fantastische Netherfestungs-Vorlage an. Eine **pixelgenaue 1:1-Übereinstimmung mit der KI-Konzeptgrafik ist nicht gegeben**: Beleuchtung, Modellkomplexität und Texturqualität bleiben durch die aktuelle Blockwelt-Engine begrenzt.
 
-Die Blockwelt hat jetzt **zwei getrennte Welten**, umschaltbar im Start-/Spielmenü unter **„🌍 Welten auswählen“**:
+### Inhalt
 
-1. **🏰 Abenteuerwelt** – die bisherige 192 × 192 große Legendenwelt mit Dörfern, Werkstätten, Entdeckerbuch, Bergen, Ruinen und Tieren. Der vorhandene Bauwerks-Speicherschlüssel `blockwelt-kleine-baumeister-v1` bleibt exakt gleich.
-2. **🌿 Große Wiese** – eine eigene 192 × 192 große, völlig flache Grasfläche, auf der anfangs **keine Bäume, Blumen, Seen, Häuser, Figuren, Tiere oder Entdeckungsorte** stehen. Auf dem Gras kann man eigene Bauwerke frei errichten. Die Oberfläche liegt überall auf der gleichen Höhe; darunter befinden sich Erde und Stein. Baublöcke, die man selbst setzt, können die Wiese natürlich verändern.
+- Zwei Welten bleiben vorhanden: Abenteuerwelt und Große Wiese.
+- Auf der **Großen Wiese** steht eine gewaltige Netherfestung (Außenabmessungen etwa **149 × 79 Felder**, höchster Block auf Höhe **52**).
+- Großer, breiter Zugang mit begehbaren Stufen, Haupttor, Innenhof, Bergfried, mehreren Etagen, seitlichen Wehrgängen, erhöhten Verbindungsbrücken, sechs Türmen und Aussichtsplattform.
+- Eigens generierte, dunkle Netherziegel, Dunkelstein, dunkle Zierränder, Wappengold und Glutstein. Alles sind bearbeitbare Spielblöcke; eigene Texturen, keine Minecraft-Dateien.
+- **Schnellreise** „🔥 Zur Netherfestung reisen“ im Menü der Großen Wiese.
+- Die Festung erscheint bereits aus der Entfernung als vereinfachtes, sparsam gerendertes Modell und wechselt beim Herankommen zu den echten, texturierten Blöcken.
+- Im Baumaterialmenü stehen fünf neue Nether-Blöcke zur Auswahl.
+- Der Bauplan ist deterministisch und wird bei Bedarf in 16×16-Chunks gestreamt, nicht als tausende einzelne separate Meshes erstellt.
+- 40.000+ feste Voxel an circa 38 Chunkpositionen. Die exakte Zahl steht in der technischen Geometrieprüfung.
 
-Beide Welten verwenden denselben Baukasten, dieselbe mobile Steuerung und dieselben Grafikoptionen. In der Großen Wiese sind das Entdeckerbuch und der Abenteuer-Kompass ausgeblendet. Über das Menü lässt sich jederzeit zur Abenteuerwelt zurückwechseln.
+### Schutz der vorhandenen Welten
 
-## Spielstände & Sicherungen
+- Die Abenteuerwelt wurde in Terrain- und Bau-Generator, alten Save-Schlüsseln und Werkstattfunktionen gegenüber V26 **nicht verändert**.
+- Der vorhandene Wiesen-Speicherschlüssel bleibt `blockwelt-grosse-wiese-v26`.
+- Die Festung wird **vor** eigenen gesetzten/abgebauten Blöcken erzeugt. Eigene Änderungen haben deshalb Vorrang und werden weiterhin gespeichert.
+- Falls du vorher mitten in der späteren Festungsfläche selbst gebaut hast, kann die neue Festung um die alten Bauwerke herum erscheinen. **Bitte vorher beide Welten sichern.**
+- Bestehende Wiesen-Sicherungen mit `version: 8, world: 'wiese'` bleiben importierbar; die fünf neuen Materialien werden vom Import erkannt.
 
-- **Abenteuerwelt:** `blockwelt-kleine-baumeister-v1` (unverändert).
-- **Große Wiese:** `blockwelt-grosse-wiese-v26` (neu, getrennt).
-- Aktive Welt: `blockwelt-aktive-welt-v26` (nur die Auswahl wird gemerkt).
-- Bauwerke werden in jeder Welt separat automatisch im Browser gespeichert.
-- **„Welt sichern“** exportiert immer nur die aktuell ausgewählte Welt. Der Abenteuer-Export bleibt rückwärtskompatibel mit V25 (Formatversion 7). Der Wiesen-Export verwendet Formatversion 8 und die ausdrückliche Weltkennzeichnung `world: "wiese"`.
-- **„Welt laden“** verhindert, dass eine Sicherung versehentlich in die falsche Welt importiert wird.
-- **„Welt neu anfangen“** löscht ausdrücklich nur die aktuell ausgewählte Welt. Die andere wird nicht angetastet.
+### Bedienung
 
-**Vor jedem Austausch:** Alte Version sichern und im vorhandenen Spiel beide Welten bei Bedarf als JSON exportieren. Testversion zunächst in einem Testbranch prüfen. Ein GitHub-Branch wird nicht automatisch über die bestehende GitHub-Pages-Adresse veröffentlicht.
+1. Spiel öffnen, im Menü „Große Wiese“ wählen.
+2. „🔥 Zur Netherfestung reisen“ drücken, danach den Spielstart.
+3. Dem breiten Weg und der Treppe zum Haupttor folgen.
+4. Durch den Innenhof zum Bergfried gehen; der westliche Treppenaufgang führt auf den ersten Wehrgang und weiter nach oben.
+5. Mit „Abbauen“ und „Setzen“ kannst du die Festung nach eigenen Vorstellungen verändern. Nutze den Flugmodus zum freien Betrachten, für den Hauptweg ist er nicht notwendig.
+6. Bei schwächeren Geräten „Grafik: Flüssig“ aktivieren. Die Sichtweite im Test kann dabei geringer sein, die Blockwelt und Bauwerke bleiben dieselben.
 
-## Bedienung
+### Technische Prüfung
 
-1. Öffne das Blockwelt-Menü (`☰`).
-2. Öffne **„🌍 Welten auswählen“**.
-3. Wähle **„🌿 Große Wiese“** oder **„🏰 Abenteuerwelt“**.
-4. Tippe auf **„▶ Große Wiese betreten“** bzw. **„▶ Abenteuerwelt betreten“**.
-5. Baue wie gewohnt; deine Änderungen werden nur in dieser Welt gespeichert.
+- JavaScript-Syntax kontrolliert.
+- Originalfunktionen für Terrain, Dörfer, Sehenswürdigkeiten, Welt-Aufbau, Laden und Speichern gegen V26 unverändert.
+- Eigenständige 3D-Block-Wegsuche: von der Wiese durch das Tor und den Hof, in den Bergfried, auf den oberen Wehrgang, auf die Dachterrasse, bis zum Turmdach sowie in beide vorderen und beide Außen-Türme.
+- Gemeinsame Geometrie an Chunkgrenzen; alle Festungsblöcke innerhalb der 192×192-Welt und unter y=70.
+- IDs der HTML-Steuerung und Syntax geprüft.
+- Darstellung des Menüs bei drei Bildschirmgrößen (375×667, 393×852, 844×390) kontrolliert.
+- Alternative 3D-Codeansichten erstellt (keine echten Safari-/Three.js-Screenshots).
 
-## Technische Prüfungen
+**Noch nicht geprüft:** End-to-End-WebGL-Rendering mit Three.js im Browser, iOS-Safari-Framerate, längerfristige Speicherbelastung auf dem Handy, exakte visuelle Entsprechung des Konzeptbildes. V27 deshalb bitte zunächst in einem **separaten Testbranch** testen und noch nicht als fertige Premium-Version veröffentlichen.
 
-- `node --check game.js`: bestanden.
-- Vergleich **aller 36.864 Geländepunkte und Biome** zwischen V25 und der V26-Abenteuerwelt: **identisch**.
-- Neue Wiese: alle 36.864 Geländehöhen = 5, Biom `wiese`.
-- Echte Wiesen-Chunkgeneratorfunktion separat getestet: nur ebene Grasschicht, Erde, Stein; keine automatisch erzeugten Bauwerke; selbst gesetzte/entfernte Blöcke bleiben erhalten.
-- Zwei getrennte Spielstände: Speichern, Wechsel und Wiedereinlesen in einer isolierten Testumgebung bestanden.
-- HTML-/CSS-Menü bei **375 × 667, 393 × 852 und 844 × 390** Pixeln geprüft. Weltwahl erreichbar; Wiesenmodus blendet Abenteuer-HUD aus.
-- 52 eindeutige HTML-IDs, keine fehlenden aus dem Skript referenzierten IDs.
-- ZIP-Integrität wird vor Übergabe geprüft.
+### Dateien
 
-**Grenzen:** Die vollständige Three.js-WebGL-Welt und die Leistung auf einem echten iPhone wurden in dieser Umgebung noch nicht live geprüft. V26 ist deshalb eine **Labor-Testversion**, keine visuell abgenommene Veröffentlichung.
+- `index.html` – Startmenü, Weltenwahl, Bauen und Schnellreise
+- `styles.css` – Spieloberfläche, Buttons und neue Material-Symbole
+- `game.js` – Welten, Bauplan, Rendering, Wegbegehbarkeit, Materialien und Spielstandlogik
+- `README.md` – diese Anleitung
 
-## GitHub-Texte
+### GitHub-Commit
 
-**Zusammenfassung:**
+**Zusammenfassung:** `Blockwelt V27 – begehbare Netherfestung auf der Großen Wiese (Test)`
 
-`Blockwelt V26 – Eigenständige Große Wiese mit getrennten Spielständen (Labor)`
+**Remote-Referenz für Working Copy:** `refs/heads/test/blockwelt-v27-netherfestung`
 
-**Detaillierte Informationen:**
-
-- Zweite, völlig ebene Bauwelt „Große Wiese“ (192 × 192 Felder) ergänzt.
-- Keine automatisch erzeugten Häuser, Bäume, Figuren, Seen oder Dekorationen auf der Wiese.
-- Umschaltung zwischen Abenteuerwelt und Großer Wiese direkt im Menü.
-- Getrennte automatische Speicherung, eigene Exporte und Importschutz pro Welt.
-- Die ursprüngliche Abenteuerwelt mit allen 36.864 Geländehöhen und bestehendem Speicherschlüssel unverändert.
-- HTML-/CSS- und Weltgenerator-Regressionstests bestanden.
-- Laborfassung: vollständiger Safari-WebGL-Test noch offen.
-
-**Branch:** `refs/heads/test/blockwelt-v26-grosse-wiese`
-
-**Force Push:** Aus.
+**Force Push:** Aus

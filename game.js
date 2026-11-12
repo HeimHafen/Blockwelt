@@ -1,4 +1,4 @@
-// BLOCKWELT V26 LABOR — neue unabhängige Bauwelt 'Große Wiese'; V25-Abenteuerwelt unverändert.
+// BLOCKWELT V27 TEST — begehbare Netherfestung auf der Großen Wiese; Abenteuerwelt bleibt erhalten.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -8,8 +8,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.m
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
-const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble','glass','gold','water','path','snow','blossom','lantern'];
-const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster',glass:'Glas',gold:'Gold',water:'Wasser',path:'Weg',snow:'Schnee',blossom:'Blüten',lantern:'Laterne'};
+const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble','glass','gold','water','path','snow','blossom','lantern','netherBrick','netherDeep','netherTrim','netherGold','lavaGlow'];
+const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster',glass:'Glas',gold:'Gold',water:'Wasser',path:'Weg',snow:'Schnee',blossom:'Blüten',lantern:'Laterne',netherBrick:'Netherziegel',netherDeep:'Dunkelstein',netherTrim:'Nether-Kante',netherGold:'Netherwappen',lavaGlow:'Glutstein'};
 const HALF = 96; // 192 × 192 Felder; Chunk-Streaming hält den iPhone-Speicher klein.
 const LEGACY_HALF = 32; // Der komplette alte V3-Weltausschnitt bleibt erhalten.
 const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 740;
@@ -36,6 +36,354 @@ try { if(localStorage.getItem(ACTIVE_WORLD_KEY)==='wiese')activeWorld='wiese'; }
 const isMeadow = () => activeWorld === 'wiese';
 const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
 const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
+// V27 — EIGENSTÄNDIGE NETHERFESTUNG AUF DER GROSSEN WIESE.
+// Der Bauplan besteht nur aus echten Minecraft-ähnlichen Voxeln. Keine
+// gerenderten Kulissen, keine Eingriffe in die unveränderte Abenteuerwelt.
+const NETHER_BOUNDS={minX:-56,maxX:56,minZ:-86,maxZ:-11};
+let netherChunkPlan=null;
+let netherPlanVoxels=null;
+let netherPlanCount=0;
+function makeNetherPlan(){
+  if(netherChunkPlan)return netherChunkPlan;
+  const vox=new Map();
+  const N='netherBrick',D='netherDeep',T='netherTrim',G='netherGold',L='lavaGlow';
+  const solid=(x,y,z,type=N)=>{
+    if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||
+       x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y)return;
+    vox.set(key(x,y,z),type);
+  };
+  const empty=(x,y,z)=>vox.delete(key(x,y,z));
+  const box=(xa,xb,ya,yb,za,zb,type=N)=>{
+    for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++)for(let y=ya;y<=yb;y++)solid(x,y,z,type);
+  };
+  const deck=(xa,xb,y,za,zb,type=N)=>box(xa,xb,y,y,za,zb,type);
+  const lineX=(xa,xb,y,z,type=N)=>box(xa,xb,y,y,z,z,type);
+  const lineZ=(x,za,zb,y,type=N)=>box(x,x,y,y,za,zb,type);
+  const lamp=(x,y,z)=>{
+    solid(x,y-1,z,D);solid(x,y,z,'lantern');
+  };
+  const rail=(xa,xb,y,za,zb,axis)=>{
+    if(axis==='z')for(let z=za;z<=zb;z++){
+      solid(xa,y,z,N);solid(xb,y,z,N);
+      if(z%3===0){solid(xa,y+1,z,T);solid(xb,y+1,z,T);}
+    }else for(let x=xa;x<=xb;x++){
+      solid(x,y,za,N);solid(x,y,zb,N);
+      if(x%3===0){solid(x,y+1,za,T);solid(x,y+1,zb,T);}
+    }
+  };
+  const crenel=(xa,xb,y,za,zb)=>{
+    for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++){
+      if(x!==xa&&x!==xb&&z!==za&&z!==zb)continue;
+      if(((x+z)&3)!==0)continue;
+      solid(x,y,z,T);
+    }
+  };
+  const tower=(cx,cz,height,wide=5)=>{
+    // Entfernt bereits gebaute Fassadenteile im Turminneren. Andernfalls
+    // durchschneidet die vordere Festungsmauer beide begehbaren Etagen.
+    for(let x=cx-wide+2;x<=cx+wide-2;x++)for(let z=cz-wide+2;z<=cz+wide-2;z++)
+      for(let y=13;y<height;y++)empty(x,y,z);
+    // Hohlraum und mehrere Etagen: ein echter Turm, kein massiver Steinblock.
+    for(let y=12;y<=height;y++)for(let dx=-wide;dx<=wide;dx++)for(let dz=-wide;dz<=wide;dz++){
+      const x=cx+dx,z=cz+dz,edge=Math.abs(dx)>=wide-1||Math.abs(dz)>=wide-1;
+      if(edge){
+        const slit=(y===17||y===18||y===27||y===28||y===height-5)&&
+          ((dx===0&&Math.abs(dz)===wide)||(dz===0&&Math.abs(dx)===wide));
+        if(slit)continue;
+        solid(x,y,z,(y===13||y===23||y===33||y===height)?T:N);
+      }
+    }
+    deck(cx-wide,cx+wide,12,cz-wide,cz+wide,D);
+    for(const y of [23,33])if(y<height-4){
+      deck(cx-wide+2,cx+wide-2,y,cz-wide+2,cz+wide-2,N);
+      // Auf der Westseite bleibt ein Schacht für die Turmtreppe frei.
+      for(let z=cz-2;z<=cz+2;z++)for(let x=cx-wide+2;x<=cx-wide+3;x++)empty(x,y,z);
+    }
+    deck(cx-wide,cx+wide,height,cz-wide,cz+wide,T);
+    crenel(cx-wide,cx+wide,height+1,cz-wide,cz+wide);
+    // Zugang zum Inneren vom Hof, ohne eine solide Torwand zu hinterlassen.
+    const front=cz+wide;
+    for(let x=cx-1;x<=cx+1;x++)for(let y=13;y<=16;y++){
+      empty(x,y,front);empty(x,y,front-1);
+    }
+    // Vier offene obere Torbögen: Brücken führen in die Türme, nicht gegen
+    // unsichtbare/volle Mauern. Die Geschossböden y=23 bleiben begehbar.
+    for(let u=-2;u<=2;u++)for(let t=0;t<=2;t++)for(let y=24;y<=27;y++){
+      empty(cx+u,y,cz-wide+t);empty(cx+u,y,cz+wide-t);
+      empty(cx-wide+t,y,cz+u);empty(cx+wide-t,y,cz+u);
+    }
+    // Turmstufen zur oberen Etage, so dass auch die Spitze erkundbar ist.
+    const ring=[];
+    for(let z=cz+2;z>=cz-2;z--)ring.push([cx-2,z]);
+    for(let x=cx-1;x<=cx+2;x++)ring.push([x,cz-2]);
+    for(let z=cz-1;z<=cz+2;z++)ring.push([cx+2,z]);
+    for(let x=cx+1;x>=cx-1;x--)ring.push([x,cz+2]);
+    for(let i=0;i<ring.length;i++){
+      const [x,z]=ring[i];
+      const y=13+Math.floor(i*.60);
+      for(let clear=y+1;clear<=y+3;clear++)empty(x,clear,z);
+      solid(x,y,z,D);
+    }
+    for(let i=0;i<18;i++){
+      const [x,z]=ring[i%ring.length];
+      const y=24+Math.floor(i*.57);
+      if(y>=height)break;
+      for(let clear=y+1;clear<=y+3;clear++)empty(x,clear,z);
+      solid(x,y,z,T);
+    }
+    // Nicht jede Etage wird durch Dachblöcke versperrt.
+    for(let z=cz-2;z<=cz+2;z++)for(let x=cx-2;x<=cx-1;x++){
+      if(height>=33)empty(x,33,z);
+      empty(x,height,z);
+    }
+    for(let y=height-4;y<height;y++)for(const z of [cz-wide,cz+wide])
+      if(y%3===0)solid(cx,y,z,L);
+  };
+  // 1. Großzügige Fundamentterrasse: die Wiese bleibt rundherum offen.
+  deck(-47,47,12,-84,-43,D);
+  box(-47,-45,5,11,-84,-43,D);box(45,47,5,11,-84,-43,D);
+  box(-47,47,5,11,-84,-82,D);box(-47,47,5,11,-45,-43,D);
+  // Flache dekorative Bodenstruktur; keine Gegenstände auf Hauptlaufwegen.
+  for(let x=-43;x<=43;x++)for(let z=-81;z<=-47;z++){
+    if(Math.abs(x)<7||z%7===0||Math.abs(x)%12===0)solid(x,12,z,(x+z)%11===0?T:N);
+  }
+  // 2. Riesige Haupttreppe: ein Block Höhenunterschied je 3 Felder.
+  // Die vorhandene 1-Block-Aufsteighilfe macht sie direkt begehbar.
+  for(let z=-13;z>=-43;z--){
+    const level=Math.min(12,5+Math.floor((-z-13)/4));
+    const width=z<-28?9:7;
+    for(let x=-width;x<=width;x++){
+      for(let y=5;y<=level;y++)solid(x,y,z,y===level?(x===0?T:D):D);
+    }
+    if((-z)%4===0){for(const x of [-width-2,width+2]){
+      box(x,x,5,level,z,z,N);
+      if(level+2<=MAX_Y)lamp(x,level+2,z);
+    }}
+  }
+  // 3. Haupteingang mit Torhaus, Zinnen und bewusst freiem Tor.
+  for(let z=-46;z<=-43;z++)for(let x=-45;x<=45;x++){
+    const gate=Math.abs(x)<=6;
+    for(let y=13;y<=27;y++){
+      const arch=(gate&&y<=22)||
+        (y===23&&Math.abs(x)<=5)||(y===24&&Math.abs(x)<=3);
+      if(arch)continue;
+      if(y>=25&&Math.abs(x)>34&&x%5===0)continue;
+      const trim=(y===13||y===24||y===27||x%11===0&&y%6===0);
+      solid(x,y,z,trim?T:N);
+    }
+    if(x%4===0)solid(x,28,z,D);
+  }
+  // Portalrahmen und symmetrisches Wappen.
+  for(const x of [-7,7])box(x,x,13,25,-43,-42,T);
+  for(let x=-6;x<=6;x++)solid(x,25,-42,T);
+  for(const x of [-17,17]){
+    box(x-2,x+2,18,25,-42,-42,T);
+    box(x-1,x+1,19,23,-41,-41,D);
+    for(let y=20;y<=22;y++)solid(x,y,-40,L);
+    solid(x,19,-40,G);
+  }
+  // Zwei Front-Wehrtürme, zwei hintere, und ein breites Kastenwerk.
+  tower(-34,-46,39,6);tower(34,-46,39,6);
+  tower(-44,-76,35,5);tower(44,-76,35,5);
+  // Relief der Vorderfassade: Lichtbögen, Steinrippen und das rote Torwappen.
+  for(const center of [-23,-13,13,23]){
+    for(let z=-46;z<=-42;z++)for(let x=center-3;x<=center+3;x++)for(let y=14;y<=22;y++){
+      const d=Math.abs(x-center);
+      if(d<=2&&y<=19||d<=1&&y<=21||d===0&&y===22)empty(x,y,z);
+    }
+    for(const x of [center-4,center+4])box(x,x,13,24,-42,-42,T);
+    for(let x=center-4;x<=center+4;x++)solid(x,24,-42,T);
+    solid(center,23,-42,L);
+  }
+  // Zwischen den Arkaden und den Eingängen entsteht eine lesbare Reliefstruktur.
+  for(const x of [-40,-29,-8,8,29,40]){
+    box(x,x,14,23,-42,-42,D);
+    for(const y of [16,23])solid(x,y,-41,T);
+  }
+  for(const x of [-10,10]){
+    box(x,x,14,21,-42,-42,T);
+    solid(x,22,-42,G);
+  }
+  // Außenposten als zweite, per Brücke erreichbare Burgebene.
+  for(const side of [-1,1]){
+    const tx=side*69;
+    tower(tx,-63,34,5);
+    const lo=Math.min(side*45,side*69),hi=Math.max(side*45,side*69);
+    deck(lo,hi,23,-65,-61,T);
+    rail(lo,hi,24,-66,-60,'x');
+    for(let x=lo;x<=hi;x+=8){
+      box(x-1,x+1,13,22,-63,-63,N);
+      for(const z of [-66,-60])lamp(x,26,z);
+    }
+  }
+  // 4. Seitliche Umfassungsmauern mit offenen Arkaden.
+  for(const sx of [-1,1])for(let z=-82;z<=-45;z++)for(let w=0;w<=2;w++){
+    const x=sx*(44+w);
+    for(let y=13;y<=24;y++){
+      // Ein paar große Bogenöffnungen zum Durchschauen und Erkunden.
+      const opening=(z>=-66&&z<=-59||z>=-78&&z<=-72)&&y<=20&&Math.abs(x)===44;
+      if(opening)continue;
+      solid(x,y,z,(y===22||y===24)?T:N);
+    }
+    if(z%4===0)solid(x,25,z,D);
+  }
+  for(let x=-46;x<=46;x++)for(let y=13;y<=23;y++){
+    if(Math.abs(x)<=6&&y<=20)continue;
+    solid(x,y,-83,y===13||y===23?T:N);
+  }
+  // 5. Erkundbarer, freier Innenhof mit mehreren Wegen.
+  for(let x=-27;x<=27;x++)for(let z=-62;z<=-48;z++){
+    if(Math.abs(x)<=4||z===-55||Math.abs(x)%9===0)solid(x,12,z,(x*z)%13===0?T:N);
+  }
+  // Leuchtsäulen stehen *neben* den Durchgängen.
+  for(const [x,z] of [[-18,-53],[18,-53],[-18,-62],[18,-62]]){
+    box(x,x,13,16,z,z,D);solid(x,17,z,L);
+  }
+  // 6. Lange, begehbare Wehrgänge auf zwei Ebenen.
+  // Hauptbrücke quer zur Festung, mit durchgehendem Boden und Geländern.
+  for(const z of [-58,-73]){
+    deck(-41,41,23,z-2,z+2,T);
+    rail(-41,41,24,z-3,z+3,'x');
+    for(let x=-38;x<=38;x+=8){
+      for(const side of [-3,3])lamp(x,26,z+side);
+      // Wiederkehrende Stützen, keine undurchdringliche Wand.
+      if(Math.abs(x)>21)for(let y=13;y<=22;y++)solid(x,y,z-2,N);
+    }
+  }
+  // Vorderer Wehrgang über dem Tor.
+  deck(-42,42,27,-48,-46,T);
+  rail(-42,42,28,-49,-45,'x');
+  // Längsbrücken zu den rückwärtigen Türmen.
+  for(const x of [-35,35]){
+    deck(x-2,x+2,23,-78,-48,T);
+    rail(x-3,x+3,24,-78,-48,'z');
+    for(let z=-74;z<=-50;z+=8){
+      lamp(x-3,26,z);lamp(x+3,26,z);
+    }
+  }
+  // Vier Torbogen-Abschnitte unter den weit gespannten Brücken.
+  for(const z of [-58,-73])for(const x of [-28,-14,14,28]){
+    for(let y=13;y<=22;y++)for(const px of [x-2,x+2])solid(px,y,z,N);
+    for(let dx=-2;dx<=2;dx++)solid(x+dx,22,z,T);
+  }
+  // 7. Rückwärtiger Bergfried: drei echte Etagen, offener Eingangsraum.
+  const KX=16,ZN=-81,ZP=-64;
+  for(let y=13;y<=39;y++)for(let x=-KX;x<=KX;x++)for(let z=ZN;z<=ZP;z++){
+    const edge=Math.abs(x)>=KX-1||z<=ZN+1||z>=ZP-1;
+    if(!edge)continue;
+    // Freie, breite Portale vorn und hinten.
+    if(Math.abs(x)<=4&&y<=18&&(z>=ZP-1||z<=ZN+1))continue;
+    const window=(y===19||y===20||y===30||y===31)&&
+      ((Math.abs(x)===KX&&(z+80)%7===0)||(z===ZN&&(x+16)%7===0));
+    if(window)continue;
+    solid(x,y,z,y%9===0?T:N);
+  }
+  for(const y of [22,33,40]){
+    deck(-KX,KX,y,ZN,ZP,y===40?T:D);
+    // Stairwell kept open where real stairs pass through the floors.
+    for(let z=-79;z<=-66;z++)for(let x=-14;x<=-11;x++){
+      if(y!==40)empty(x,y,z);
+    }
+  }
+  crenel(-KX,KX,41,ZN,ZP);
+  // Hoher zentraler Turm mit herausragenden leuchtenden Fenstern.
+  for(let y=41;y<=50;y++)for(let x=-9;x<=9;x++)for(let z=-77;z<=-69;z++){
+    if(Math.abs(x)===9||z===-77||z===-69){
+      const win=(Math.abs(x)<=1&&(z===-69||z===-77)&&y>=44&&y<=48);
+      solid(x,y,z,win?L:N);
+    }
+  }
+  deck(-10,10,51,-78,-68,T);crenel(-10,10,52,-78,-68);
+  // 8. Betretbare Treppe vom Hof zum ersten Wehrgang (inkl. Kopffreiheit).
+  // Süd -> Nord, eine volle Stufe je zwei Wegfelder.
+  for(let z=-50;z>=-72;z--){
+    const level=Math.min(23,13+Math.floor((-z-50)/2));
+    for(let x=-23;x<=-20;x++){
+      for(let y=13;y<=level;y++)solid(x,y,z,y===level?T:D);
+      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
+    }
+  }
+  // Landung zum Quergang und nach innen in den oberen Bergfried.
+  deck(-23,-13,23,-74,-70,T);deck(-23,-13,23,-65,-61,T);
+  for(let z=-74;z<=-61;z++)deck(-20,-17,23,z,z,T);
+  // Die Treppe geht durch das Turmhaus und endet im oberen Stockwerk.
+  // Ein zweiter, kurzer Treppenlauf führt zum dritten Geschoss.
+  for(let z=-66;z>=-79;z--){
+    const level=Math.min(33,23+Math.floor((-z-66)*.80));
+    for(let x=-13;x<=-11;x++){
+      for(let y=24;y<=level;y++)solid(x,y,z,D);
+      for(let y=level+1;y<=Math.min(level+3,39);y++)empty(x,y,z);
+    }
+  }
+  deck(-13,-5,33,-80,-75,T);
+  // Das Obergeschoss darf nicht als Decke durch die aufsteigende Treppe ragen.
+  for(let z=-66;z>=-79;z--){
+    const level=Math.min(33,23+Math.floor((-z-66)*.80));
+    for(let x=-13;x<=-11;x++){
+      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
+      solid(x,level,z,D);
+    }
+  }
+  // Dachterrasse: separater Treppenlauf vom dritten Stock auf das Dach.
+  for(let z=-78;z<=-68;z++){
+    const level=Math.min(41,34+Math.floor((z+78)*.7));
+    for(let x=11;x<=13;x++){
+      for(let y=34;y<=level;y++)solid(x,y,z,D);
+      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
+    }
+  }
+  // Eingang zum hohen Aussichtsturm aus der Dachterrasse.
+  for(let x=-2;x<=2;x++)for(let y=41;y<=44;y++)empty(x,y,-69);
+  const topStair=[];
+  for(let z=-70;z>=-76;z--)topStair.push([-6,z]);
+  for(let x=-5;x<=-2;x++)topStair.push([x,-76]);
+  for(let i=0;i<topStair.length;i++){
+    const [x,z]=topStair[i],level=Math.min(51,41+i);
+    for(let y=level+1;y<=Math.min(53,level+3);y++)empty(x,y,z);
+    solid(x,level,z,T);
+  }
+  for(let x=-3;x<=-1;x++)for(let z=-77;z<=-74;z++)empty(x,51,z);
+  deck(-7,-2,51,-75,-74,T);
+
+  // Obere Verbindung zu den seitlichen Gängen, mit echter Durchgangshöhe.
+  for(const sx of [-1,1])for(let x=sx*13;x!==sx*18;x+=sx)for(let z=-73;z<=-68;z++)
+    for(let y=24;y<=27;y++)empty(x,y,z);
+  // Continuity from the gallery to the inside of the upper hall.
+  deck(-20,-12,23,-72,-68,T);
+  // 9. Ornamentik: Lava-Lichtbänder an Außenseiten, keine offenen Flüsse
+  // auf Laufwegen. Kinder können die Festung gefahrlos erkunden.
+  for(const sx of [-1,1]){
+    for(let z=-74;z<=-50;z+=6)for(let y=15;y<=22;y++)solid(sx*47,y,z,(y+z)%4===0?L:T);
+    for(const x of [sx*30,sx*43])for(let y=28;y<=33;y++)solid(x,y,-42,(y%3===0)?L:T);
+  }
+  // Laternen an den Wegrändern, nicht im mittleren Laufraum.
+  for(let z=-60;z<=-48;z+=6)for(const x of [-8,8])lamp(x,15,z);
+  // Zur Festungsmitte führender Weg durch den Rasen, ohne Baumhindernisse.
+  for(let z=-11;z<=-6;z++)for(let x=-5;x<=5;x++)solid(x,4,z,D);
+  // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
+  // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
+  netherPlanVoxels=vox;
+  netherChunkPlan=new Map();
+  for(const [k,type] of vox){
+    const [x,y,z]=k.split(',').map(Number);
+    const id=`${Math.floor(x/CHUNK)},${Math.floor(z/CHUNK)}`;
+    if(!netherChunkPlan.has(id))netherChunkPlan.set(id,[]);
+    netherChunkPlan.get(id).push([x,y,z,type]);
+  }
+  netherPlanCount=vox.size;
+  return netherChunkPlan;
+}
+function addNetherChunk(cx,cz){
+  for(const [x,y,z,type] of makeNetherPlan().get(chunkKey(cx,cz))||[])
+    put(x,y,z,type);
+}
+function meadowSurfaceY(x,z){
+  const base=MEADOW_HEIGHT;
+  if(!isMeadow())return terrainHeight(x,z);
+  // Nur für Spawn/Schnellreise; niemals ein Spielerbauwerk überschreiben.
+  const sample=(cx,cz)=>{for(let y=MAX_Y;y>=MEADOW_HEIGHT;y--)if(get(cx,y,cz))return y+1;return base;};
+  return sample(Math.floor(x),Math.floor(z));
+}
 
 const blocks = new Map();
 const edits = new Map();
@@ -99,7 +447,12 @@ function texture(type,face){
     path:['#987b55','#baa079','#d1b58c','#ac8c65','#e1c59b','#c6aa80'],
     snow:['#e3eff2','#f8ffff','#c5dce6','#e5f5f8','#f0faff','#d4e5ed'],
     blossom:['#e49bbc','#f3b5d0','#ffe0e7','#d98eae','#f8c8da','#efafd0'],
-    lantern:['#f4b642','#ffdc72','#ffe7a1','#df8f2f','#ffd66a','#fff0b0']
+    lantern:['#f4b642','#ffdc72','#ffe7a1','#df8f2f','#ffd66a','#fff0b0'],
+    netherBrick:['#321b26','#48212d','#562b35','#3c1c27','#632c36','#261723'],
+    netherDeep:['#191620','#28202a','#34232b','#201a26','#3a2832','#16151e'],
+    netherTrim:['#6c2d3c','#863746','#a34a4f','#712b3a','#9a424c','#5b2635'],
+    netherGold:['#e8a23d','#f7c65d','#ffd98b','#b86732','#ffde92','#c7863d'],
+    lavaGlow:['#f76613','#ff9a1d','#ffd256','#e84f13','#ffe17c','#ff7219']
   };
   const pal=palettes[(type==='grass'&&face==='bottom')?'dirt':type];
   const pick=(a=pal)=>a[Math.floor(random()*a.length)];
@@ -141,10 +494,11 @@ function texture(type,face){
     for(let i=0;i<7;i++){const x=Math.floor(random()*60),y=5+Math.floor(random()*56);
       line('#986b38',x,y,4,2);}
   }
-  if(type==='bricks'){
-    for(let y=0;y<64;y+=13){line('#e2b79b',0,y,64,3);
+  if(type==='bricks'||type==='netherBrick'||type==='netherTrim'||type==='netherDeep'){
+    for(let y=0;y<64;y+=13){const mortar=type==='bricks'?'#e2b79b':type==='netherDeep'?'#110e19':'#27111e';
+      line(mortar,0,y,64,type==='bricks'?3:2);
       const offset=(Math.floor(y/13)%2)*13;
-      for(let x=offset;x<64;x+=26)line('#e2b79b',x,y+3,3,10);
+      for(let x=offset;x<64;x+=26)line(mortar,x,y+2,2,11);
     }
   }
   if(type==='path'){
@@ -164,6 +518,9 @@ function texture(type,face){
       line(random()>.5?'#b6edee':'#317dab',x,y,4+Math.floor(random()*4)*2,2);
     }
   }
+  if(type==='lavaGlow'){
+    for(let i=0;i<70;i++){let x=Math.floor(random()*31)*2,y=Math.floor(random()*31)*2;line(random()>.47?'#fff49b':'#df3e10',x,y,2+Math.floor(random()*3)*2,2);}
+  }
   if(type==='glass'){
     line('#e9ffff',4,5,4,46);line('#e9ffff',10,10,2,23);line('#4c9cbe',0,58,64,3);
   }
@@ -178,8 +535,8 @@ for(const type of BLOCK_TYPES){
   const side=new THREE.MeshLambertMaterial({map:texture(type,'side')});
   const top=new THREE.MeshLambertMaterial({map:texture(type,'top')});
   const bottom=new THREE.MeshLambertMaterial({map:texture(type,'bottom')});
-  if(type==='lantern'){
-    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:'#ffae3c',emissiveIntensity:.42});
+  if(type==='lantern'||type==='lavaGlow'){
+    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:type==='lavaGlow'?'#ff6a17':'#ffae3c',emissiveIntensity:type==='lavaGlow'?.72:.42});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='water'){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.72,depthWrite:false});
@@ -1408,6 +1765,8 @@ function generateChunkData(cx,cz){
       for(let y=0;y<MEADOW_HEIGHT;y++)
         put(x,y,z,y===MEADOW_HEIGHT-1?'grass':y>=MEADOW_HEIGHT-3?'dirt':'stone');
     }
+    // Erzeugte Festungsblöcke zuerst, persönliche Änderungen zuletzt.
+    addNetherChunk(cx,cz);
     const xmin=cx*CHUNK,zmin=cz*CHUNK;
     for(const edit of edits.values()){
       const [x,y,z,type]=edit;
@@ -1471,19 +1830,78 @@ function unloadChunkData(cx,cz){
     for(let y=0;y<=MAX_Y+7;y++)blocks.delete(key(x,y,z));
   }
 }
+// Fernansicht als ein einziges, billiges Farbgitter. Nur nicht-geladene Chunks:
+// Dadurch bleiben Turmsilhouetten sichtbar, ohne 30 weitere Echt-Chunks zu laden.
+let netherFarMesh=null;
+const netherFarMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
+const netherFarPalette={
+  netherBrick:'#4d2934',netherDeep:'#28232b',netherTrim:'#8a3c48',
+  netherGold:'#e3ac57',lavaGlow:'#ff842c',lantern:'#ffd079',
+  grass:'#5e8c4b',dirt:'#73583b',stone:'#7d8285'
+};
+function rebuildNetherFarView(cx,cz,radius){
+  if(netherFarMesh){scene.remove(netherFarMesh);netherFarMesh.geometry.dispose();netherFarMesh=null;}
+  if(!isMeadow())return;
+  const plan=makeNetherPlan();
+  const all=netherPlanVoxels;
+  const vertices=[],colors=[];
+  const faceTable=[
+    {d:[1,0,0],shade:.81,v:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]]},
+    {d:[-1,0,0],shade:.70,v:[[0,0,1],[0,1,1],[0,1,0],[0,0,0]]},
+    {d:[0,1,0],shade:1.13,v:[[0,1,0],[0,1,1],[1,1,1],[1,1,0]]},
+    {d:[0,-1,0],shade:.58,v:[[0,0,1],[0,0,0],[1,0,0],[1,0,1]]},
+    {d:[0,0,1],shade:.89,v:[[1,0,1],[1,1,1],[0,1,1],[0,0,1]]},
+    {d:[0,0,-1],shade:.76,v:[[0,0,0],[0,1,0],[1,1,0],[1,0,0]]}
+  ];
+  const colorObjects={};
+  const getTone=type=>colorObjects[type]||(colorObjects[type]=new THREE.Color(netherFarPalette[type]||'#7b737b'));
+  const order=[0,1,2,0,2,3];
+  for(const [id,list] of plan){
+    const [pcx,pcz]=id.split(',').map(Number);
+    if(Math.abs(pcx-cx)<=radius&&Math.abs(pcz-cz)<=radius)continue;
+    for(const [x,y,z,baseType] of list){
+      const k=key(x,y,z);
+      const type=edits.has(k)?edits.get(k)[3]:baseType;
+      if(!type)continue;
+      const base=getTone(type);
+      for(const face of faceTable){
+        const nx=x+face.d[0],ny=y+face.d[1],nz=z+face.d[2];
+        const nk=key(nx,ny,nz),neighbor=edits.has(nk)?edits.get(nk)[3]:all.get(nk);
+        if(neighbor)continue;
+        const c=base.clone().multiplyScalar(face.shade);
+        for(const j of order){
+          const v=face.v[j];vertices.push(x+v[0],y+v[1],z+v[2]);
+          colors.push(c.r,c.g,c.b);
+        }
+      }
+    }
+  }
+  if(!vertices.length)return;
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  netherFarMesh=new THREE.Mesh(geometry,netherFarMaterial);
+  netherFarMesh.renderOrder=-1;
+  scene.add(netherFarMesh);
+}
+
 function updateWorldStream(force=false){
   const cx=Math.floor(player.x/CHUNK),cz=Math.floor(player.z/CHUNK);
-  const id=chunkKey(cx,cz);
+  // Ein zusätzlicher Sicht-Chunk im schönen Grafikmodus zeigt die Burg bereits
+  // von der Wiese aus. Sparmodus behält den bewährten iPhone-Radius.
+  const radius=isMeadow()&&graphicMode==='schoen'?Math.max(STREAM_RADIUS,3):STREAM_RADIUS;
+  const id=chunkKey(cx,cz)+'/'+radius;
   if(!force&&id===lastStreamCenter)return;
   lastStreamCenter=id;
   const desired=new Set();
   // Generate data in a one-chunk halo to avoid incorrect open edges.
-  for(let dx=-STREAM_RADIUS-1;dx<=STREAM_RADIUS+1;dx++)for(let dz=-STREAM_RADIUS-1;dz<=STREAM_RADIUS+1;dz++){
+  for(let dx=-radius-1;dx<=radius+1;dx++)for(let dz=-radius-1;dz<=radius+1;dz++){
     const x=cx+dx,z=cz+dz;
     if(x<-chunksPerSide||x>=chunksPerSide||z<-chunksPerSide||z>=chunksPerSide)continue;
     generateChunkData(x,z);
   }
-  for(let dx=-STREAM_RADIUS;dx<=STREAM_RADIUS;dx++)for(let dz=-STREAM_RADIUS;dz<=STREAM_RADIUS;dz++){
+  for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
     const x=cx+dx,z=cz+dz;
     if(x<-chunksPerSide||x>=chunksPerSide||z<-chunksPerSide||z>=chunksPerSide)continue;
     const key=chunkKey(x,z);desired.add(key);
@@ -1492,10 +1910,11 @@ function updateWorldStream(force=false){
   for(const id of [...chunkMeshes.keys()])if(!desired.has(id))disposeChunkMesh(id);
   for(const id of [...generatedChunks]){
     const [x,z]=id.split(',').map(Number);
-    if(Math.max(Math.abs(cx-x),Math.abs(cz-z))>STREAM_RADIUS+1)unloadChunkData(x,z);
+    if(Math.max(Math.abs(cx-x),Math.abs(cz-z))>radius+1)unloadChunkData(x,z);
   }
   // Vereinfachte Berg-, Wald- und See-Silhouetten weit hinter den echten Baublöcken.
   rebuildDistantLandscape(cx,cz);
+  rebuildNetherFarView(cx,cz,radius);
 }
 // V7 FERNLANDSCHAFT: Ein zusammengefasstes Geometrieobjekt statt hunderter echter Chunks.
 // Diese Meshes sind KEINE Baublöcke, keine Kollisionskörper und nicht anvisierbar.
@@ -1518,6 +1937,7 @@ function clearDistantLandscape(){
 }
 function rebuildDistantLandscape(cx,cz){
   clearDistantLandscape();
+  const radius=isMeadow()&&graphicMode==='schoen'?Math.max(STREAM_RADIUS,3):STREAM_RADIUS;
   const ring=farView?(MOBILE?6:7):4;
   const positions=[],colors=[];
   const step=2,trees=[];
@@ -1532,7 +1952,7 @@ function rebuildDistantLandscape(cx,cz){
     return !isMeadow()&&lakeDistance(x,z)<0&&h<=WATER_LEVEL ? WATER_LEVEL+.07 : h-.035;
   };
   for(let ox=-ring;ox<=ring;ox++)for(let oz=-ring;oz<=ring;oz++){
-    if(Math.max(Math.abs(ox),Math.abs(oz))<=STREAM_RADIUS)continue;
+    if(Math.max(Math.abs(ox),Math.abs(oz))<=radius)continue;
     const ccx=cx+ox,ccz=cz+oz;
     if(ccx<-chunksPerSide||ccx>=chunksPerSide||ccz<-chunksPerSide||ccz>=chunksPerSide)continue;
     const xmin=ccx*CHUNK,zmin=ccz*CHUNK;
@@ -2303,7 +2723,7 @@ function updateMovement(dt){
   if(player.grounded&&player.vy<0)player.vy=0;
   if(player.y< -5){respawn();toast('Wieder sicher auf der Wiese!');}
 }
-function respawn(){player.x=.5;player.z=isMeadow()?.5:6.5;player.y=terrainHeight(0,Math.floor(player.z))+.08;player.vy=0;player.grounded=false;}
+function respawn(){player.x=.5;player.z=isMeadow()?-.5:6.5;player.y=isMeadow()?MEADOW_HEIGHT+.08:terrainHeight(0,6)+.08;player.vy=0;player.grounded=false;}
 function jump(){if(!gameRunning||flying)return;const inWater=get(Math.floor(player.x),Math.floor(player.y+.25),Math.floor(player.z))==='water';if(player.grounded||inWater){player.vy=inWater?4.5:JUMP;player.grounded=false;}}
 function updateCamera(){
   camera.position.set(player.x,player.y+1.57,player.z);
@@ -2946,6 +3366,7 @@ function applyGraphicMode(notify=false){
   for(const meshes of decorativeMeshes.values())for(const mesh of meshes){
     if(mesh.userData.natureDetail)mesh.visible=graphicMode==='schoen';
   }
+  if(notify&&isMeadow())updateWorldStream(true);
   if(notify)toast(graphicMode==='schoen'?'Schönere Grafik aktiviert':'Flüssigere Grafik aktiviert');
 }
 $('graphicsBtn').addEventListener('click',()=>{
@@ -3177,9 +3598,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V26 – Labor':'Legendenwelt · V26 – Labor';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V27 – Netherfestung':'Legendenwelt · V27 – Labor';
+  $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V26 · Große Wiese':'Blockwelt V26 · Legendenwelt';
+  document.title=meadow?'Blockwelt V27 · Netherfestung':'Blockwelt V27 · Legendenwelt';
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
 }
@@ -3203,6 +3625,11 @@ function switchWorld(next){
 }
 $('worldAdventureBtn').addEventListener('click',()=>switchWorld('abenteuer'));
 $('worldMeadowBtn').addEventListener('click',()=>switchWorld('wiese'));
+$('fortressBtn').addEventListener('click',()=>{
+  if(!isMeadow())switchWorld('wiese');
+  // Der Weg zur Festung bleibt bewusst frei: keine Teleportation in Mauern.
+  teleportTo(0,-7,'Die Netherfestung wartet auf dich!',0,-45);
+});
 function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';updateWorldSelector();}
 $('menuBtn').addEventListener('click',openMenu);
 $('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
@@ -3225,7 +3652,8 @@ const regions={schattenwald:'🌑 Schattenwald',dorf:'🏘️ Dorf',see:'🌊 Se
 let regionName='';
 function updateRegion(){
   if(isMeadow()){
-    const name='🌿 Große Wiese';
+    const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<NETHER_BOUNDS.maxX+5;
+    const name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
     if(regionName!==name){regionName=name;$('regionLabel').textContent=name;}
     return;
   }

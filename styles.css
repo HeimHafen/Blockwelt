@@ -216,3 +216,17 @@ html,body{touch-action:auto}
 .world-description{padding:0 12px 10px!important;font-size:11px!important;text-align:left;color:#658375!important}
 .world-select .option-btn[aria-pressed="true"]{background:#d8efdd;border-color:#3b9b72;color:#21533d;box-shadow:inset 0 0 0 1px #82c9a2}
 .meadow-mode .adventure-only,.meadow-mode #discoveryBtn,.meadow-mode #compassGuide,.meadow-mode #mobsBtn,.meadow-mode #compassBtn{display:none!important}
+
+/* V27: neue originale Netherziegel, klar von der freien Graswelt getrennt. */
+.fortress-visit{display:block;width:100%;margin-top:10px;min-height:44px;
+  background:linear-gradient(115deg,#583039,#733643);color:#fff1dc;
+  border:1px solid #8c5960;}
+.fortress-visit[hidden]{display:none!important}
+.cube-netherBrick{background:linear-gradient(135deg,#632e3a,#311b28 78%)}
+.cube-netherDeep{background:linear-gradient(135deg,#46313c,#171620 75%)}
+.cube-netherTrim{background:linear-gradient(135deg,#b2565e,#682938 75%)}
+.cube-netherGold{background:linear-gradient(135deg,#ffdd92,#b56d2e 80%)}
+.cube-lavaGlow{background:linear-gradient(135deg,#ffe47b,#e95010 80%)}
+
+/* Horizontale Materialleiste bleibt auch mit fünf neuen Nether-Blöcken per Finger bedienbar. */
+.hotbar .slot{touch-action:pan-x;flex-shrink:0}

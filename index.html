@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V26: Abenteuerwelt und eigenständige große, ebene Bauwiese; kinderfreundliche 3D-Abenteuerwelt mit Dörfern, Burg, Wasserfall, Entdeckerkompass und lebendiger Natur.">
-  <title>Blockwelt V26 · Große Wiese · Labor</title>
+  <meta name="description" content="Blockwelt V27 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
+  <title>Blockwelt V27 · Große Wiese · Labor</title>
   <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
@@ -15,7 +15,7 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V26 – Labor</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V27 – Netherfestung</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -58,6 +58,11 @@
     <button class="slot" data-block="snow" type="button" aria-label="Schnee auswählen" aria-pressed="false"><span class="cube cube-snow"></span><small>Schnee</small></button>
     <button class="slot" data-block="blossom" type="button" aria-label="Blüten auswählen" aria-pressed="false"><span class="cube cube-blossom"></span><small>Blüten</small></button>
     <button class="slot" data-block="lantern" type="button" aria-label="Laterne auswählen" aria-pressed="false"><span class="cube cube-lantern"></span><small>Laterne</small></button>
+    <button class="slot" data-block="netherBrick" type="button" aria-label="Netherziegel auswählen" aria-pressed="false"><span class="cube cube-netherBrick"></span><small>Netherziegel</small></button>
+    <button class="slot" data-block="netherDeep" type="button" aria-label="Dunkelstein auswählen" aria-pressed="false"><span class="cube cube-netherDeep"></span><small>Dunkelstein</small></button>
+    <button class="slot" data-block="netherTrim" type="button" aria-label="Nether-Kante auswählen" aria-pressed="false"><span class="cube cube-netherTrim"></span><small>Nether-Kante</small></button>
+    <button class="slot" data-block="netherGold" type="button" aria-label="Netherwappen auswählen" aria-pressed="false"><span class="cube cube-netherGold"></span><small>Wappen</small></button>
+    <button class="slot" data-block="lavaGlow" type="button" aria-label="Glutstein auswählen" aria-pressed="false"><span class="cube cube-lavaGlow"></span><small>Glutstein</small></button>
   </nav>
   <div class="hint">Links laufen · Rechts umsehen · Blöcke auswählen</div>
 
@@ -77,7 +82,8 @@
               <button id="worldAdventureBtn" class="option-btn" type="button" aria-pressed="true">✓ 🏰 Abenteuerwelt</button>
               <button id="worldMeadowBtn" class="option-btn" type="button" aria-pressed="false">🌿 Große Wiese</button>
             </div>
-            <p class="world-description">Jede Welt speichert deine Bauwerke getrennt.</p>
+            <p class="world-description">Jede Welt speichert deine Bauwerke getrennt. Auf der Großen Wiese steht jetzt eine begehbare Netherfestung.</p>
+            <button id="fortressBtn" class="option-btn fortress-visit" type="button" hidden>🔥 Zur Netherfestung reisen</button>
           </details>
           <details class="menu-panel adventure-only">
             <summary>🧭 Orte entdecken <span>7 Ziele</span></summary>
