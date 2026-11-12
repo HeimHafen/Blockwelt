@@ -1,4 +1,4 @@
-// BLOCKWELT V29 LABOR — Netherfestung mit fliegendem Drachen, Zombies, Creepern und begehbaren Turmaufgängen.
+// BLOCKWELT V30 LABOR — Netherfestung mit fliegendem Drachen, Zombies, Creepern und begehbaren Turmaufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -139,49 +139,6 @@ function makeNetherPlan(){
     for(let y=height-4;y<height;y++)for(const z of [cz-wide,cz+wide])
       if(y%3===0)solid(cx,y,z,L);
   };
-  // Echte, breite Turmaufstiege: Jede Festungsebene bleibt ohne Flugmodus erreichbar.
-  const towerStairFlight=(coords,startY,type=D)=>{
-    for(let i=0;i<coords.length;i++){
-      const [x,z]=coords[i],y=startY+i;
-      solid(x,y,z,type);
-      for(let clear=y+1;clear<=Math.min(MAX_Y,y+3);clear++)empty(x,clear,z);
-    }
-  };
-  const towerAccess=(cx,cz,height,wide=5)=>{
-    const west=cx-wide+2,east=cx+wide-2,north=cz-wide+2,south=cz+wide-2;
-    // Flug 1: Terrasse -> mittlere Etage (y23)
-    const flight1=[];
-    for(let z=south-1;z>=north+1 && flight1.length<10;z--)flight1.push([west,z]);
-    for(let x=west+1;x<=east-1 && flight1.length<10;x++)flight1.push([x,north+1]);
-    towerStairFlight(flight1,13,D);
-    // Kleine Zwischenfläche direkt an der mittleren Ebene.
-    deck(west,Math.min(west+2,east),23,north+1,Math.min(north+2,south),T);
-    for(let x=west;x<=Math.min(west+2,east);x++)for(let z=north+1;z<=Math.min(north+2,south);z++)
-      for(let clear=24;clear<=26;clear++)empty(x,clear,z);
-    // Flug 2: mittlere Etage -> obere Turmebene (y33)
-    if(height>=33){
-      const flight2=[];
-      for(let z=north+1;z<=south-1 && flight2.length<9;z++)flight2.push([east,z]);
-      for(let x=east-1;x>=west+1 && flight2.length<9;x--)flight2.push([x,south-1]);
-      towerStairFlight(flight2,24,T);
-      deck(Math.max(east-2,west),east,33,Math.max(south-2,north),south,T);
-      for(let x=Math.max(east-2,west);x<=east;x++)for(let z=Math.max(south-2,north);z<=south;z++)
-        for(let clear=34;clear<=36;clear++)empty(x,clear,z);
-    }
-    // Flug 3: obere Ebene -> Dach / Zinnen.
-    const finalSteps=Math.max(0,height-34);
-    if(finalSteps){
-      const flight3=[];
-      for(let z=south-1;z>=north+1 && flight3.length<finalSteps;z--)flight3.push([west+1,z]);
-      for(let x=west+2;x<=east-1 && flight3.length<finalSteps;x++)flight3.push([x,north+2]);
-      towerStairFlight(flight3,34,T);
-    }
-    // Deutliche Dachöffnung an der Turmwestseite, damit die letzte Stufe frei ausläuft.
-    for(let x=west;x<=Math.min(west+2,east);x++)for(let z=cz-1;z<=cz+1;z++){
-      empty(x,height,z);
-      empty(x,height+1,z);
-    }
-  };
   // 1. Großzügige Fundamentterrasse: die Wiese bleibt rundherum offen.
   deck(-47,47,12,-84,-43,D);
   box(-47,-45,5,11,-84,-43,D);box(45,47,5,11,-84,-43,D);
@@ -226,10 +183,10 @@ function makeNetherPlan(){
     solid(x,19,-40,G);
   }
   // Zwei Front-Wehrtürme, zwei hintere, und ein breites Kastenwerk.
-  tower(-34,-46,39,6);towerAccess(-34,-46,39,6);
-  tower(34,-46,39,6);towerAccess(34,-46,39,6);
-  tower(-44,-76,35,5);towerAccess(-44,-76,35,5);
-  tower(44,-76,35,5);towerAccess(44,-76,35,5);
+  tower(-34,-46,39,6);
+  tower(34,-46,39,6);
+  tower(-44,-76,35,5);
+  tower(44,-76,35,5);
   // Relief der Vorderfassade: Lichtbögen, Steinrippen und das rote Torwappen.
   for(const center of [-23,-13,13,23]){
     for(let z=-46;z<=-42;z++)for(let x=center-3;x<=center+3;x++)for(let y=14;y<=22;y++){
@@ -252,7 +209,7 @@ function makeNetherPlan(){
   // Außenposten als zweite, per Brücke erreichbare Burgebene.
   for(const side of [-1,1]){
     const tx=side*69;
-    tower(tx,-63,34,5);towerAccess(tx,-63,34,5);
+    tower(tx,-63,34,5);
     const lo=Math.min(side*45,side*69),hi=Math.max(side*45,side*69);
     deck(lo,hi,23,-65,-61,T);
     rail(lo,hi,24,-66,-60,'x');
@@ -405,6 +362,83 @@ function makeNetherPlan(){
   for(let z=-60;z<=-48;z+=6)for(const x of [-8,8])lamp(x,15,z);
   // Zur Festungsmitte führender Weg durch den Rasen, ohne Baumhindernisse.
   for(let z=-11;z<=-6;z++)for(let x=-5;x<=5;x++)solid(x,4,z,D);
+  // V30: Durchgehende innere Wendeltreppen statt der unterbrochenen V29-Rampen.
+  // Abschluss NACH Brücken und Wehrgängen: spätere Decks versperren die Stufen nicht.
+  const finishTowerStairs=(cx,cz,height,wide)=>{
+    const r=wide===6?3:2;
+    const route=[];
+    // Eine geschlossene Runde von begehbaren, paarweise benachbarten Feldern.
+    // Start ist direkt hinter der vorderen Eingangstür.
+    for(let x=0;x<=r;x++)route.push([cx+x,cz+r]);
+    for(let z=r-1;z>=-r;z--)route.push([cx+r,cz+z]);
+    for(let x=r-1;x>=-r;x--)route.push([cx+x,cz-r]);
+    for(let z=-r+1;z<=r;z++)route.push([cx-r,cz+z]);
+    for(let x=-r+1;x<=-1;x++)route.push([cx+x,cz+r]);
+    // Erster Schritt liegt bei y13, letzter Schritt bei y(height-1).
+    // So landet der Spieler auf dem vorhandenen Dachniveau y(height+1).
+    let last=null;
+    for(let step=0;step<height-13;step++){
+      const [x,z]=route[step%route.length], y=13+step;
+      for(let clear=y+1;clear<=Math.min(MAX_Y,y+2);clear++)empty(x,clear,z);
+      solid(x,y,z,step%4===0?T:D);
+      last=[x,z];
+    }
+    // Freie Anbindung von der letzten Stufe zum umlaufenden Dach.
+    const [x,z]=last;
+    const dx=x-cx,dz=z-cz;
+    let lx=x,lz=z;
+    if(Math.abs(dx)===r)lx+=Math.sign(dx);
+    else lz+=Math.sign(dz||1);
+    solid(lx,height,lz,T);
+    empty(lx,height+1,lz);empty(lx,height+2,lz);
+    // Auf der Eingangsebene eine freie Zone hinter der Tür schaffen.
+    for(let z0=cz+wide-1;z0>cz+r;z0--){
+      for(let y=13;y<=15;y++)empty(cx,y,z0);
+    }
+    // Lichtleiste auf der Innenwand statt störender Dekoration im Stiegenlauf.
+    const lampX=cx+wide-2,lampZ=cz;
+    if(wide>=5&&height>22){
+      solid(lampX,19,lampZ,L);
+      solid(lampX,29,lampZ,L);
+    }
+  };
+  for(const [tx,tz,h,w] of [
+    [-34,-46,39,6],[34,-46,39,6],
+    [-44,-76,35,5],[44,-76,35,5],
+    [-69,-63,34,5],[69,-63,34,5]
+  ])finishTowerStairs(tx,tz,h,w);
+
+  // V30: Glutkabinett – kleine Ausstellungsstücke im zentralen Bergfried.
+  // Die Mitte des Durchgangs (x -3 bis +3) bleibt durchgehend frei.
+  for(const cx of [-7,7]){
+    box(cx-1,cx+1,13,13,-75,-74,D);
+    solid(cx,14,-74,G);
+    solid(cx,15,-74,L);
+    box(cx-1,cx+1,34,34,-76,-75,T);
+    solid(cx,35,-75,G);
+    solid(cx,36,-75,L);
+  }
+  // Glühende Wandzeichen in der oberen Halle: von den Treppen fern.
+  for(const x of [-8,-4,4,8]){
+    solid(x,37,-79,G);
+    solid(x,38,-79,L);
+  }
+  // Jedes erreichte Dach bietet einen kleinen, sichtbaren Orientierungspunkt.
+  // Die Umgänge bleiben breit; alle begehbaren Zinnen werden nicht zugestellt.
+  for(const [tx,tz,h] of [
+    [-34,-46,39],[34,-46,39],[-44,-76,35],[44,-76,35],
+    [-69,-63,34],[69,-63,34]
+  ]){
+    solid(tx,h+1,tz,T);
+    solid(tx,h+2,tz,L);
+    solid(tx,13,tz,D);
+    solid(tx,14,tz,G);
+  }
+  // Zwei Wegmarken auf der Außenkante des Hofes statt im Hauptweg.
+  for(const side of [-1,1]){
+    box(side*28,side*28,13,15,-55,-55,D);
+    solid(side*28,16,-55,L);
+  }
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
   netherPlanVoxels=vox;
@@ -3872,10 +3906,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V29 – Türme begehbar':'Legendenwelt · V29 – Labor';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V30 – Turmabenteuer':'Legendenwelt · V30 – Labor';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V29 · Türme begehbar':'Blockwelt V29 · Legendenwelt';
+  document.title=meadow?'Blockwelt V30 · Turmabenteuer':'Blockwelt V30 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
