@@ -1,11 +1,12 @@
-# Blockwelt V28 – Drachenfestung | Labor-Testpaket
+# Blockwelt V29 – Drachenfestung mit Turmzugang | Labor-Testpaket
 
 ## Wichtiger Status
 **Technisch geprüfte Testversion, keine visuell abgenommene finale Premiumfassung.**
-Die gezeigte KI-Konzeptgrafik mit einer riesigen Drachenfestung kann nicht automatisch 1:1 in die aktuelle Three.js-Engine übersetzt werden. Diese Version enthält echte 3D-Figuren und die bestehende begehbare V27-Festung. Eine vollständige Safari-WebGL- und FPS-Prüfung auf dem iPhone steht noch aus.
+Die gezeigte KI-Konzeptgrafik mit einer riesigen Drachenfestung kann nicht automatisch 1:1 in die aktuelle Three.js-Engine übersetzt werden. Diese Version enthält echte 3D-Figuren, die große Netherfestung und zusätzliche Turmtreppen für begehbare Türme. Eine vollständige Safari-WebGL- und FPS-Prüfung auf dem iPhone steht noch aus.
 
 ## Neu gegenüber V27
 
+- **Alle Haupttürme sind jetzt per Treppe erreichbar**: Fronttürme, Hintertürme und die äußeren Wehrtürme besitzen echte begehbare Aufstiege zu ihren Ebenen und aufs Dach.
 - Ein **großer fliegender, blockbasierter Drache** mit animierten Flügeln, segmentiertem Schwanz, violett leuchtenden Augen und vereinfachtem Atem-Partikeleffekt (nur im Grafikmodus *Schön*).
 - **5 Zombies und 5 Creeper** als echte 3D-Figuren, verteilt auf der freien Wiese, der Festungstreppe, dem Innenhof und oberen Wehrgängen.
 - Die Figuren bewegen sich langsam, orientieren sich am Spieler und berücksichtigen vorhandene Böden, eigene Blockänderungen und Hindernisse.
@@ -19,7 +20,7 @@ Die gezeigte KI-Konzeptgrafik mit einer riesigen Drachenfestung kann nicht autom
 
 - Die beiden Weltenslots bleiben erhalten: **Abenteuerwelt** und **Große Wiese**.
 - Speicherschlüssel bleiben **exakt unverändert**: `blockwelt-kleine-baumeister-v1`, `blockwelt-grosse-wiese-v26`.
-- Die **40.025 festen Festungsblöcke** und der begehbare V27-Bauplan wurden nicht geändert. Es kommen ausschließlich dekorative Objekte und bewegliche Figuren hinzu.
+- Der bestehende Festungsbauplan bleibt die Grundlage. Zusätzlich wurden feste Treppen- und Podestblöcke in mehreren Türmen ergänzt, damit die Turmebenen ohne Flugmodus erreichbar sind.
 - Die bisherigen Werkstatt-Aktivitäten und Entdeckerbuch-Speicher bleiben erhalten.
 - Spieleränderungen werden nach dem generierten Festungsplan angewendet und haben Vorrang.
 - Figuren werden nur in der Großen Wiese angezeigt. Die Abenteuerwelt enthält weiterhin ihre eigenen Tiere und Bewohner.
