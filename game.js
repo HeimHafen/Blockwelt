@@ -1,4 +1,4 @@
-// BLOCKWELT V33 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V34 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -397,6 +397,34 @@ function makeNetherPlan(){
     const x=side*47;
     solid(x,23,z,G);
   }
+  // Ground the outer towers on masonry piers and articulate the front plinth.
+  for(const x of [-69,69]){
+    box(x-4,x+4,5,6,-67,-59,D);
+    box(x-3,x+3,7,11,-66,-60,N);
+    deck(x-4,x+4,10,-67,-59,T);
+  }
+  for(let x=-46;x<=46;x++){
+    if(Math.abs(x)<12)continue;
+    for(const y of [5,10])solid(x,y,-43,T);
+    if(x%8===0)box(x,x,6,9,-43,-43,N);
+  }
+  // Recessed window motifs, trim and copper-colored insets in existing masonry.
+  for(const [cx,front] of [[-34,-40],[34,-40],[-69,-58],[69,-58],[-44,-71],[44,-71]]){
+    for(const x of [cx-3,cx+3])for(let y=17;y<=21;y++){
+      if(vox.has(key(x,y,front)))solid(x,y,front,y===17||y===21?T:L);
+    }
+  }
+  for(const z of [-58,-73])for(let x=-39;x<=39;x+=6){
+    for(const side of [-1,1]){
+      const railZ=z+side*3;
+      if(vox.has(key(x,24,railZ)))solid(x,24,railZ,T);
+    }
+  }
+  for(const x of [-13,-6,6,13])for(const z of [-77,-70]){
+    if(vox.has(key(x,22,z)))solid(x,22,z,L);
+    if(vox.has(key(x,33,z)))solid(x,33,z,L);
+  }
+
   // Set floors first, then clear the entire walking envelope after all decoration.
   const routes=[];
   const towerSpecs=[
@@ -567,9 +595,9 @@ function texture(type,face){
     snow:['#e3eff2','#f8ffff','#c5dce6','#e5f5f8','#f0faff','#d4e5ed'],
     blossom:['#e49bbc','#f3b5d0','#ffe0e7','#d98eae','#f8c8da','#efafd0'],
     lantern:['#f4b642','#ffdc72','#ffe7a1','#df8f2f','#ffd66a','#fff0b0'],
-    netherBrick:['#321b26','#48212d','#562b35','#3c1c27','#632c36','#261723'],
-    netherDeep:['#191620','#28202a','#34232b','#201a26','#3a2832','#16151e'],
-    netherTrim:['#6c2d3c','#863746','#a34a4f','#712b3a','#9a424c','#5b2635'],
+    netherBrick:['#794750','#8d4e56','#9e5f64','#814851','#a36669','#70424c'],
+    netherDeep:['#595060','#66566a','#736275','#605368','#7c6877','#51495d'],
+    netherTrim:['#a85b62','#ba6e6b','#c78078','#ab6266','#c27a71','#9a535e'],
     netherGold:['#e8a23d','#f7c65d','#ffd98b','#b86732','#ffde92','#c7863d'],
     lavaGlow:['#f76613','#ff9a1d','#ffd256','#e84f13','#ffe17c','#ff7219']
   };
@@ -614,7 +642,7 @@ function texture(type,face){
       line('#986b38',x,y,4,2);}
   }
   if(type==='bricks'||type==='netherBrick'||type==='netherTrim'||type==='netherDeep'){
-    for(let y=0;y<64;y+=13){const mortar=type==='bricks'?'#e2b79b':type==='netherDeep'?'#110e19':'#27111e';
+    for(let y=0;y<64;y+=13){const mortar=type==='bricks'?'#e2b79b':type==='netherDeep'?'#40384c':'#633641';
       line(mortar,0,y,64,type==='bricks'?3:2);
       const offset=(Math.floor(y/13)%2)*13;
       for(let x=offset;x<64;x+=26)line(mortar,x,y+2,2,11);
@@ -623,7 +651,7 @@ function texture(type,face){
   // V31: Eigene, charakteristische Nether-Oberflächen statt bloßem Farbrauschen.
   // Läuft pro Material nur einmal beim Start, kostet keine zusätzlichen Meshes.
   if(type==='netherBrick'||type==='netherDeep'||type==='netherTrim'){
-    const highlight=type==='netherTrim'?'#b95c66':type==='netherDeep'?'#514253':'#79404b';
+    const highlight=type==='netherTrim'?'#dd9a89':type==='netherDeep'?'#958399':'#b47a7a';
     for(let y=1;y<64;y+=13){
       ctx.fillStyle=highlight;ctx.fillRect(1,y+2,62,1);
       const offset=(Math.floor(y/13)%2)*13;
@@ -632,7 +660,7 @@ function texture(type,face){
     // Seltene feine Steinrisse: nicht flächig und nicht repetitiv.
     for(let j=0;j<5;j++){
       const x=4+Math.floor(random()*54),y=6+Math.floor(random()*51);
-      line(type==='netherDeep'?'#13111b':'#23131f',x,y,2,6);
+      line(type==='netherDeep'?'#443b51':'#683d49',x,y,2,6);
       line(highlight,x+2,y+4,4,1);
     }
   }
@@ -678,9 +706,17 @@ function texture(type,face){
 }
 const materialByType={};
 for(const type of BLOCK_TYPES){
-  const side=new THREE.MeshLambertMaterial({map:texture(type,'side')});
-  const top=new THREE.MeshLambertMaterial({map:texture(type,'top')});
-  const bottom=new THREE.MeshLambertMaterial({map:texture(type,'bottom')});
+  const makeFace=face=>{
+    const map=texture(type,face);
+    const material=new THREE.MeshLambertMaterial({map});
+    if(type.startsWith('nether')){
+      material.emissiveMap=map;
+      material.emissive.set('#ffe3db');
+      material.emissiveIntensity=.36;
+    }
+    return material;
+  };
+  const side=makeFace('side'),top=makeFace('top'),bottom=makeFace('bottom');
   if(type==='lantern'||type==='lavaGlow'){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:type==='lavaGlow'?'#ff6a17':'#ffae3c',emissiveIntensity:type==='lavaGlow'?.72:.42});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
@@ -1981,7 +2017,7 @@ function unloadChunkData(cx,cz){
 let netherFarMesh=null;
 const netherFarMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
 const netherFarPalette={
-  netherBrick:'#4d2934',netherDeep:'#28232b',netherTrim:'#8a3c48',
+  netherBrick:'#905860',netherDeep:'#65566a',netherTrim:'#b57473',
   netherGold:'#e3ac57',lavaGlow:'#ff842c',lantern:'#ffd079',
   grass:'#5e8c4b',dirt:'#73583b',stone:'#7d8285'
 };
@@ -2278,6 +2314,7 @@ function rebuildChunk(cx,cz){
   const chunk=[];
   function addInstanced(type,positions){
     if(!positions.length)return;
+    const fortressStone=type.startsWith('nether');
     const mesh=new THREE.InstancedMesh(blockGeo,materialByType[type],positions.length);
     mesh.userData.positions=positions;
     for(let i=0;i<positions.length;i++){
@@ -2291,7 +2328,9 @@ function rebuildChunk(cx,cz){
       const overhead=!!get(x,y+1,z);
       const closeWalls=Number(!!get(x-1,y,z))+Number(!!get(x+1,y,z))+
         Number(!!get(x,y,z-1))+Number(!!get(x,y,z+1));
-      const shade=Math.max(.67,variation*(overhead?.88:1)*(1-Math.min(3,closeWalls)*.037));
+      const shade=fortressStone
+        ? Math.max(.88,variation*(overhead?.98:1)*(1-Math.min(3,closeWalls)*.017))
+        : Math.max(.67,variation*(overhead?.88:1)*(1-Math.min(3,closeWalls)*.037));
       mesh.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));
     }
     mesh.instanceColor.needsUpdate=true;
@@ -3295,9 +3334,9 @@ const netherCreatureMaterials={
   creeperDark:new THREE.MeshLambertMaterial({color:'#2b5634'}),
   black:new THREE.MeshLambertMaterial({color:'#171c20'}),
   purple:new THREE.MeshLambertMaterial({color:'#654076',emissive:'#321648',emissiveIntensity:.23}),
-  dragon:new THREE.MeshLambertMaterial({color:'#242332'}),
-  dragonEdge:new THREE.MeshLambertMaterial({color:'#383044'}),
-  dragonWing:new THREE.MeshLambertMaterial({color:'#56336e',side:THREE.DoubleSide}),
+  dragon:new THREE.MeshLambertMaterial({color:'#494257',emissive:'#36223e',emissiveIntensity:.24}),
+  dragonEdge:new THREE.MeshLambertMaterial({color:'#74617c'}),
+  dragonWing:new THREE.MeshLambertMaterial({color:'#754b86',emissive:'#402450',emissiveIntensity:.20,side:THREE.DoubleSide}),
   dragonEye:new THREE.MeshBasicMaterial({color:'#ed83ff'}),
   dragonSpine:new THREE.MeshLambertMaterial({color:'#8751ac',emissive:'#46216f',emissiveIntensity:.36})
 };
@@ -3413,7 +3452,7 @@ netherDragon.visible=false;
 // Banner und Feuerbecken: kleine, gemeinsam instanzierte Dekorationen;
 // die ursprünglichen V27-Mauern bleiben unverändert und abbaubar.
 const fortressAccentGroup=new THREE.Group();scene.add(fortressAccentGroup);
-const flagMat=new THREE.MeshLambertMaterial({color:'#873647',side:THREE.DoubleSide});
+const flagMat=new THREE.MeshLambertMaterial({color:'#ad4c56',emissive:'#783044',emissiveIntensity:.23,side:THREE.DoubleSide});
 const crestMat=new THREE.MeshLambertMaterial({color:'#e5a851'});
 const emberMat=new THREE.MeshBasicMaterial({color:'#ffb049'});
 const accentTransform=new THREE.Object3D();
@@ -3990,10 +4029,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V33 – Festung & Aussicht':'Legendenwelt · V33';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V34 – Glutsteinfestung':'Legendenwelt · V34';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V33 · Netherfestung Deluxe':'Blockwelt V33 · Legendenwelt';
+  document.title=meadow?'Blockwelt V34 · Netherfestung Deluxe':'Blockwelt V34 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
