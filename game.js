@@ -1,10 +1,29 @@
-// BLOCKWELT V30 LABOR — Netherfestung mit fliegendem Drachen, Zombies, Creepern und begehbaren Turmaufgängen.
+// BLOCKWELT V31 LABOR — Netherfestung mit fliegendem Drachen, Zombies, Creepern und begehbaren Turmaufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
 // Die Geländeform und Spieler-Speicherschlüssel bleiben unverändert.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
+
+// V31 – AUSDRÜCKLICH GEWÜNSCHTER EINMALIGER NEUSTART.
+// Nur Blockwelt-Spielstände und Erkundungsfortschritte werden gelöscht.
+// Andere Apps auf derselben Domain und grafische Einstellungen bleiben erhalten.
+// Nach dem ersten erfolgreichen Reset schützt das Versionskennzeichen neu gebaute Werke.
+const V31_RESET_MARKER='blockwelt-v31-alte-spielstaende-geloescht';
+const V31_RESET_KEYS=[
+  'blockwelt-kleine-baumeister-v1', 'blockwelt-grosse-wiese-v26',
+  'blockwelt-aktive-welt-v26', 'blockwelt-entdeckerbuch-v10',
+  'blockwelt-relikte-v10', 'blockwelt-sonnendorf-werkstaetten-v23'
+];
+let oldSavesReset=false;
+try {
+  if(localStorage.getItem(V31_RESET_MARKER)!=='ja'){
+    for(const saveKey of V31_RESET_KEYS)localStorage.removeItem(saveKey);
+    localStorage.setItem(V31_RESET_MARKER,'ja');
+    oldSavesReset=true;
+  }
+}catch(error){console.warn('Blockwelt: Einmaliger Spielstand-Reset nicht vollständig möglich',error);}
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
@@ -33,6 +52,7 @@ const MEADOW_KEY = 'blockwelt-grosse-wiese-v26';
 const ACTIVE_WORLD_KEY = 'blockwelt-aktive-welt-v26';
 let activeWorld = 'abenteuer';
 try { if(localStorage.getItem(ACTIVE_WORLD_KEY)==='wiese')activeWorld='wiese'; }catch(_){}
+if(oldSavesReset){activeWorld='wiese';try{localStorage.setItem(ACTIVE_WORLD_KEY,'wiese');}catch(_){}}
 const isMeadow = () => activeWorld === 'wiese';
 const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
 const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
@@ -439,6 +459,85 @@ function makeNetherPlan(){
     box(side*28,side*28,13,15,-55,-55,D);
     solid(side*28,16,-55,L);
   }
+  // V31 – NETHERFESTUNG PREMIUM: Zusätzliche echte, bearbeitbare Baublöcke.
+  // Orientierung: Süd (z=-40) liegt vor dem Tor, Nord (z=-80) beim Bergfried.
+  // Alle Details bleiben neben dem 9 Felder breiten Hauptweg x=-4..4.
+  // A) Portal mit abgestuftem Bogen, Schlüsselsymbol und steinernen Flanken.
+  for(const side of [-1,1]){
+    // Zwei mächtige, tief gestaffelte Portalpfeiler; der Weg bleibt frei.
+    for(let z=-42;z<=-39;z++)for(let y=13;y<=27;y++){
+      const x=side*(8+(z===-42?0:z===-41?1:2));
+      solid(x,y,z,(y%5===0)?T:D);
+      if(y%7===1)solid(x+side,y,z,G);
+    }
+    // Sorgfältig proportioniertes Leuchtornament an der freien Toraußenwand.
+    for(let y=15;y<=23;y++){
+      solid(side*12,y,-41,y===15||y===23?G:T);
+      if(y===18||y===21)solid(side*13,y,-41,L);
+    }
+  }
+  for(let x=-7;x<=7;x++){
+    const archY=27+Math.max(0,3-Math.floor(Math.abs(x)/2));
+    solid(x,archY,-40,x===0?G:T);
+  }
+  // B) Innenhof: bewusst großzügig, vier glühende Wachtfeuer auf Sockeln.
+  // Jeweils mindestens 7 Blöcke Abstand zum unverbauten Hauptweg.
+  for(const [cx,cz] of [[-13,-54],[13,-54],[-13,-65],[13,-65]]){
+    deck(cx-2,cx+2,13,cz-2,cz+2,D);
+    // Stufenförmiger Sockel und geschützte Flammenmitte.
+    deck(cx-1,cx+1,14,cz-1,cz+1,T);
+    solid(cx,15,cz,G);solid(cx,16,cz,L);
+    for(const [dx,dz] of [[-2,0],[2,0],[0,-2],[0,2]]){
+      solid(cx+dx,14,cz+dz,T);
+    }
+  }
+  // C) Begehbare Relikt-/Thronkammer im hinteren Bergfried.
+  // Der mittige Laufweg und die alten Treppenschächte bleiben frei.
+  // Bewusst an der östlichen Wand statt im Hallenzentrum.
+  const throneX=9,throneZ=-76;
+  deck(6,12,13,-80,-74,T);
+  deck(7,11,14,-79,-76,D);
+  deck(8,10,15,-79,-77,N);
+  // Sitz und Rücken: Blick aus dem Thron nach Süden zum Halleneingang.
+  box(8,10,16,19,-79,-79,N);
+  for(const x of [7,11])box(x,x,15,17,-78,-77,T);
+  solid(9,20,-79,G);
+  for(const [x,z] of [[6,-75],[12,-75]]){
+    solid(x,14,z,D);solid(x,15,z,L);
+  }
+  // D) Bergfried-Wappen, Leuchtrahmen und Nebentüren – außerhalb der
+  // Hauptöffnung |x|<=4, die durchgehend frei bleibt.
+  for(const side of [-1,1]){
+    for(let y=15;y<=28;y++)solid(side*7,y,-63,(y%5===0)?G:T);
+    for(const y of [19,25,29])solid(side*7,y,-62,L);
+    for(let x=9;x<=13;x++)for(let y=16;y<=21;y++){
+      if(Math.abs(x-11)===2||y===21)solid(side*x,y,-63,T);
+    }
+  }
+  // E) Krönung: Turmsilhouetten mit Netherwappen an den Außenfassaden.
+  // Nur Wandaußenseiten, keine Treppen und keine Laufstege werden belegt.
+  for(const [cx,cz,h,w] of [
+    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],
+    [44,-76,35,5],[-69,-63,34,5],[69,-63,34,5]
+  ]){
+    const fx=cx,front=cz+w+1;
+    for(let y=h-9;y<=h-3;y++){
+      // Über der unteren Tür, vor der Turmwand (nur Deko an der Fassade).
+      solid(fx,y,front,(y===h-9||y===h-3)?G:T);
+      if(y===h-6){solid(fx-1,y,front,G);solid(fx+1,y,front,G);}
+    }
+    // Zwei sorgfältig gesetzte Ecktürmchen auf den Zinnen, nur am Außenrand.
+    for(const side of [-1,1]){
+      const cornerX=cx+side*w;
+      solid(cornerX,h+2,cz-w,T);
+      solid(cornerX,h+3,cz-w,L);
+    }
+  }
+  // F) Fernsicht bleibt lesbar: kontrastreiche horizontale Wandbänder.
+  for(const side of [-1,1])for(let z=-79;z<=-50;z+=3){
+    const x=side*47;
+    solid(x,23,z,G);
+  }
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
   netherPlanVoxels=vox;
@@ -579,6 +678,33 @@ function texture(type,face){
       const offset=(Math.floor(y/13)%2)*13;
       for(let x=offset;x<64;x+=26)line(mortar,x,y+2,2,11);
     }
+  }
+  // V31: Eigene, charakteristische Nether-Oberflächen statt bloßem Farbrauschen.
+  // Läuft pro Material nur einmal beim Start, kostet keine zusätzlichen Meshes.
+  if(type==='netherBrick'||type==='netherDeep'||type==='netherTrim'){
+    const highlight=type==='netherTrim'?'#b95c66':type==='netherDeep'?'#514253':'#79404b';
+    for(let y=1;y<64;y+=13){
+      ctx.fillStyle=highlight;ctx.fillRect(1,y+2,62,1);
+      const offset=(Math.floor(y/13)%2)*13;
+      for(let x=offset;x<64;x+=26)ctx.fillRect(x+2,y+4,1,7);
+    }
+    // Seltene feine Steinrisse: nicht flächig und nicht repetitiv.
+    for(let j=0;j<5;j++){
+      const x=4+Math.floor(random()*54),y=6+Math.floor(random()*51);
+      line(type==='netherDeep'?'#13111b':'#23131f',x,y,2,6);
+      line(highlight,x+2,y+4,4,1);
+    }
+  }
+  if(type==='netherGold'){
+    // Pixelwappen / Flammenrune, sichtbar auf Tor, Sockeln und Turmwappen.
+    line('#663024',6,6,52,52);
+    line('#f5c569',10,10,44,44);
+    line('#7b3540',14,14,36,36);
+    line('#ffe08b',28,16,8,8);
+    line('#ffad43',22,24,20,8);
+    line('#ffe08b',18,32,28,6);
+    line('#ffad43',25,38,14,8);
+    line('#ffe08b',29,46,6,5);
   }
   if(type==='path'){
     for(let i=0;i<23;i++){const x=Math.floor(random()*60),y=Math.floor(random()*60);
@@ -3656,8 +3782,8 @@ function applyLighting(){
   applyView();
 }
 function applyView(){
-  const fogFar=isMeadow()?(farView?235:166):(farView?(MOBILE?178:220):(MOBILE?114:145));
-  scene.fog.near=isMeadow()?(farView?108:71):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
+  const fogFar=isMeadow()?(farView?245:178):(farView?(MOBILE?178:220):(MOBILE?114:145));
+  scene.fog.near=isMeadow()?(farView?127:81):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));
@@ -3906,10 +4032,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V30 – Turmabenteuer':'Legendenwelt · V30 – Labor';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V31 – Netherfestung Deluxe':'Legendenwelt · V31 – Neustart';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V30 · Turmabenteuer':'Blockwelt V30 · Legendenwelt';
+  document.title=meadow?'Blockwelt V31 · Netherfestung Deluxe':'Blockwelt V31 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);

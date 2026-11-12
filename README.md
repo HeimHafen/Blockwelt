@@ -1,38 +1,51 @@
-# Blockwelt V30 – Turmabenteuer in der Drachenfestung
+# BLOCKWELT V31 – Netherfestung Deluxe · Neue Spielstände
 
-**Status:** Technisch geprüfter Teststand. Die iPhone-WebGL-Darstellung und die Bildrate sind noch nicht live geprüft. Das KI-Referenzbild stellt weiterhin ein gestalterisches Ziel dar, keine 1:1 geprüfte Liveansicht.
+**Status: vollständiges GitHub-Austauschpaket, technisch geprüft – iPhone-WebGL-Grafik und Langzeitleistung noch nicht live abgenommen.**
 
-## Neu gegenüber V29
+## ACHTUNG – ALTE SPIELSTÄNDE WERDEN GELÖSCHT
 
-Die Turmaufstiege wurden neu angelegt: geschlossene, echte Wendeltreppen ersetzen die teilweise unterbrochenen Rampen aus V29. Von der Großen Wiese gelangt man jetzt laut unabhängiger geometrischer Wegsuche ohne Flugmodus auf die Dächer **aller sechs Türme** (beide Fronttürme, beide rückwärtigen Türme und beide äußeren Türme). Auch der zentrale Bergfried ist bis zur höchsten Plattform erreichbar.
+Auf ausdrücklichen Wunsch beginnt V31 beim **ersten Start dieser Version in diesem Browser** vollständig neu. Dabei löscht der Code automatisch:
 
-Im zentralen Bergfried gibt es zwei kleine **Glutkabinette** mit leuchtenden Sockeln und Wandzeichen. Die Türme erhalten innen Orientierungspunkte und auf dem Dach ein warm leuchtendes Signal. An der Hofkante wurden zwei zurückhaltende Wegmarken ergänzt. Hauptwege und die geprüften Turmaufstiege bleiben offen.
+- die selbst gesetzten und abgebauten Blöcke in der **Abenteuerwelt** und auf der **Großen Wiese**,
+- alte Entdeckungen und gesammelte Geheimnisse,
+- die bereits absolvierten Werkstatt-Aufgaben,
+- die zuvor gewählte aktive Welt. Der Neustart öffnet die **Große Wiese**.
 
-**Unverändert:** Drache, fünf Zombies und fünf Creeper aus V28, die Festungsbrücken und -bauten, die Abenteuerwelt sowie die bestehenden Werkstatt-Abenteuer. Die Kreaturen können weiterhin über das Menü ausgeschaltet werden und zerstören keine selbst gebauten Blöcke.
+**Einmalig, nicht bei jedem Start:** `blockwelt-v31-alte-spielstaende-geloescht` verhindert die erneute Löschung. Alle **nach V31 neu errichteten Bauwerke bleiben dauerhaft gespeichert**, soweit Safari den lokalen Speicher zulässt.
 
-## Speicherstände und Sicherheit
+**Wichtig:** Dieser Reset wirkt nur auf Blockwelt-Spielstände **im Browser/Gerät, in dem V31 erstmals geöffnet wird**. Er löscht keine exportierten JSON-Sicherungen auf dem Gerät, keine Spielstände auf anderen Geräten und keine Daten anderer Apps. Grafikoptionen bleiben erhalten. Wenn alte Bauwerke doch noch benötigt werden, müssen sie **vor dem ersten Aufruf von V31** im alten Spiel exportiert werden. Das erneute Öffnen der alten Version stellt gelöschte lokale Daten nicht wieder her.
 
-- Abenteuerwelt: `blockwelt-kleine-baumeister-v1`
-- Große Wiese: `blockwelt-grosse-wiese-v26`
-- Aktive Welt: `blockwelt-aktive-welt-v26`
-- Diese **Speicherschlüssel sind unverändert**. Eigene gespeicherte Blockänderungen haben Vorrang vor dem generierten Bauplan. Bereits selbst veränderte Turmblöcke können daher örtlich einzelne neue Stufen beeinflussen.
-- Die Umgebung der Festung und die ursprüngliche Abenteuerwelt wurden nicht umgestaltet.
+## Verbesserungen gegenüber V30
 
-## Einspielen
+- **Aufgewertetes Festungstor:** gestaffelte Portalpfeiler, Lichtakzente, Wappen und markantere Bogenarchitektur.
+- **Gluthof:** vier begehbar umgebbare Wachtfeuer und ein erkennbarer Weg durch den Innenhof.
+- **Thron- und Reliktkammer:** erhöhte, begehbare Bühne mit einem dunklen Thron, beleuchteten Sockeln und Wandmotiven im zentralen Bergfried.
+- **Erkennbare Turmsilhouetten:** Wappen, Eckfackeln und architektonische Akzente an allen sechs Türmen.
+- **Verbesserte Nethertexturen:** Mauerfugen, Steinrisse und ein eigenes goldenes Flammenwappen als prozedurale Pixelmaterialien.
+- **Etwas bessere Fernwirkung:** dezent später einsetzender Wiesen-Nebel bei unverändertem Chunk-Streaming.
+- **V30-Inhalte weiter vorhanden:** sechs begehbare Türme, durchgehende Treppen und Wehrgänge, fliegender großer Drache, fünf Zombies und fünf Creeper. Die Gegner verursachen keinen Gebäudeschaden.
 
-1. **Vorher sichern:** In jeder Welt im Spielmenü »Welt sichern« benutzen. Auch das aktuelle GitHub-Repository bzw. den bisherigen Commit sichern.
-2. Das ZIP entpacken. Die enthaltenen Dateien `index.html`, `styles.css`, `game.js`, `README.md` ersetzen die gleichnamigen Dateien im GitHub-Repository `HeimHafen/Blockwelt`.
-3. Empfehlenswert: erst den Testbranch `test/blockwelt-v30-turmabenteuer` verwenden. Beachte, dass ein GitHub-Testbranch nicht automatisch auf die bisherige Pages-Live-URL veröffentlicht wird. Für das Testen auf der Pages-URL muss die Deployment-Quelle entsprechend eingerichtet oder nach Sicherung auf `main` übernommen werden.
-4. Im Spiel **Große Wiese → Zur Drachenfestung reisen**, das Haupttor betreten, danach die Türme über die Treppen hinaufsteigen. Dabei die Grafik- und Bedienleistung auf dem iPhone beobachten.
-5. Bei niedriger Bildrate **Grafik: Flüssig** wählen und gegebenenfalls **Festungswesen** ausschalten.
+## Spielbare Welten
 
-## Prüfungen in dieser Entwicklungsrunde
+1. **Große Wiese:** flache Graswelt mit der großen begehbaren Netherfestung.
+2. **Abenteuerwelt:** bestehende Orte, Dörfer, Tiere und vier Werkstatt-Abenteuer. Die **Generatoren und Geländehöhen** dieser Welt bleiben unverändert; die bisherigen **lokalen Spieländerungen** werden auf Wunsch zurückgesetzt.
 
-- `node --check` auf `game.js`: bestanden.
-- 53 HTML-Kennungen: eindeutig; alle 47 per JavaScript referenzierten IDs vorhanden.
-- Unabhängige Raster-Wegsuche von der Wiese aus: alle 6 Turmdächer, die oberen Wehrgänge sowie die höchste Bergfriedplattform erreicht, ohne Flugmodus oder Teleportation.
-- Vergleich zum V29-Bauplan: 40.100 bisherige vs. 40.156 aktuelle generierte Festungsblockeinträge; keine Veränderung an den geprüften Bereichen außerhalb der Festung und keine Änderung am Wiesengelände.
-- Bisherige Speicherschlüssel und Umschaltung der Festungswesen vorhanden.
-- ZIP-Struktur und CRC-Integrität geprüft.
+## Installation
 
-**Noch offen:** Echte vollständige WebGL-Abnahme auf einem iPhone; längerfristige FPS-/Speicher- und Touchscreen-Prüfung; pixelgenaue Grafikübereinstimmung mit dem KI-Konzeptbild (nicht erreicht).
+1. Bisherige Dateien oder GitHub-Commit bei Bedarf sichern. Bei gewünschtem vollständigem Neustart keine alten JSON-Spielstände später wieder importieren.
+2. Das ZIP entpacken und `index.html`, `styles.css`, `game.js`, `README.md` im Repository `HeimHafen/Blockwelt` ersetzen.
+3. Für einen geschützten Test den Branch `test/blockwelt-v31-netherfestung` wählen. Ein Testbranch ist nicht automatisch unter der normalen GitHub-Pages-Adresse live.
+4. Nach dem Deployment die Seite **einmal vollständig mit V31 laden**. Die einmalige lokale Löschung erfolgt beim Start des neuen `game.js` **ohne gesonderte Rückfrage**.
+5. Im Spiel **Große Wiese → Zur Netherfestung**. Haupttor, Gluthof, Bergfried, Turmtreppen und Aussichtsplattformen erkunden.
+6. Bei Ruckeln `Grafik: Flüssig` wählen oder `Festungswesen` ausschalten.
+
+## Nachvollziehbare Tests dieses Durchgangs
+
+- `node --check` für `game.js`: bestanden.
+- Aus dem echten `makeNetherPlan()` erzeugte Geometrie: **40.668 feste Festungsblockpositionen** in 38 Chunks.
+- Unabhängige Raster-Wegsuche mit Sprungregel bis 1 Block: Haupttor, Innenhof, sechs Turmdächer, Bergfried-Dach, Gluthof und Thronfront erreichbar.
+- HTML-IDs geprüft: 53 eindeutig; 47 JavaScript-Verweise vollständig vorhanden.
+- Automatischer Reset geprüft: beide lokalen Spielstände und Fortschrittsbereiche beim ersten Start gelöscht; andere App-Daten und Grafikvorliebe erhalten; neu gespeicherte Bauwerke überleben den nächsten Start.
+- Skriptdatei mit `?v=31` versioniert, um alte HTML-Script-Caches eher zu umgehen.
+
+**Nicht geprüft:** Vollständige Laufzeit im echten Safari-WebGL auf dem iPhone, FPS, Dauerbetrieb, alle Touch-Interaktionen sowie pixelgenaue Übereinstimmung mit der KI-Konzeptgrafik. V31 ist deshalb kein nachweislich finales „1:1“-Bildniveau.
