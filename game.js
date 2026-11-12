@@ -1,4 +1,4 @@
-// BLOCKWELT V35 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V36 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -465,6 +465,54 @@ function makeNetherPlan(){
   for(const x of [-12,-6,6,12])for(const y of [22,33]){
     for(let yy=y+3;yy<=y+6;yy++)solid(x,yy,-80,yy===y+5?G:D);
   }
+
+  // Twin dragon guardians frame the courtyard without narrowing its axis.
+  for(const x of [-10,10]){
+    deck(x-2,x+2,13,-54,-52,D);
+    deck(x-1,x+1,14,-54,-52,T);
+    box(x-1,x+1,15,17,-54,-54,D);
+    solid(x,18,-54,T);solid(x,19,-54,D);
+    solid(x,18,-53,D);solid(x,17,-52,T);
+    for(const side of [-1,1]){
+      solid(x+side,19,-54,G);
+      solid(x+side,20,-54,D);
+      solid(x+side*2,17,-54,T);
+      solid(x+side*3,18,-54,D);
+    }
+  }
+
+  // The upper keep is a gallery: deep, stepped embrasures frame the views.
+  for(const side of [-1,1])for(const z of [-76,-71]){
+    for(let x=14;x<=16;x++)for(let y=35;y<=38;y++){
+      empty(x*side,y,z);
+      if(y<=37){
+        empty(x*side,y,z-1);
+        empty(x*side,y,z+1);
+      }
+    }
+    // Low sill keeps the overlook walkable and protects the outside edge.
+    for(let x=15;x<=16;x++)for(let dz=-1;dz<=1;dz++)solid(x*side,34,z+dz,T);
+    solid(14*side,38,z-1,G);solid(14*side,38,z+1,G);
+  }
+
+  for(let z=-79;z<=-70;z++){
+    solid(-14,33,z,T);
+    for(let y=34;y<=36;y++)empty(-14,y,z);
+  }
+
+  // Roof shrine. Its luminous core and crown rise above the far silhouette.
+  deck(3,7,52,-75,-71,D);
+  deck(4,6,53,-74,-72,T);
+  solid(5,54,-73,G);
+  solid(5,55,-73,L);
+  solid(5,56,-73,L);
+  solid(5,57,-73,G);
+  for(const [dx,dz] of [[-1,0],[1,0],[0,-1],[0,1]]){
+    solid(5+dx,54,-73+dz,D);
+    solid(5+dx,55,-73+dz,T);
+    solid(5+dx,56,-73+dz,G);
+  }
+  for(let x=0;x<=5;x++)solid(x,51,-76,x%2===0?G:T);
 
   // Set floors first, then clear the entire walking envelope after all decoration.
   const routes=[];
@@ -4123,10 +4171,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V35 – Drachenmark':'Legendenwelt · V35';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V36 – Drachenkrone':'Legendenwelt · V36';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V35 · Netherfestung Deluxe':'Blockwelt V35 · Legendenwelt';
+  document.title=meadow?'Blockwelt V36 · Drachenkrone':'Blockwelt V36 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4182,9 +4230,9 @@ function updateRegion(){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
     let name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
     if(inside&&Math.abs(player.x)<17&&player.z>=-82&&player.z<=-64){
-      if(player.y>=51.8)name='🐉 Höchstes Dach';
+      if(player.y>=51.8)name='🐉 Drachenkrone';
       else if(player.y>=40.8)name='🏰 Dachterrasse';
-      else if(player.y>=33.8)name='🏰 Oberer Bergfried';
+      else if(player.y>=33.8)name='🏰 Drachengalerie';
       else if(player.y>=22.8)name='🏰 Bergfried';
       else if(player.y>=12.8)name='🔥 Thronhalle';
     }else if(inside&&player.y>=12.8&&Math.abs(player.x)<27&&player.z>-64&&player.z<-46){

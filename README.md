@@ -1,4 +1,6 @@
-# Blockwelt V35 – Drachenmark
+# Blockwelt V36 – Drachenkrone
+
+Zwei steinerne Drachenwächter flankieren den Gluthof. Im oberen Bergfried führen gestufte Fensterbuchten an die Aussicht, und auf dem höchsten Dach wartet ein leuchtender Schrein. Der Weg dorthin führt über die bestehende Treppe.
 
 V35 baut auf V34 auf. Die Festung hat reliefierte Turmecken, gestaffelte Dachkanten und anders geschnittene Bodenplatten. Gluthof, Hallen und Terrassen erhalten Steinläufer und Einlegearbeiten. Auf der Großen Wiese führen Pflaster und Wegränder zum Tor. Abseits der zentralen Baufläche stehen Baumgruppen, blühende Sträucher und Felsen. Die Fernansicht zeichnet die Silhouette und ihre Materialien mit eigenen Farben. Zombies und Creeper erhalten Pixeltexturen. Die Wolken liegen höher.
 
@@ -12,7 +14,7 @@ V35 löscht beim Update keine lokalen Spielstände. Bereits gesetzte oder abgeba
 
 1. Den bisherigen Stand in GitHub oder Working Copy sichern.
 2. Das ZIP entpacken. Im bestehenden Blockwelt-Repository `index.html`, `styles.css`, `game.js` und `README.md` durch die neuen Dateien ersetzen.
-3. Committen und auf den GitHub-Pages-Branch pushen. Nach dem Deployment die Seite neu laden. Oben steht dann **V35 – Drachenmark**.
+3. Committen und auf den GitHub-Pages-Branch pushen. Nach dem Deployment die Seite neu laden. Oben steht dann **V36 – Drachenkrone**.
 4. Über **☰ → Welten auswählen → Große Wiese → Zur Netherfestung Deluxe reisen** zur Festung gehen.
 
 ## Prüfung
