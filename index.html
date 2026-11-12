@@ -6,16 +6,16 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V31 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
-  <title>Blockwelt V31 · Große Wiese · Labor</title>
-  <link rel="stylesheet" href="styles.css?v=26">
+  <meta name="description" content="Blockwelt V33 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
+  <title>Blockwelt V33 · Große Wiese · Labor</title>
+  <link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V31 – Netherfestung Deluxe</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V33 – Festung &amp; Aussicht</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -72,7 +72,7 @@
       <div class="dialog-main">
         <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
-        <p>Wähle deine Welt: Erkunde die Legendenwelt oder die Große Wiese mit der neuen Netherfestung. V31 beginnt auf diesem Gerät einmalig mit neuen, leeren Spielständen.</p>
+        <p>Wähle deine Welt: Erkunde die Legendenwelt oder die Große Wiese mit der neuen Netherfestung.</p>
         <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span><span>🏘️ Dörfer</span></div>
         <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
         <div class="menu-options" aria-label="Spieloptionen">
@@ -100,6 +100,7 @@
           <details class="menu-panel">
             <summary>✨ Welt &amp; Grafik <span>Spieloptionen</span></summary>
             <div class="option-grid">
+              <button id="resetViewBtn" class="option-btn" type="button">Ansicht neu laden</button>
               <button id="mobsBtn" class="option-btn" type="button">✓ Tiere und Bewohner: an</button>
               <button id="viewBtn" class="option-btn" type="button" aria-pressed="true">🏔️ Sichtweite: Weit</button>
               <button id="graphicsBtn" class="option-btn" type="button" aria-pressed="true">✨ Grafik: Schön</button>
@@ -139,6 +140,6 @@
     </div>
   </section>
 
-  <script type="module" src="game.js?v=31"></script>
+  <script type="module" src="game.js?v=33"></script>
 </body>
 </html>

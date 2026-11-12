@@ -1,29 +1,10 @@
-// BLOCKWELT V31 LABOR — Netherfestung mit fliegendem Drachen, Zombies, Creepern und begehbaren Turmaufgängen.
+// BLOCKWELT V33 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
 // Die Geländeform und Spieler-Speicherschlüssel bleiben unverändert.
 // Keine Minecraft-Dateien oder Texturen; 3D-Technik: Three.js (MIT).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';
-
-// V31 – AUSDRÜCKLICH GEWÜNSCHTER EINMALIGER NEUSTART.
-// Nur Blockwelt-Spielstände und Erkundungsfortschritte werden gelöscht.
-// Andere Apps auf derselben Domain und grafische Einstellungen bleiben erhalten.
-// Nach dem ersten erfolgreichen Reset schützt das Versionskennzeichen neu gebaute Werke.
-const V31_RESET_MARKER='blockwelt-v31-alte-spielstaende-geloescht';
-const V31_RESET_KEYS=[
-  'blockwelt-kleine-baumeister-v1', 'blockwelt-grosse-wiese-v26',
-  'blockwelt-aktive-welt-v26', 'blockwelt-entdeckerbuch-v10',
-  'blockwelt-relikte-v10', 'blockwelt-sonnendorf-werkstaetten-v23'
-];
-let oldSavesReset=false;
-try {
-  if(localStorage.getItem(V31_RESET_MARKER)!=='ja'){
-    for(const saveKey of V31_RESET_KEYS)localStorage.removeItem(saveKey);
-    localStorage.setItem(V31_RESET_MARKER,'ja');
-    oldSavesReset=true;
-  }
-}catch(error){console.warn('Blockwelt: Einmaliger Spielstand-Reset nicht vollständig möglich',error);}
 
 const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
@@ -52,7 +33,6 @@ const MEADOW_KEY = 'blockwelt-grosse-wiese-v26';
 const ACTIVE_WORLD_KEY = 'blockwelt-aktive-welt-v26';
 let activeWorld = 'abenteuer';
 try { if(localStorage.getItem(ACTIVE_WORLD_KEY)==='wiese')activeWorld='wiese'; }catch(_){}
-if(oldSavesReset){activeWorld='wiese';try{localStorage.setItem(ACTIVE_WORLD_KEY,'wiese');}catch(_){}}
 const isMeadow = () => activeWorld === 'wiese';
 const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
 const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
@@ -131,30 +111,6 @@ function makeNetherPlan(){
     for(let u=-2;u<=2;u++)for(let t=0;t<=2;t++)for(let y=24;y<=27;y++){
       empty(cx+u,y,cz-wide+t);empty(cx+u,y,cz+wide-t);
       empty(cx-wide+t,y,cz+u);empty(cx+wide-t,y,cz+u);
-    }
-    // Turmstufen zur oberen Etage, so dass auch die Spitze erkundbar ist.
-    const ring=[];
-    for(let z=cz+2;z>=cz-2;z--)ring.push([cx-2,z]);
-    for(let x=cx-1;x<=cx+2;x++)ring.push([x,cz-2]);
-    for(let z=cz-1;z<=cz+2;z++)ring.push([cx+2,z]);
-    for(let x=cx+1;x>=cx-1;x--)ring.push([x,cz+2]);
-    for(let i=0;i<ring.length;i++){
-      const [x,z]=ring[i];
-      const y=13+Math.floor(i*.60);
-      for(let clear=y+1;clear<=y+3;clear++)empty(x,clear,z);
-      solid(x,y,z,D);
-    }
-    for(let i=0;i<18;i++){
-      const [x,z]=ring[i%ring.length];
-      const y=24+Math.floor(i*.57);
-      if(y>=height)break;
-      for(let clear=y+1;clear<=y+3;clear++)empty(x,clear,z);
-      solid(x,y,z,T);
-    }
-    // Nicht jede Etage wird durch Dachblöcke versperrt.
-    for(let z=cz-2;z<=cz+2;z++)for(let x=cx-2;x<=cx-1;x++){
-      if(height>=33)empty(x,33,z);
-      empty(x,height,z);
     }
     for(let y=height-4;y<height;y++)for(const z of [cz-wide,cz+wide])
       if(y%3===0)solid(cx,y,z,L);
@@ -316,57 +272,6 @@ function makeNetherPlan(){
     }
   }
   deck(-10,10,51,-78,-68,T);crenel(-10,10,52,-78,-68);
-  // 8. Betretbare Treppe vom Hof zum ersten Wehrgang (inkl. Kopffreiheit).
-  // Süd -> Nord, eine volle Stufe je zwei Wegfelder.
-  for(let z=-50;z>=-72;z--){
-    const level=Math.min(23,13+Math.floor((-z-50)/2));
-    for(let x=-23;x<=-20;x++){
-      for(let y=13;y<=level;y++)solid(x,y,z,y===level?T:D);
-      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
-    }
-  }
-  // Landung zum Quergang und nach innen in den oberen Bergfried.
-  deck(-23,-13,23,-74,-70,T);deck(-23,-13,23,-65,-61,T);
-  for(let z=-74;z<=-61;z++)deck(-20,-17,23,z,z,T);
-  // Die Treppe geht durch das Turmhaus und endet im oberen Stockwerk.
-  // Ein zweiter, kurzer Treppenlauf führt zum dritten Geschoss.
-  for(let z=-66;z>=-79;z--){
-    const level=Math.min(33,23+Math.floor((-z-66)*.80));
-    for(let x=-13;x<=-11;x++){
-      for(let y=24;y<=level;y++)solid(x,y,z,D);
-      for(let y=level+1;y<=Math.min(level+3,39);y++)empty(x,y,z);
-    }
-  }
-  deck(-13,-5,33,-80,-75,T);
-  // Das Obergeschoss darf nicht als Decke durch die aufsteigende Treppe ragen.
-  for(let z=-66;z>=-79;z--){
-    const level=Math.min(33,23+Math.floor((-z-66)*.80));
-    for(let x=-13;x<=-11;x++){
-      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
-      solid(x,level,z,D);
-    }
-  }
-  // Dachterrasse: separater Treppenlauf vom dritten Stock auf das Dach.
-  for(let z=-78;z<=-68;z++){
-    const level=Math.min(41,34+Math.floor((z+78)*.7));
-    for(let x=11;x<=13;x++){
-      for(let y=34;y<=level;y++)solid(x,y,z,D);
-      for(let y=level+1;y<=level+3;y++)empty(x,y,z);
-    }
-  }
-  // Eingang zum hohen Aussichtsturm aus der Dachterrasse.
-  for(let x=-2;x<=2;x++)for(let y=41;y<=44;y++)empty(x,y,-69);
-  const topStair=[];
-  for(let z=-70;z>=-76;z--)topStair.push([-6,z]);
-  for(let x=-5;x<=-2;x++)topStair.push([x,-76]);
-  for(let i=0;i<topStair.length;i++){
-    const [x,z]=topStair[i],level=Math.min(51,41+i);
-    for(let y=level+1;y<=Math.min(53,level+3);y++)empty(x,y,z);
-    solid(x,level,z,T);
-  }
-  for(let x=-3;x<=-1;x++)for(let z=-77;z<=-74;z++)empty(x,51,z);
-  deck(-7,-2,51,-75,-74,T);
-
   // Obere Verbindung zu den seitlichen Gängen, mit echter Durchgangshöhe.
   for(const sx of [-1,1])for(let x=sx*13;x!==sx*18;x+=sx)for(let z=-73;z<=-68;z++)
     for(let y=24;y<=27;y++)empty(x,y,z);
@@ -382,52 +287,6 @@ function makeNetherPlan(){
   for(let z=-60;z<=-48;z+=6)for(const x of [-8,8])lamp(x,15,z);
   // Zur Festungsmitte führender Weg durch den Rasen, ohne Baumhindernisse.
   for(let z=-11;z<=-6;z++)for(let x=-5;x<=5;x++)solid(x,4,z,D);
-  // V30: Durchgehende innere Wendeltreppen statt der unterbrochenen V29-Rampen.
-  // Abschluss NACH Brücken und Wehrgängen: spätere Decks versperren die Stufen nicht.
-  const finishTowerStairs=(cx,cz,height,wide)=>{
-    const r=wide===6?3:2;
-    const route=[];
-    // Eine geschlossene Runde von begehbaren, paarweise benachbarten Feldern.
-    // Start ist direkt hinter der vorderen Eingangstür.
-    for(let x=0;x<=r;x++)route.push([cx+x,cz+r]);
-    for(let z=r-1;z>=-r;z--)route.push([cx+r,cz+z]);
-    for(let x=r-1;x>=-r;x--)route.push([cx+x,cz-r]);
-    for(let z=-r+1;z<=r;z++)route.push([cx-r,cz+z]);
-    for(let x=-r+1;x<=-1;x++)route.push([cx+x,cz+r]);
-    // Erster Schritt liegt bei y13, letzter Schritt bei y(height-1).
-    // So landet der Spieler auf dem vorhandenen Dachniveau y(height+1).
-    let last=null;
-    for(let step=0;step<height-13;step++){
-      const [x,z]=route[step%route.length], y=13+step;
-      for(let clear=y+1;clear<=Math.min(MAX_Y,y+2);clear++)empty(x,clear,z);
-      solid(x,y,z,step%4===0?T:D);
-      last=[x,z];
-    }
-    // Freie Anbindung von der letzten Stufe zum umlaufenden Dach.
-    const [x,z]=last;
-    const dx=x-cx,dz=z-cz;
-    let lx=x,lz=z;
-    if(Math.abs(dx)===r)lx+=Math.sign(dx);
-    else lz+=Math.sign(dz||1);
-    solid(lx,height,lz,T);
-    empty(lx,height+1,lz);empty(lx,height+2,lz);
-    // Auf der Eingangsebene eine freie Zone hinter der Tür schaffen.
-    for(let z0=cz+wide-1;z0>cz+r;z0--){
-      for(let y=13;y<=15;y++)empty(cx,y,z0);
-    }
-    // Lichtleiste auf der Innenwand statt störender Dekoration im Stiegenlauf.
-    const lampX=cx+wide-2,lampZ=cz;
-    if(wide>=5&&height>22){
-      solid(lampX,19,lampZ,L);
-      solid(lampX,29,lampZ,L);
-    }
-  };
-  for(const [tx,tz,h,w] of [
-    [-34,-46,39,6],[34,-46,39,6],
-    [-44,-76,35,5],[44,-76,35,5],
-    [-69,-63,34,5],[69,-63,34,5]
-  ])finishTowerStairs(tx,tz,h,w);
-
   // V30: Glutkabinett – kleine Ausstellungsstücke im zentralen Bergfried.
   // Die Mitte des Durchgangs (x -3 bis +3) bleibt durchgehend frei.
   for(const cx of [-7,7]){
@@ -537,6 +396,88 @@ function makeNetherPlan(){
   for(const side of [-1,1])for(let z=-79;z<=-50;z+=3){
     const x=side*47;
     solid(x,23,z,G);
+  }
+  // Set floors first, then clear the entire walking envelope after all decoration.
+  const routes=[];
+  const towerSpecs=[
+    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],[44,-76,35,5],
+    [-69,-63,34,5],[69,-63,34,5]
+  ];
+  for(const [cx,cz,height,wide] of towerSpecs){
+    const r=wide-3;
+    const ring=[];
+    for(let x=0;x<=r;x++)ring.push([cx+x,cz+r]);
+    for(let z=r-1;z>=-r;z--)ring.push([cx+r,cz+z]);
+    for(let x=r-1;x>=-r;x--)ring.push([cx+x,cz-r]);
+    for(let z=-r+1;z<=r;z++)ring.push([cx-r,cz+z]);
+    for(let x=-r+1;x<0;x++)ring.push([cx+x,cz+r]);
+
+    const route=[];
+    const entrance=cz===-46?cz-wide-1:cz+wide+1;
+    if(entrance<cz){
+      // Front towers are entered from the courtyard, on their north side.
+      for(let z=entrance;z<cz+r;z++)route.push([cx,12,z]);
+    }else{
+      // The outer watchtowers also have a direct approach from the meadow.
+      if(Math.abs(cx)===69){
+        for(let i=0;i<16;i++){
+          const floor=4+Math.floor(i/2), z=entrance+16-i;
+          if(floor>5)box(cx,cx,5,floor-1,z,z,D);
+          route.push([cx,floor,z]);
+        }
+        box(cx,cx,5,11,entrance,entrance,D);
+      }
+      for(let z=entrance;z>cz+r;z--)route.push([cx,12,z]);
+    }
+    for(let floor=13;floor<=height;floor++){
+      const [x,z]=ring[(floor-13)%ring.length];
+      route.push([x,floor,z]);
+    }
+    const [x,,z]=route.at(-1);
+    const landing=Math.abs(x-cx)===r
+      ? [x+Math.sign(x-cx),height,z]
+      : [x,height,z+Math.sign(z-cz)];
+    route.push(landing);
+    routes.push(route);
+  }
+  // Courtyard to the bridges, then three independent flights through the keep.
+  for(let x=-23;x<=-21;x++){
+    routes.push(Array.from({length:25},(_,i)=>[x,Math.min(23,12+Math.floor(i/2)),-48-i]));
+  }
+  for(let x=-13;x<=-11;x++){
+    routes.push(Array.from({length:15},(_,i)=>[x,23+Math.floor(i*10/14),-65-i]));
+  }
+  for(let x=11;x<=13;x++){
+    routes.push(Array.from({length:12},(_,i)=>[x,33+Math.floor(i*7/11),-79+i]));
+  }
+  routes.push([[-11,24,-67],[-10,23,-67],[-9,22,-67],[-8,22,-67]]);
+  // The summit opens directly onto the roof at the end of the upper staircase.
+  const summit=[[-6,40,-68],[-6,40,-69]];
+  for(let z=-70;z>=-76;z--)summit.push([-6,41+(-70-z),z]);
+  for(let x=-5;x<=-2;x++)summit.push([x,48+(x+5),-76]);
+  summit.push([-1,51,-76]);
+  routes.push(summit);
+
+  // Link the first bridge level to the gallery above the main gate.
+  routes.push(Array.from({length:10},(_,i)=>[-25,23+Math.min(4,Math.floor(i/2)),-56+i]));
+  for(const route of routes)for(let i=0;i<route.length;i++){
+    const [x,y,z]=route[i];
+    const previous=route[i-1], next=route[i+1];
+    const turn=previous&&next&&previous[0]!==next[0]&&previous[2]!==next[2];
+    solid(x,y,z,!previous||!next||turn?G:T);
+  }
+  // Replace existing stone with light. The wall keeps its shape and the
+  // subsequent clearance pass keeps the stair volume free.
+  for(const [cx,cz,height,wide] of towerSpecs){
+    for(let y=17;y<height-2;y+=6){
+      for(const side of [-1,1]){
+        const x=cx+side*(wide-1);
+        if(vox.has(key(x,y,cz)))solid(x,y,cz,L);
+      }
+    }
+  }
+  for(const route of routes)for(const [x,y,z] of route){
+    for(let head=y+1;head<=y+3;head++)empty(x,head,z);
   }
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
@@ -3952,7 +3893,7 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Escape'&&gameRunning)openMenu();
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('blur',()=>{keys.clear();stick.x=0;stick.y=0;centerStick();});
+
 const stick={x:0,y:0,id:null};
 const joystick=$('joystick'),knob=$('joystickKnob');
 function centerStick(){knob.style.left='50%';knob.style.top='50%';}
@@ -3964,12 +3905,12 @@ function moveStick(e){
   knob.style.left=`calc(50% + ${dx}px)`;knob.style.top=`calc(50% + ${dy}px)`;
 }
 joystick.addEventListener('pointerdown',e=>{
-  if(!gameRunning)return;e.preventDefault();e.stopPropagation();
+  if(!gameRunning||stick.id!==null)return;e.preventDefault();e.stopPropagation();
   stick.id=e.pointerId;joystick.setPointerCapture(e.pointerId);moveStick(e);
 });
 joystick.addEventListener('pointermove',e=>{if(e.pointerId===stick.id)moveStick(e);});
 function stopStick(e){if(e.pointerId!==stick.id)return;stick.id=null;stick.x=0;stick.y=0;centerStick();}
-joystick.addEventListener('pointerup',stopStick);joystick.addEventListener('pointercancel',stopStick);
+for(const event of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(event,stopStick);
 let lookId=null,lookX=0,lookY=0;
 renderer.domElement.addEventListener('pointerdown',e=>{
   if(!gameRunning||lookId!==null)return;
@@ -3982,14 +3923,31 @@ renderer.domElement.addEventListener('pointermove',e=>{
   yaw-=dx*.0048;pitch-=dy*.0048;
   pitch=Math.max(-1.34,Math.min(1.34,pitch));
 });
-for(const event of ['pointerup','pointercancel'])renderer.domElement.addEventListener(event,e=>{if(e.pointerId===lookId)lookId=null;});
+renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null;});
 // Mouse: drag to look, left click to mine, right click to place.
 let mouseDown=null;
+function resetControls(){
+  keys.clear();
+  stick.id=null;
+  stick.x=stick.y=0;
+  centerStick();
+  lookId=null;
+  mouseDown=null;
+  jumpHeld=descendHeld=false;
+}
+window.addEventListener('blur',resetControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetControls();});
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')mouseDown={x:e.clientX,y:e.clientY,button:e.button};});
 renderer.domElement.addEventListener('pointerup',e=>{
   if(e.pointerType==='mouse'&&mouseDown&&Math.hypot(e.clientX-mouseDown.x,e.clientY-mouseDown.y)<6){modifyWorld(mouseDown.button===2);}
   mouseDown=null;
 });
+for(const event of ['pointercancel','lostpointercapture']){
+  renderer.domElement.addEventListener(event,e=>{
+    if(e.pointerId===lookId)lookId=null;
+    if(e.pointerType==='mouse')mouseDown=null;
+  });
+}
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 function bindHold(id,onStart,onEnd){
   const element=$(id);
@@ -4032,10 +3990,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V31 – Netherfestung Deluxe':'Legendenwelt · V31 – Neustart';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V33 – Festung & Aussicht':'Legendenwelt · V33';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V31 · Netherfestung Deluxe':'Blockwelt V31 · Legendenwelt';
+  document.title=meadow?'Blockwelt V33 · Netherfestung Deluxe':'Blockwelt V33 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4066,7 +4024,7 @@ $('fortressBtn').addEventListener('click',()=>{
   // Der Weg zur Festung bleibt bewusst frei: keine Teleportation in Mauern.
   teleportTo(0,-7,'Die Netherfestung wartet auf dich!',0,-45);
 });
-function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;stick.x=0;stick.y=0;centerStick();jumpHeld=false;descendHeld=false;$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';updateWorldSelector();}
+function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;resetControls();$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';updateWorldSelector();}
 $('menuBtn').addEventListener('click',openMenu);
 $('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
 $('undoBtn').addEventListener('click',undo);
@@ -4089,7 +4047,16 @@ let regionName='';
 function updateRegion(){
   if(isMeadow()){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
-    const name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
+    let name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
+    if(inside&&Math.abs(player.x)<17&&player.z>=-82&&player.z<=-64){
+      if(player.y>=51.8)name='🐉 Höchstes Dach';
+      else if(player.y>=40.8)name='🏰 Dachterrasse';
+      else if(player.y>=33.8)name='🏰 Oberer Bergfried';
+      else if(player.y>=22.8)name='🏰 Bergfried';
+      else if(player.y>=12.8)name='🔥 Thronhalle';
+    }else if(inside&&player.y>=12.8&&Math.abs(player.x)<27&&player.z>-64&&player.z<-46){
+      name=player.y>=23.8?'🧱 Wehrgang':'🔥 Gluthof';
+    }
     if(regionName!==name){regionName=name;$('regionLabel').textContent=name;}
     return;
   }
@@ -4098,6 +4065,31 @@ function updateRegion(){
   const name=Math.hypot(player.x-RUIN.x,player.z-RUIN.z)<17?'🗝️ Schattenruine':Math.hypot(player.x-CAMP.x,player.z-CAMP.z)<13?'⛺ Waldlager':Math.hypot(player.x-LOOKOUT.x,player.z-LOOKOUT.z)<14?'🏰 Himmelswarte':Math.hypot(player.x-FALL.x,player.z-FALL.z)<15?'💦 Kristallfall':b==='hoehle'?'🪨 Berghöhle':regions[b];
   if(name!==regionName){regionName=name;$('regionLabel').textContent=name;}
 }
+// WebKit may ignore viewport scale limits. Cancel native pinch and rapid
+// double taps while leaving single taps and both scroll axes available.
+for(const event of ['gesturestart','gesturechange','gestureend']){
+  document.addEventListener(event,e=>e.preventDefault(),{passive:false});
+}
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length>1)e.preventDefault();
+},{passive:false});
+let previousTap=null;
+document.addEventListener('touchend',e=>{
+  if(e.touches.length||e.changedTouches.length!==1)return;
+  const {clientX:x,clientY:y}=e.changedTouches[0];
+  if(previousTap&&e.timeStamp-previousTap.time<300&&
+    Math.hypot(x-previousTap.x,y-previousTap.y)<28&&e.target===previousTap.target){
+    // Preserve the click for HTML controls. The camera and actions use pointers.
+    if(!e.target.closest('button,summary'))e.preventDefault();
+  }
+  previousTap={x,y,time:e.timeStamp,target:e.target};
+},{passive:false});
+$('resetViewBtn').addEventListener('click',()=>{
+  const url=new URL(location.href);
+  url.searchParams.set('ansicht',String(Date.now()));
+  url.hash='';
+  location.replace(url.href);
+});
 function resize(){
   const w=window.innerWidth,h=window.innerHeight;
   camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);

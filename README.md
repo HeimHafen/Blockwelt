@@ -1,51 +1,18 @@
-# BLOCKWELT V31 – Netherfestung Deluxe · Neue Spielstände
+# Blockwelt V33 – Festung & Aussicht
 
-**Status: vollständiges GitHub-Austauschpaket, technisch geprüft – iPhone-WebGL-Grafik und Langzeitleistung noch nicht live abgenommen.**
+V33 basiert auf Netherfestung Deluxe (V31). Alle sechs Außentürme haben durchgehende Wendeltreppen mit Dachausstieg. Vom Innenhof führen Aufgänge zu den Wehrgängen, den Etagen des Bergfrieds und bis zum höchsten Dach. Die Treppen lassen sich in beide Richtungen ohne Springen benutzen. Beide äußeren Wachtürme sind zusätzlich direkt von der Wiese aus erreichbar. Goldene Ecksteine und Wandlichter markieren die Wendeltreppen. Die Ortsanzeige benennt Gluthof, Thronhalle, Wehrgang und die Ebenen des Bergfrieds.
 
-## ACHTUNG – ALTE SPIELSTÄNDE WERDEN GELÖSCHT
+Das Spiel fängt die Safari-Zoomgesten ab. Die Inventarleiste lässt sich weiterhin seitlich wischen und das Menü vertikal scrollen. Sollte Safari bereits vergrößert sein, öffne **☰ → Welt & Grafik → Ansicht neu laden**. Das startet die Seite mit einer frischen Ansicht und setzt die Spielfigur an die Startposition.
 
-Auf ausdrücklichen Wunsch beginnt V31 beim **ersten Start dieser Version in diesem Browser** vollständig neu. Dabei löscht der Code automatisch:
-
-- die selbst gesetzten und abgebauten Blöcke in der **Abenteuerwelt** und auf der **Großen Wiese**,
-- alte Entdeckungen und gesammelte Geheimnisse,
-- die bereits absolvierten Werkstatt-Aufgaben,
-- die zuvor gewählte aktive Welt. Der Neustart öffnet die **Große Wiese**.
-
-**Einmalig, nicht bei jedem Start:** `blockwelt-v31-alte-spielstaende-geloescht` verhindert die erneute Löschung. Alle **nach V31 neu errichteten Bauwerke bleiben dauerhaft gespeichert**, soweit Safari den lokalen Speicher zulässt.
-
-**Wichtig:** Dieser Reset wirkt nur auf Blockwelt-Spielstände **im Browser/Gerät, in dem V31 erstmals geöffnet wird**. Er löscht keine exportierten JSON-Sicherungen auf dem Gerät, keine Spielstände auf anderen Geräten und keine Daten anderer Apps. Grafikoptionen bleiben erhalten. Wenn alte Bauwerke doch noch benötigt werden, müssen sie **vor dem ersten Aufruf von V31** im alten Spiel exportiert werden. Das erneute Öffnen der alten Version stellt gelöschte lokale Daten nicht wieder her.
-
-## Verbesserungen gegenüber V30
-
-- **Aufgewertetes Festungstor:** gestaffelte Portalpfeiler, Lichtakzente, Wappen und markantere Bogenarchitektur.
-- **Gluthof:** vier begehbar umgebbare Wachtfeuer und ein erkennbarer Weg durch den Innenhof.
-- **Thron- und Reliktkammer:** erhöhte, begehbare Bühne mit einem dunklen Thron, beleuchteten Sockeln und Wandmotiven im zentralen Bergfried.
-- **Erkennbare Turmsilhouetten:** Wappen, Eckfackeln und architektonische Akzente an allen sechs Türmen.
-- **Verbesserte Nethertexturen:** Mauerfugen, Steinrisse und ein eigenes goldenes Flammenwappen als prozedurale Pixelmaterialien.
-- **Etwas bessere Fernwirkung:** dezent später einsetzender Wiesen-Nebel bei unverändertem Chunk-Streaming.
-- **V30-Inhalte weiter vorhanden:** sechs begehbare Türme, durchgehende Treppen und Wehrgänge, fliegender großer Drache, fünf Zombies und fünf Creeper. Die Gegner verursachen keinen Gebäudeschaden.
-
-## Spielbare Welten
-
-1. **Große Wiese:** flache Graswelt mit der großen begehbaren Netherfestung.
-2. **Abenteuerwelt:** bestehende Orte, Dörfer, Tiere und vier Werkstatt-Abenteuer. Die **Generatoren und Geländehöhen** dieser Welt bleiben unverändert; die bisherigen **lokalen Spieländerungen** werden auf Wunsch zurückgesetzt.
+V33 löscht beim Update keine lokalen Spielstände. Bereits gesetzte oder abgebaute Blöcke bleiben wirksam, auch innerhalb der Festung. Selbst gesetzte Hindernisse auf Treppen können im Spiel abgebaut werden.
 
 ## Installation
 
-1. Bisherige Dateien oder GitHub-Commit bei Bedarf sichern. Bei gewünschtem vollständigem Neustart keine alten JSON-Spielstände später wieder importieren.
-2. Das ZIP entpacken und `index.html`, `styles.css`, `game.js`, `README.md` im Repository `HeimHafen/Blockwelt` ersetzen.
-3. Für einen geschützten Test den Branch `test/blockwelt-v31-netherfestung` wählen. Ein Testbranch ist nicht automatisch unter der normalen GitHub-Pages-Adresse live.
-4. Nach dem Deployment die Seite **einmal vollständig mit V31 laden**. Die einmalige lokale Löschung erfolgt beim Start des neuen `game.js` **ohne gesonderte Rückfrage**.
-5. Im Spiel **Große Wiese → Zur Netherfestung**. Haupttor, Gluthof, Bergfried, Turmtreppen und Aussichtsplattformen erkunden.
-6. Bei Ruckeln `Grafik: Flüssig` wählen oder `Festungswesen` ausschalten.
+1. Den bisherigen Stand in GitHub oder Working Copy sichern.
+2. Das ZIP entpacken. Im bestehenden Blockwelt-Repository `index.html`, `styles.css`, `game.js` und `README.md` durch die neuen Dateien ersetzen.
+3. Committen und auf den GitHub-Pages-Branch pushen. Nach dem Deployment die Seite neu laden. Oben steht dann **V33 – Festung & Aussicht**.
+4. Über **☰ → Welten auswählen → Große Wiese → Zur Netherfestung Deluxe reisen** zur Festung gehen.
 
-## Nachvollziehbare Tests dieses Durchgangs
+## Prüfung
 
-- `node --check` für `game.js`: bestanden.
-- Aus dem echten `makeNetherPlan()` erzeugte Geometrie: **40.668 feste Festungsblockpositionen** in 38 Chunks.
-- Unabhängige Raster-Wegsuche mit Sprungregel bis 1 Block: Haupttor, Innenhof, sechs Turmdächer, Bergfried-Dach, Gluthof und Thronfront erreichbar.
-- HTML-IDs geprüft: 53 eindeutig; 47 JavaScript-Verweise vollständig vorhanden.
-- Automatischer Reset geprüft: beide lokalen Spielstände und Fortschrittsbereiche beim ersten Start gelöscht; andere App-Daten und Grafikvorliebe erhalten; neu gespeicherte Bauwerke überleben den nächsten Start.
-- Skriptdatei mit `?v=31` versioniert, um alte HTML-Script-Caches eher zu umgehen.
-
-**Nicht geprüft:** Vollständige Laufzeit im echten Safari-WebGL auf dem iPhone, FPS, Dauerbetrieb, alle Touch-Interaktionen sowie pixelgenaue Übereinstimmung mit der KI-Konzeptgrafik. V31 ist deshalb kein nachweislich finales „1:1“-Bildniveau.
+Die Erreichbarkeit wurde an der erzeugten Blockgeometrie vom Weg vor dem Haupttor aus geprüft. Alle sechs Turmdächer, die zentralen Festungsebenen, die Wehrgänge und das höchste Dach waren zu Fuß erreichbar. Die Bewegungsprüfung mit der echten Kollisionslogik hat 768 Übergänge entlang der Aufgänge in beiden Richtungen bestanden. Bei Fokusverlust oder wenn das Spiel in den Hintergrund wechselt, setzt V33 die gehaltenen Eingaben zurück. Die Safari-Gesten sind noch auf einem echten iPhone zu prüfen.

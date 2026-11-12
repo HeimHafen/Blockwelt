@@ -230,3 +230,7 @@ html,body{touch-action:auto}
 
 /* Horizontale Materialleiste bleibt auch mit fünf neuen Nether-Blöcken per Finger bedienbar. */
 .hotbar .slot{touch-action:pan-x;flex-shrink:0}
+
+/* Keep native scrolling in menus and inventory without double-tap zoom. */
+html,body,.menu-panel>summary{touch-action:pan-x pan-y}
+html{-webkit-text-size-adjust:100%}
