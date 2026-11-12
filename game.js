@@ -1,4 +1,4 @@
-// BLOCKWELT V34 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V35 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -425,6 +425,47 @@ function makeNetherPlan(){
     if(vox.has(key(x,33,z)))solid(x,33,z,L);
   }
 
+  // Give the fortress a legible silhouette even in the simplified far view.
+  for(const [cx,cz,h,w] of [
+    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],[44,-76,35,5],
+    [-69,-63,34,5],[69,-63,34,5]
+  ]){
+    for(const sx of [-1,1])for(const sz of [-1,1]){
+      const x=cx+sx*w,z=cz+sz*w;
+      box(x,x,14,h-1,z,z,D);
+      box(x+sx,x+sx,14,h-2,z,z,D);
+      box(x,x,14,h-2,z+sz,z+sz,D);
+      for(const y of [16,h-4,h]){
+        solid(x,y,z,T);
+        solid(x+sx,y,z,T);solid(x,y,z+sz,T);
+      }
+      solid(x,h+1,z,D);solid(x,h+2,z,T);
+    }
+    // Corbels under the rim break up the tall uninterrupted tower faces.
+    for(let u=-w+2;u<=w-2;u+=2)for(const side of [-1,1]){
+      solid(cx+u,h-2,cz+side*w,D);
+      solid(cx+side*w,h-2,cz+u,D);
+    }
+    for(let u=-w+1;u<=w-1;u++){
+      solid(cx+u,h,cz-w,T);solid(cx+u,h,cz+w,T);
+      solid(cx-w,h,cz+u,T);solid(cx+w,h,cz+u,T);
+    }
+  }
+  // Broad stone runners and inset patterns are part of the existing floor.
+  for(const [y,xa,xb,za,zb] of [[12,-26,26,-61,-48],[22,-14,14,-79,-66],
+    [33,-14,14,-79,-66],[40,-15,15,-80,-65],[51,-9,9,-77,-69]]){
+    for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++){
+      if(!vox.has(key(x,y,z))||vox.get(key(x,y,z))===L)continue;
+      const edge=x===xa||x===xb||z===za||z===zb;
+      const mosaic=Math.abs(x)+Math.abs(z-Math.round((za+zb)/2))===4;
+      if(edge||mosaic||Math.abs(x)===2)solid(x,y,z,T);
+      else if(Math.abs(x)<=3||((x+z)&7)===0)solid(x,y,z,D);
+    }
+  }
+  for(const x of [-12,-6,6,12])for(const y of [22,33]){
+    for(let yy=y+3;yy<=y+6;yy++)solid(x,yy,-80,yy===y+5?G:D);
+  }
+
   // Set floors first, then clear the entire walking envelope after all decoration.
   const routes=[];
   const towerSpecs=[
@@ -506,6 +547,31 @@ function makeNetherPlan(){
   }
   for(const route of routes)for(const [x,y,z] of route){
     for(let head=y+1;head<=y+3;head++)empty(x,head,z);
+  }
+  // The main building lawn remains open. The flanks have real voxel groves,
+  // glacial stones, flowering shrubs and a clear paved approach to the gate.
+  for(let z=-10;z<=15;z++)for(let x=-2;x<=2;x++){
+    solid(x,4,z,Math.abs(x)===2?'cobble':'path');
+  }
+  for(const [cx,cz] of [[-29,12],[31,10],[-53,28],[53,30],[-76,-22],[77,-26],[-31,65],[34,65]]){
+    for(const [dx,dz,h] of [[0,0,6],[-5,4,5],[5,5,7]]){
+      const x=cx+dx,z=cz+dz;
+      box(x,x,5,4+h,z,z,'wood');
+      for(let layer=0;layer<3;layer++){
+        const r=2-layer;
+        for(let i=-r;i<=r;i++)for(let j=-r;j<=r;j++){
+          if(Math.abs(i)+Math.abs(j)>r+1)continue;
+          solid(x+i,4+h+layer,z+j,'leaves');
+        }
+      }
+      solid(x,4+h,z,'wood');
+    }
+    for(const offset of [-5,4]){
+      solid(cx+offset,5,cz-3,'blossom');
+      solid(cx+offset+1,5,cz-3,'leaves');
+    }
+    box(cx-3,cx-1,5,5,cz-7,cz-6,'cobble');
+    solid(cx-2,6,cz-6,'stone');
   }
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
@@ -664,6 +730,15 @@ function texture(type,face){
       line(highlight,x+2,y+4,4,1);
     }
   }
+  if(face==='top'&&(type==='netherBrick'||type==='netherDeep'||type==='netherTrim')){
+    for(let row=0;row<2;row++)for(let col=0;col<2;col++){
+      const x=col*32,y=row*32;
+      line(pal[(row*2+col+1)%pal.length],x,y,32,32);
+      line(pal[0],x,y+30,32,2);line(pal[0],x+30,y,2,32);
+      line(pal[4],x+2,y+2,27,1);line(pal[4],x+2,y+3,1,26);
+      for(let i=0;i<10;i++)line(pick(),x+3+Math.floor(random()*24),y+4+Math.floor(random()*23),3,2);
+    }
+  }
   if(type==='netherGold'){
     // Pixelwappen / Flammenrune, sichtbar auf Tor, Sockeln und Turmwappen.
     line('#663024',6,6,52,52);
@@ -701,7 +776,7 @@ function texture(type,face){
   const map=new THREE.CanvasTexture(canvas);
   map.colorSpace=THREE.SRGBColorSpace;map.magFilter=THREE.NearestFilter;
   map.minFilter=THREE.NearestMipmapNearestFilter;
-  map.anisotropy=2;
+  map.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),MOBILE?4:8);
   return map;
 }
 const materialByType={};
@@ -712,7 +787,7 @@ for(const type of BLOCK_TYPES){
     if(type.startsWith('nether')){
       material.emissiveMap=map;
       material.emissive.set('#ffe3db');
-      material.emissiveIntensity=.36;
+      material.emissiveIntensity=type==='netherDeep'?.36:.28;
     }
     return material;
   };
@@ -2015,11 +2090,12 @@ function unloadChunkData(cx,cz){
 // Fernansicht als ein einziges, billiges Farbgitter. Nur nicht-geladene Chunks:
 // Dadurch bleiben Turmsilhouetten sichtbar, ohne 30 weitere Echt-Chunks zu laden.
 let netherFarMesh=null;
-const netherFarMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
+const netherFarMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
 const netherFarPalette={
   netherBrick:'#905860',netherDeep:'#65566a',netherTrim:'#b57473',
   netherGold:'#e3ac57',lavaGlow:'#ff842c',lantern:'#ffd079',
-  grass:'#5e8c4b',dirt:'#73583b',stone:'#7d8285'
+  grass:'#5e8c4b',dirt:'#73583b',stone:'#7d8285',
+  wood:'#8c6849',leaves:'#538650',blossom:'#d988af',cobble:'#85948b',path:'#bda077'
 };
 function rebuildNetherFarView(cx,cz,radius){
   if(netherFarMesh){scene.remove(netherFarMesh);netherFarMesh.geometry.dispose();netherFarMesh=null;}
@@ -2775,7 +2851,7 @@ const cloudMat=new THREE.MeshBasicMaterial({color:'#f9fff7',transparent:true,opa
 const cloudGeo=new THREE.BoxGeometry(1,1,1);
 const clouds=new THREE.Group();scene.add(clouds);
 for(let i=0;i<12;i++){
-  const group=new THREE.Group();group.position.set(-52+i*10.5,29+(i%3)*3,-40-(i%2)*9);
+  const group=new THREE.Group();group.position.set(-52+i*10.5,60+(i%3)*5,-40-(i%2)*9);
   for(let j=0;j<3;j++){
     const p=new THREE.Mesh(cloudGeo,cloudMat);p.position.set((j-1)*2.2,j===1?.6:0,0);
     p.scale.set(j===1?4.7:3.4,1.6,2.5);group.add(p);
@@ -3324,13 +3400,28 @@ function restoreSunnyResidentSpot(npc){
 // V28 FESTUNGSWESEN: Originale Voxelmodelle aus gemeinsamen Würfelgeometrien.
 // Alle Figuren sind dekorative, bewegliche Meshes: keine fremden Modelldateien,
 // keine zerstörerischen Creeper-Explosionen und keine Änderung am Spielstand.
+function creatureMaterial(palette){
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=32;
+  const ctx=canvas.getContext('2d');
+  for(let y=0;y<32;y+=2)for(let x=0;x<32;x+=2){
+    const value=pixelHash(x,y,407);
+    ctx.fillStyle=palette[value<.63?0:value<.84?1:2];
+    ctx.fillRect(x,y,2,2);
+  }
+  const map=new THREE.CanvasTexture(canvas);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.magFilter=THREE.NearestFilter;
+  map.minFilter=THREE.NearestMipmapNearestFilter;
+  return new THREE.MeshLambertMaterial({map});
+}
 const netherCreatureMaterials={
-  zombieSkin:new THREE.MeshLambertMaterial({color:'#6caa57'}),
+  zombieSkin:creatureMaterial(['#73a95a', '#5e8e4e', '#95bd69']),
   zombieShade:new THREE.MeshLambertMaterial({color:'#456c44'}),
-  zombieShirt:new THREE.MeshLambertMaterial({color:'#4c8c94'}),
-  zombiePants:new THREE.MeshLambertMaterial({color:'#58476d'}),
-  creeperGreen:new THREE.MeshLambertMaterial({color:'#68a946'}),
-  creeperLight:new THREE.MeshLambertMaterial({color:'#8ac960'}),
+  zombieShirt:creatureMaterial(['#45828a', '#346873', '#68a1a0']),
+  zombiePants:creatureMaterial(['#58476d', '#483852', '#786384']),
+  creeperGreen:creatureMaterial(['#73a747', '#4e823b', '#9aba5e']),
+  creeperLight:creatureMaterial(['#8db858', '#64994c', '#abc773']),
   creeperDark:new THREE.MeshLambertMaterial({color:'#2b5634'}),
   black:new THREE.MeshLambertMaterial({color:'#171c20'}),
   purple:new THREE.MeshLambertMaterial({color:'#654076',emissive:'#321648',emissiveIntensity:.23}),
@@ -3374,6 +3465,8 @@ function makeNetherEnemy(type,x,z,feetY,idx){
   }else{
     for(const side of [-1,1])part(head,.14,.14,.055,m.black,side*.20,.08,-.39);
     part(head,.24,.045,.06,m.zombieShade,0,-.22,-.38);
+    part(head,.12,.08,.055,m.zombieShade,.24,-.13,-.38);
+    part(group,.15,.18,.05,m.zombieShade,.20,.83,-.29);
   }
   const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
   let arms=[];
@@ -3746,6 +3839,7 @@ function applyLighting(){
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
   const p=options[lightMode];scene.background.set(p.sky);
+  netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
   rimLight.intensity=lightMode===2?.16:.31;
   // Day: barely visible. Dusk: amber windows. Night: lit, still voxel-like.
@@ -4029,10 +4123,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V34 – Glutsteinfestung':'Legendenwelt · V34';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V35 – Drachenmark':'Legendenwelt · V35';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V34 · Netherfestung Deluxe':'Blockwelt V34 · Legendenwelt';
+  document.title=meadow?'Blockwelt V35 · Netherfestung Deluxe':'Blockwelt V35 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
