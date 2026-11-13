@@ -181,3 +181,7 @@ Das Bücherregal steht weiter rechts an der Nordwand, außerhalb der Türöffnun
 ## V120 – Hängelampe im Kaminzimmer
 
 Eine eiserne Deckenlaterne ergänzt das Kaminfeuer mit warmem Licht.
+
+## V121 – Laufzeit- und Speicherfehler
+
+Die Lichtaktualisierung verwendet die Richtungswerte der Leuchten. Beim Start bleiben vorhandene Weltdaten und Blockänderungen erhalten.

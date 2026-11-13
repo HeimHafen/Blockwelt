@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=120';
-// BLOCKWELT V120 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=121';
+// BLOCKWELT V121 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1988,20 +1988,12 @@ function loadEdits(){
   try{
     const arr=JSON.parse(localStorage.getItem(currentSaveKey())||'[]');
     if(!Array.isArray(arr))return;
-    const repairBunker=isMeadow()&&localStorage.getItem('blockwelt-bunker-passage-v87')!=='1';
     for(const item of arr){
       if(!Array.isArray(item)||item.length!==4)continue;
       const [x,y,z,type]=item;
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
-      // Restore the walking lane and the bottom landing from the generated plan.
-      if(repairBunker&&x>=18&&x<=20&&z>=-12&&z<=1&&
-        y>=Math.max(-6,3+z)&&y<=Math.max(4,5+z))continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
-    }
-    if(repairBunker){
-      localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));
-      localStorage.setItem('blockwelt-bunker-passage-v87','1');
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
@@ -4873,11 +4865,11 @@ function updateCastleLighting(){
     stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
   const meadow=isMeadow();
   playerLightPosition.set(player.x,player.y+1,player.z);
-  for(const {site:[x,y,z,type],light,power,torch} of [...fixedLanterns,...bunkerStairLights]){
+  for(const {site:[x,y,z,type,dx,dz],light,power,torch} of [...fixedLanterns,...bunkerStairLights]){
     const mounted=meadow&&netherBlockAt(x,y,z)===type;
     const distance=light.position.distanceTo(playerLightPosition);
     light.visible=mounted&&distance<light.distance+5;
-    const outdoor=site[4]===undefined&&site[5]===undefined&&!torch;
+    const outdoor=dx===undefined&&dz===undefined&&!torch;
     light.intensity=light.visible?power*(outdoor?outdoorLanternGain:1):0;
     if(torch)torch.visible=mounted&&distance<22;
   }
@@ -5461,7 +5453,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V120';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V121';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5552,21 +5544,7 @@ function resize(){
 resize();
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-try {
-  if(localStorage.getItem('blockwelt-nachtrabe-bereinigung-v62')!=='1'){
-    localStorage.removeItem(MEADOW_KEY);
-    localStorage.removeItem(ADVENTURE_KEY);
-    localStorage.setItem('blockwelt-nachtrabe-bereinigung-v62','1');
-  }
-} catch(error) {
-  console.warn('Blockwelt-Weltbereinigung fehlgeschlagen.',error);
-}
 baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();refreshNachtrabeMenu();
-try {
-  localStorage.removeItem(ADVENTURE_KEY);
-} catch(error) {
-  console.warn('Der alte Abenteuerwelt-Spielstand konnte nicht gelöscht werden.',error);
-}
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){
