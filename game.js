@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=88';
-// BLOCKWELT V88 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=89';
+// BLOCKWELT V89 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3719,57 +3719,14 @@ function updateLeverDoors(dt){
   castleLeverBtn.hidden=!gameRunning||!nearestLeverDoor;
   if(nearestLeverDoor)castleLeverBtn.textContent=nearestLeverDoor.open?'Hebel · Tür schließen':'Hebel · Tür öffnen';
 }
-const hatchRay=new THREE.Raycaster();
-const hatchPointer=new THREE.Vector2();
-function interactWithHatch(clientX,clientY){
-  if(!gameRunning||!isMeadow())return false;
-  if(Math.hypot(player.x-19.5,player.y+1-5,player.z+1)>4)return false;
-  const rect=renderer.domElement.getBoundingClientRect();
-  hatchPointer.set(2*(clientX-rect.left)/rect.width-1,1-2*(clientY-rect.top)/rect.height);
-  hatchAssembly.updateWorldMatrix(true,true);
-  hatchRay.setFromCamera(hatchPointer,camera);
-  const hit=hatchRay.intersectObject(hatchAssembly,true)[0];
-  const obstacle=traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,
-    hit?Math.max(0,hit.distance-.025):5);
-  if(!hit||obstacle){
-    // The flush lid can be obscured by the grass edge at shallow camera angles.
-    if(bunkerHatchOpen||!obstacle||obstacle.y!==4||
-      obstacle.x<18||obstacle.x>20||obstacle.z< -3||obstacle.z>0)return false;
-  }
-  if(bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45){
-    toast('Tritt zum Schließen aus der Luke.');
-    return true;
-  }
-  bunkerHatchOpen=!bunkerHatchOpen;
-  
-  return true;
-}
-const bunkerEntryBtn=$('bunkerEntryBtn');
-function canEnterBunker(){
-  return gameRunning&&isMeadow()&&player.y>=1&&player.y<=7&&
-    Math.hypot(player.x-19.5,player.z+1)<4;
-}
-bunkerEntryBtn.addEventListener('click',()=>{
-  if(!canEnterBunker())return;
-  for(const z of [-10.5,-11.5,-12.5])for(const x of [19.5,18.5,20.5]){
-    const y=-4.98;
-    if(blocked(x,y,z)||!groundedAt(x,y,z))continue;
-    if(flying)setFlying(false);
-    bunkerHatchOpen=true;
-    Object.assign(player,{x,y,z,vy:0,grounded:true});
-    yaw=0;
-    pitch=-.12;
-    updateWorldStream();
-    bunkerEntryBtn.hidden=true;
-    return;
-  }
-  toast('Das untere Podest ist durch Blöcke versperrt.');
-});
 function updateBunkerHatch(dt){
-  bunkerEntryBtn.hidden=!canEnterBunker();
-  const playerInOpening=overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45;
-  const target=bunkerHatchOpen||playerInOpening?1.76:0;
-  hatchAssembly.rotation.z=THREE.MathUtils.damp(hatchAssembly.rotation.z,target,13,dt);
+  const near=isMeadow()&&Math.abs(player.x-19.5)<2&&
+    player.z>=-4.1&&player.z<=2.3&&player.y>=-.1&&player.y<=7;
+  const inOpening=isMeadow()&&overBunkerHatch(player.x,player.z)&&
+    player.y<5&&player.y+PLAYER_H>4.45;
+  bunkerHatchOpen=gameRunning&&(near||inOpening);
+  hatchAssembly.rotation.z=THREE.MathUtils.damp(
+    hatchAssembly.rotation.z,bunkerHatchOpen?1.76:0,13,dt);
 }
 
 for(const y of [-4.42,-2.83]){
@@ -4575,8 +4532,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{if(e.isPrimary)mouseDown=
 renderer.domElement.addEventListener('pointerup',e=>{
   if(!mouseDown||mouseDown.id!==e.pointerId)return;
   if(Math.hypot(e.clientX-mouseDown.x,e.clientY-mouseDown.y)<6){
-    const handled=mouseDown.button===0&&interactWithHatch(e.clientX,e.clientY);
-    if(!handled&&e.pointerType==='mouse')modifyWorld(mouseDown.button===2);
+    if(e.pointerType==='mouse')modifyWorld(mouseDown.button===2);
   }
   mouseDown=null;
 });
@@ -4623,7 +4579,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V88';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V89';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -4735,9 +4691,9 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   const oldX=player.x,oldZ=player.z;
+  updateBunkerHatch(dt);
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
-  updateBunkerHatch(dt);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible)continue;
     const flicker=Math.sin(now*.009+site[2]+site[0])*.07+Math.sin(now*.021+site[2])*.04;

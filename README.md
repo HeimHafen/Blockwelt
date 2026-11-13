@@ -1,4 +1,4 @@
-# Blockwelt V88 – Schloss Nachtrabe
+# Blockwelt V89 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -65,3 +65,7 @@ Beim ersten Laden wird der Laufweg einschließlich des unteren Podests aus dem B
 ## V88
 
 Neben der Falltür erscheint „Bunker betreten“ auch bei geschlossener Luke. Die Schaltfläche öffnet die Luke und setzt die Spielfigur auf einen freien Platz am unteren Absatz.
+
+## V89 – Automatische Falltür
+
+Von der Wiese aus zur oberen Treppenkante laufen. Die Falltür öffnet sich bei Annäherung von oben und unten und schließt nach Verlassen des Durchgangs. Die Treppe wird zu Fuß benutzt.
