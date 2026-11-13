@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V130 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V131 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5190,6 +5190,68 @@ for(const portal of [castlePortal,futurePortal]){
   }
   scene.add(arch);
 }
+const pawPortal=new THREE.Group();
+// West wall starts at x=-38. Center the portal on the length of that wall.
+pawPortal.position.set(-138,MEADOW_HEIGHT,-58.5);
+pawPortal.rotation.y=Math.PI/2;
+const pawRed=new THREE.MeshStandardMaterial({color:0xcf2440,roughness:.45});
+const pawBlue=new THREE.MeshStandardMaterial({color:0x174eaa,roughness:.4});
+const pawSilver=new THREE.MeshStandardMaterial({color:0xe6ebf4,metalness:.55,roughness:.32});
+const pawLight=new THREE.MeshBasicMaterial({color:0x7ce3ff});
+function pawPart(geometry,material,x,y,z){
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.position.set(x,y,z);
+  pawPortal.add(mesh);
+  return mesh;
+}
+for(const side of [-1,1]){
+  pawPart(new THREE.BoxGeometry(.88,3,.85),pawBlue,side*2.6,1.5,0);
+  pawPart(new THREE.BoxGeometry(1.2,.34,1.1),pawSilver,side*2.6,.17,0);
+  for(const face of [-1,1])
+    pawPart(new THREE.BoxGeometry(.12,2.45,.07),pawLight,side*2.6,1.58,face*.45);
+}
+pawPart(new THREE.TorusGeometry(2.6,.44,10,40,Math.PI),pawRed,0,3,0);
+for(const face of [-1,1])
+  pawPart(new THREE.TorusGeometry(2.6,.08,8,40,Math.PI),pawSilver,0,3,face*.4);
+const portalCanvas=document.createElement('canvas');
+portalCanvas.width=512;
+portalCanvas.height=320;
+const badge=portalCanvas.getContext('2d');
+badge.fillStyle='#f2f5ff';
+badge.beginPath();
+badge.roundRect(8,8,496,304,66);
+badge.fill();
+badge.fillStyle='#174eaa';
+badge.beginPath();
+badge.roundRect(22,22,468,276,55);
+badge.fill();
+badge.fillStyle='#fff';
+for(const [x,y,rx,ry] of [[256,120,50,32],[183,85,17,22],[227,60,17,22],[285,60,17,22],[329,85,17,22]]){
+  badge.beginPath();
+  badge.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+  badge.fill();
+}
+badge.font='bold 65px system-ui';
+badge.textAlign='center';
+badge.fillText('PAW PATROL',256,222,448);
+const badgeTexture=new THREE.CanvasTexture(portalCanvas);
+badgeTexture.colorSpace=THREE.SRGBColorSpace;
+const badgeMaterial=new THREE.MeshBasicMaterial({map:badgeTexture,transparent:true});
+for(const face of [-1,1])
+  pawPart(new THREE.PlaneGeometry(2.7,1.69),badgeMaterial,0,5.52,face*.47).rotation.y=face===1?0:Math.PI;
+const veilShape=new THREE.Shape();
+veilShape.moveTo(-2.16,0);
+veilShape.lineTo(2.16,0);
+veilShape.lineTo(2.16,3);
+veilShape.absarc(0,3,2.16,0,Math.PI,false);
+veilShape.closePath();
+const veil=new THREE.MeshBasicMaterial({color:0x57c8ff,opacity:.25,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+pawPart(new THREE.ShapeGeometry(veilShape,24),veil,0,0,0);
+scene.add(pawPortal);
+function updatePawPortal(now){
+  pawPortal.visible=isMeadow()&&Math.hypot(player.x+138,player.z+58.5)<120;
+  if(pawPortal.visible)veil.opacity=.23+.07*Math.sin(now*.003);
+}
 const charizard=new THREE.Group();
 charizard.position.set(240.5,5.04,84);
 charizard.rotation.y=Math.PI;
@@ -5892,7 +5954,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V130';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V131';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5994,7 +6056,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);updatePawPortal(now);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
