@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=91';
-// BLOCKWELT V91 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=92';
+// BLOCKWELT V92 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1978,10 +1978,6 @@ function baseWorld(){
 }
 function loadEdits(){
   try{
-    if(isMeadow()&&localStorage.getItem('blockwelt-schlosswelt-v90')!=='1'){
-      localStorage.removeItem(MEADOW_KEY);
-      localStorage.setItem('blockwelt-schlosswelt-v90','1');
-    }
     const arr=JSON.parse(localStorage.getItem(currentSaveKey())||'[]');
     if(!Array.isArray(arr))return;
     const repairBunker=isMeadow()&&localStorage.getItem('blockwelt-bunker-passage-v87')!=='1';
@@ -3337,12 +3333,12 @@ netherDragon.visible=false;
 const fortressAccentGroup=new THREE.Group();scene.add(fortressAccentGroup);
 const flagMat=new THREE.MeshLambertMaterial({color:'#ad4c56',emissive:'#783044',emissiveIntensity:.23,side:THREE.DoubleSide});
 const crestMat=new THREE.MeshLambertMaterial({color:'#e5a851'});
-for(const x of [-8,8]){
+for(const x of [-9,9]){
   const banner=new THREE.Group();
   banner.position.set(x+.5,10,-33.84);
-  part(banner,2.4,4.6,.15,flagMat,0,0,0);
+  part(banner,1.22,3.85,.055,flagMat,0,0,0);
   part(banner,.82,1,.05,crestMat,0,-.3,.09);
-  part(banner,2.75,.15,.18,flagMat,0,2.35,0);
+  part(banner,1.58,.15,.18,flagMat,0,2.35,0);
   fortressAccentGroup.add(banner);
 }
 fortressAccentGroup.visible=false;
@@ -3556,6 +3552,37 @@ for(const [left,right] of [[-12,-4],[4,12]]){
   }
   for(const x of [left,right])for(let y=6;y<15;y++){
     facadePart([x,y,-34],'netherBrick',y%2?.69:.87,.91,.21,gateStone,x+.5,y+.5,-33.96);
+  }
+}
+// Corbelled stone turrets project above the corner of the curtain wall.
+const turretCourses=[
+  [0.66,1.56,1.65,11.85,gateStone],
+  [1.56,1.56,3.40,14.37,materialByType.netherBrick[0]],
+  [1.67,1.58,.28,16.2,gateStone],
+  [0.12,1.76,3.65,18.15,roofStone]
+];
+for(const x of [-37,36]){
+  for(const [upper,lower,height,y,material] of turretCourses){
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(upper,lower,height,16),material);
+    mesh.position.set(x+.5,y,-34.5);
+    mesh.userData.site=[x,12,-35];
+    mesh.userData.type='netherBrick';
+    gateMolding.add(mesh);
+  }
+}
+// Coping and recessed horizontal courses emphasize the thickness of the wall.
+for(const [start,end] of [[-38,-13],[13,37]]){
+  for(let x=start;x<=end;x++){
+    facadePart([x,12,-35],'netherBrick',1,.20,.43,gateStone,x+.5,12.75,-34.03);
+    facadePart([x,5,-35],'netherBrick',1,.38,.19,roofStone,x+.5,5.22,-33.98);
+    if((x+38)%3===0)
+      facadePart([x,13,-35],'netherTrim',1.04,.17,1.14,gateStone,x+.5,14,-34.5);
+  }
+}
+// Projecting oak beams and stone brackets give the tower eaves a visible underside.
+for(const [left,right] of [[-12,-4],[4,12]]){
+  for(let x=left+1;x<right;x+=2){
+    facadePart([x,15,-34],'netherBrick',.34,.31,.58,roofStone,x+.5,15.33,-33.86);
   }
 }
 scene.add(gateMolding);
@@ -4615,7 +4642,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V91';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V92';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

@@ -1,4 +1,4 @@
-# Blockwelt V91 – Schloss Nachtrabe
+# Blockwelt V92 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -77,3 +77,7 @@ Beim ersten Laden entfernt V90 die gespeicherten Spieleränderungen der Schlossw
 ## V91 – Tortürme
 
 Vier tiefe Fensteröffnungen mit innenliegendem Glas, Werksteinrahmen, Sockelleisten und Dachgesimse an den Tortürmen.
+
+## V92 – Ringmauer und Torfront
+
+Runde Ecktürmchen mit Schieferhauben, Steinabdeckungen und Konsolen an der Torfront. Die schmaleren Banner sitzen zwischen den Fensterachsen.
