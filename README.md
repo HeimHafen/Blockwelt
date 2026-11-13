@@ -145,3 +145,7 @@ Vom Innenhof aus führt die mittlere Tür im Ostflügel in das Zimmer mit dem Sc
 ## V108 – Geheimes Kaminzimmer
 
 Hinter dem Schrank warten ein gemauerter Kamin mit Glutbett und flackerndem Feuer, zwei gepolsterte Holzstühle, ein eingefasster Teppich und ein Beistelltisch mit Buch und Becher.
+
+## V109 – Schrank und Kaminzimmer
+
+Der Schrank erhält gerahmte Holzfronten und Eisenringe. Das Kaminfeuer beleuchtet die Kammer mit warmer, zurückhaltender Intensität. Ein gemauerter Bogen, eine dunkle Feuerkammer, aufsteigende Glut und ein kleiner Holzvorrat ergänzen den Kamin.

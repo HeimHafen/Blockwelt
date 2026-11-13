@@ -164,7 +164,6 @@ const stairwellLamps=stairwellBounds.flatMap(([left,right])=>[
 ]);
 
 export const interiorLampSites=[
-  [33,6,-58,'lantern',1,0],
   ...stairwellLamps,
   ...[-3,3].flatMap(x=>[-41,-38].map(z=>[x,8,z,'lantern',Math.sign(x),0])),
   ...[-34,33].flatMap(x=>[-67,-57,-47].map(z=>[x,7,z,'lantern',x<0?-1:1,0])),
