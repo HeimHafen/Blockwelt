@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=117';
-// BLOCKWELT V117 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=118';
+// BLOCKWELT V118 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -4230,8 +4230,31 @@ const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
 const flameGeometry=new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.069,.04),new THREE.Vector2(.087,.105),new THREE.Vector2(.049,.18),new THREE.Vector2(0,.28)],12);
 // The hearth and furniture sit beyond the wardrobe's clear walking lane.
 const hearthRoom=new THREE.Group();
-const hearthStone=materialByType.netherTrim[0];
-const hearthBrick=materialByType.netherBrick[0];
+const stoneCanvas=document.createElement('canvas');
+stoneCanvas.width=stoneCanvas.height=128;
+const stoneContext=stoneCanvas.getContext('2d');
+const normalPixels=stoneContext.createImageData(128,128);
+const relief=(x,y)=>{
+  const row=Math.floor(y/32);
+  const u=((x+row%2*32)%64+64)%64;
+  const v=((y%32)+32)%32;
+  return Math.min(1,Math.min(u,64-u,v,32-v)/3)
+    +.18*Math.sin(x*Math.PI/8)*Math.cos(y*Math.PI/8);
+};
+for(let y=0;y<128;y++)for(let x=0;x<128;x++){
+  const nx=(relief(x-1,y)-relief(x+1,y))*.7;
+  const ny=(relief(x,y+1)-relief(x,y-1))*.7;
+  const length=Math.hypot(nx,ny,1);
+  normalPixels.data.set([128+127*nx/length,128+127*ny/length,128+127/length,255],(y*128+x)*4);
+}
+stoneContext.putImageData(normalPixels,0,0);
+const hearthNormal=new THREE.CanvasTexture(stoneCanvas);
+const hearthStone=new THREE.MeshStandardMaterial({
+  color:'#a29484',map:materialByType.netherTrim[0].map,
+  normalMap:hearthNormal,normalScale:new THREE.Vector2(.48,.48),roughness:.94
+});
+const hearthBrick=hearthStone.clone();
+hearthBrick.color.set('#77695d');
 const hearthPart=(w,h,d,material,x,y,z)=>part(hearthRoom,w,h,d,material,x,y,z);
 hearthPart(3.16,.13,1.34,hearthStone,32,5.065,-56.86);
 for(const x of [30.94,33.06]){
@@ -4240,8 +4263,14 @@ for(const x of [30.94,33.06]){
 }
 hearthPart(2.82,.22,1.02,hearthStone,32,6.82,-56.55);
 hearthPart(2.27,2.12,.47,hearthBrick,32,7.99,-56.25);
-const soot=new THREE.MeshLambertMaterial({color:'#29221f'});
+const soot=hearthBrick.clone();
+soot.color.set('#39302b');
 hearthPart(1.67,1.52,.12,soot,32,5.89,-56.09);
+for(const side of [-1,1])
+  hearthPart(.12,1.32,.84,soot,32+side*.80,5.82,-56.54);
+hearthPart(1.59,.08,.78,soot,32,5.14,-56.52);
+hearthPart(2.93,.12,1.10,hearthStone,32,6.99,-56.58);
+hearthPart(2.69,.08,.97,hearthBrick,32,6.89,-56.55);
 for(let block=0;block<9;block++){
   const angle=Math.PI*(block+.5)/9;
   const archStone=hearthPart(.33,.22,.29,hearthStone,
@@ -4370,7 +4399,7 @@ for(const y of [7.15,7.38,7.61,7.84]){
     hearthPart(.018,.16,.16,hearthThread,33.909,y,z).rotation.x=Math.PI/4;
 }
 const hearthLight=new THREE.PointLight('#ffad72',0,8,2);
-hearthLight.position.set(32,5.96,-57.06);
+hearthLight.position.set(32,5.79,-56.96);
 hearthRoom.add(hearthLight);
 scene.add(hearthRoom);
 function updateHearth(now){
@@ -5420,7 +5449,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V117';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V118';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

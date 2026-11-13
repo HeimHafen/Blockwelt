@@ -169,3 +169,7 @@ Zwei Türen im Obergeschoss erhalten auf der Treppenhausseite einen durchgehende
 ## V117 – Arbeitszimmer am Geheimschrank
 
 Eichenvertäfelung, ein gemusterter Wollteppich und profilierte Regalleisten rahmen die Schreibnische. Gerollte Briefe, ein Wachssiegel und ein Leinenbuch liegen auf dem Schreibtisch.
+
+## V118 – Kaminoberflächen
+
+Der Kamin erhält einen ausgekleideten Feuerraum, einen abgestuften Sims und eine Stein-Normalmap. Das Feuer bleibt die einzige Lichtquelle.
