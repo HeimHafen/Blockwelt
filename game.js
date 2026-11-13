@@ -1,4 +1,4 @@
-// BLOCKWELT V38 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V43 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -57,19 +57,8 @@ function makeNetherPlan(){
     for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++)for(let y=ya;y<=yb;y++)solid(x,y,z,type);
   };
   const deck=(xa,xb,y,za,zb,type=N)=>box(xa,xb,y,y,za,zb,type);
-  const lineX=(xa,xb,y,z,type=N)=>box(xa,xb,y,y,z,z,type);
-  const lineZ=(x,za,zb,y,type=N)=>box(x,x,y,y,za,zb,type);
   const lamp=(x,y,z)=>{
     solid(x,y-1,z,D);solid(x,y,z,'lantern');
-  };
-  const rail=(xa,xb,y,za,zb,axis)=>{
-    if(axis==='z')for(let z=za;z<=zb;z++){
-      solid(xa,y,z,N);solid(xb,y,z,N);
-      if(z%3===0){solid(xa,y+1,z,T);solid(xb,y+1,z,T);}
-    }else for(let x=xa;x<=xb;x++){
-      solid(x,y,za,N);solid(x,y,zb,N);
-      if(x%3===0){solid(x,y+1,za,T);solid(x,y+1,zb,T);}
-    }
   };
   const crenel=(xa,xb,y,za,zb)=>{
     for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++){
@@ -78,523 +67,182 @@ function makeNetherPlan(){
       solid(x,y,z,T);
     }
   };
-  const tower=(cx,cz,height,wide=5)=>{
-    // Entfernt bereits gebaute Fassadenteile im Turminneren. Andernfalls
-    // durchschneidet die vordere Festungsmauer beide begehbaren Etagen.
-    for(let x=cx-wide+2;x<=cx+wide-2;x++)for(let z=cz-wide+2;z<=cz+wide-2;z++)
-      for(let y=13;y<height;y++)empty(x,y,z);
-    // Hohlraum und mehrere Etagen: ein echter Turm, kein massiver Steinblock.
-    for(let y=12;y<=height;y++)for(let dx=-wide;dx<=wide;dx++)for(let dz=-wide;dz<=wide;dz++){
-      const x=cx+dx,z=cz+dz,edge=Math.abs(dx)>=wide-1||Math.abs(dz)>=wide-1;
-      if(edge){
-        const slit=(y===17||y===18||y===27||y===28||y===height-5)&&
-          ((dx===0&&Math.abs(dz)===wide)||(dz===0&&Math.abs(dx)===wide));
-        if(slit)continue;
-        solid(x,y,z,(y===13||y===23||y===33||y===height)?T:N);
-      }
-    }
-    deck(cx-wide,cx+wide,12,cz-wide,cz+wide,D);
-    for(const y of [23,33])if(y<height-4){
-      deck(cx-wide+2,cx+wide-2,y,cz-wide+2,cz+wide-2,N);
-      // Auf der Westseite bleibt ein Schacht für die Turmtreppe frei.
-      for(let z=cz-2;z<=cz+2;z++)for(let x=cx-wide+2;x<=cx-wide+3;x++)empty(x,y,z);
-    }
-    deck(cx-wide,cx+wide,height,cz-wide,cz+wide,T);
-    crenel(cx-wide,cx+wide,height+1,cz-wide,cz+wide);
-    // Zugang zum Inneren vom Hof, ohne eine solide Torwand zu hinterlassen.
-    const front=cz+wide;
-    for(let x=cx-1;x<=cx+1;x++)for(let y=13;y<=16;y++){
-      empty(x,y,front);empty(x,y,front-1);
-    }
-    // Vier offene obere Torbögen: Brücken führen in die Türme, nicht gegen
-    // unsichtbare/volle Mauern. Die Geschossböden y=23 bleiben begehbar.
-    for(let u=-2;u<=2;u++)for(let t=0;t<=2;t++)for(let y=24;y<=27;y++){
-      empty(cx+u,y,cz-wide+t);empty(cx+u,y,cz+wide-t);
-      empty(cx-wide+t,y,cz+u);empty(cx+wide-t,y,cz+u);
-    }
-    for(let y=height-4;y<height;y++)for(const z of [cz-wide,cz+wide])
-      if(y%3===0)solid(cx,y,z,L);
-  };
-  // 1. Großzügige Fundamentterrasse: die Wiese bleibt rundherum offen.
-  deck(-47,47,12,-84,-43,D);
-  box(-47,-45,5,11,-84,-43,D);box(45,47,5,11,-84,-43,D);
-  box(-47,47,5,11,-84,-82,D);box(-47,47,5,11,-45,-43,D);
-  // Flache dekorative Bodenstruktur; keine Gegenstände auf Hauptlaufwegen.
-  for(let x=-43;x<=43;x++)for(let z=-81;z<=-47;z++){
-    if(Math.abs(x)<7||z%7===0||Math.abs(x)%12===0)solid(x,12,z,(x+z)%11===0?T:N);
-  }
-  // 2. Riesige Haupttreppe: ein Block Höhenunterschied je 3 Felder.
-  // Die vorhandene 1-Block-Aufsteighilfe macht sie direkt begehbar.
-  for(let z=-13;z>=-43;z--){
-    const level=Math.min(12,5+Math.floor((-z-13)/4));
-    const width=z<-28?9:7;
-    for(let x=-width;x<=width;x++){
-      for(let y=5;y<=level;y++)solid(x,y,z,y===level?(x===0?T:D):D);
-    }
-    if((-z)%4===0){for(const x of [-width-2,width+2]){
-      box(x,x,5,level,z,z,N);
-      if(level+2<=MAX_Y)lamp(x,level+2,z);
-    }}
-  }
-  // 3. Haupteingang mit Torhaus, Zinnen und bewusst freiem Tor.
-  for(let z=-46;z<=-43;z++)for(let x=-45;x<=45;x++){
-    const gate=Math.abs(x)<=6;
-    for(let y=13;y<=27;y++){
-      const arch=(gate&&y<=22)||
-        (y===23&&Math.abs(x)<=5)||(y===24&&Math.abs(x)<=3);
-      if(arch)continue;
-      if(y>=25&&Math.abs(x)>34&&x%5===0)continue;
-      const trim=(y===13||y===24||y===27||x%11===0&&y%6===0);
-      solid(x,y,z,trim?T:N);
-    }
-    if(x%4===0)solid(x,28,z,D);
-  }
-  // Portalrahmen und symmetrisches Wappen.
-  for(const x of [-7,7])box(x,x,13,25,-43,-42,T);
-  for(let x=-6;x<=6;x++)solid(x,25,-42,T);
-  for(const x of [-17,17]){
-    box(x-2,x+2,18,25,-42,-42,T);
-    box(x-1,x+1,19,23,-41,-41,D);
-    for(let y=20;y<=22;y++)solid(x,y,-40,L);
-    solid(x,19,-40,G);
-  }
-  // Zwei Front-Wehrtürme, zwei hintere, und ein breites Kastenwerk.
-  tower(-34,-46,39,6);
-  tower(34,-46,39,6);
-  tower(-44,-76,35,5);
-  tower(44,-76,35,5);
-  // Relief der Vorderfassade: Lichtbögen, Steinrippen und das rote Torwappen.
-  for(const center of [-23,-13,13,23]){
-    for(let z=-46;z<=-42;z++)for(let x=center-3;x<=center+3;x++)for(let y=14;y<=22;y++){
-      const d=Math.abs(x-center);
-      if(d<=2&&y<=19||d<=1&&y<=21||d===0&&y===22)empty(x,y,z);
-    }
-    for(const x of [center-4,center+4])box(x,x,13,24,-42,-42,T);
-    for(let x=center-4;x<=center+4;x++)solid(x,24,-42,T);
-    solid(center,23,-42,L);
-  }
-  // Zwischen den Arkaden und den Eingängen entsteht eine lesbare Reliefstruktur.
-  for(const x of [-40,-29,-8,8,29,40]){
-    box(x,x,14,23,-42,-42,D);
-    for(const y of [16,23])solid(x,y,-41,T);
-  }
-  for(const x of [-10,10]){
-    box(x,x,14,21,-42,-42,T);
-    solid(x,22,-42,G);
-  }
-  // Außenposten als zweite, per Brücke erreichbare Burgebene.
-  for(const side of [-1,1]){
-    const tx=side*69;
-    tower(tx,-63,34,5);
-    const lo=Math.min(side*45,side*69),hi=Math.max(side*45,side*69);
-    deck(lo,hi,23,-65,-61,T);
-    rail(lo,hi,24,-66,-60,'x');
-    for(let x=lo;x<=hi;x+=8){
-      box(x-1,x+1,13,22,-63,-63,N);
-      for(const z of [-66,-60])lamp(x,26,z);
-    }
-  }
-  // 4. Seitliche Umfassungsmauern mit offenen Arkaden.
-  for(const sx of [-1,1])for(let z=-82;z<=-45;z++)for(let w=0;w<=2;w++){
-    const x=sx*(44+w);
-    for(let y=13;y<=24;y++){
-      // Ein paar große Bogenöffnungen zum Durchschauen und Erkunden.
-      const opening=(z>=-66&&z<=-59||z>=-78&&z<=-72)&&y<=20&&Math.abs(x)===44;
-      if(opening)continue;
-      solid(x,y,z,(y===22||y===24)?T:N);
-    }
-    if(z%4===0)solid(x,25,z,D);
-  }
-  for(let x=-46;x<=46;x++)for(let y=13;y<=23;y++){
-    if(Math.abs(x)<=6&&y<=20)continue;
-    solid(x,y,-83,y===13||y===23?T:N);
-  }
-  // 5. Erkundbarer, freier Innenhof mit mehreren Wegen.
-  for(let x=-27;x<=27;x++)for(let z=-62;z<=-48;z++){
-    if(Math.abs(x)<=4||z===-55||Math.abs(x)%9===0)solid(x,12,z,(x*z)%13===0?T:N);
-  }
-  // Leuchtsäulen stehen *neben* den Durchgängen.
-  for(const [x,z] of [[-18,-53],[18,-53],[-18,-62],[18,-62]]){
-    box(x,x,13,16,z,z,D);solid(x,17,z,L);
-  }
-  // 6. Lange, begehbare Wehrgänge auf zwei Ebenen.
-  // Hauptbrücke quer zur Festung, mit durchgehendem Boden und Geländern.
-  for(const z of [-58,-73]){
-    deck(-41,41,23,z-2,z+2,T);
-    rail(-41,41,24,z-3,z+3,'x');
-    for(let x=-38;x<=38;x+=8){
-      for(const side of [-3,3])lamp(x,26,z+side);
-      // Wiederkehrende Stützen, keine undurchdringliche Wand.
-      if(Math.abs(x)>21)for(let y=13;y<=22;y++)solid(x,y,z-2,N);
-    }
-  }
-  // Vorderer Wehrgang über dem Tor.
-  deck(-42,42,27,-48,-46,T);
-  rail(-42,42,28,-49,-45,'x');
-  // Längsbrücken zu den rückwärtigen Türmen.
-  for(const x of [-35,35]){
-    deck(x-2,x+2,23,-78,-48,T);
-    rail(x-3,x+3,24,-78,-48,'z');
-    for(let z=-74;z<=-50;z+=8){
-      lamp(x-3,26,z);lamp(x+3,26,z);
-    }
-  }
-  // Vier Torbogen-Abschnitte unter den weit gespannten Brücken.
-  for(const z of [-58,-73])for(const x of [-28,-14,14,28]){
-    for(let y=13;y<=22;y++)for(const px of [x-2,x+2])solid(px,y,z,N);
-    for(let dx=-2;dx<=2;dx++)solid(x+dx,22,z,T);
-  }
-  // 7. Rückwärtiger Bergfried: drei echte Etagen, offener Eingangsraum.
-  const KX=16,ZN=-81,ZP=-64;
-  for(let y=13;y<=39;y++)for(let x=-KX;x<=KX;x++)for(let z=ZN;z<=ZP;z++){
-    const edge=Math.abs(x)>=KX-1||z<=ZN+1||z>=ZP-1;
-    if(!edge)continue;
-    // Freie, breite Portale vorn und hinten.
-    if(Math.abs(x)<=4&&y<=18&&(z>=ZP-1||z<=ZN+1))continue;
-    const window=(y===19||y===20||y===30||y===31)&&
-      ((Math.abs(x)===KX&&(z+80)%7===0)||(z===ZN&&(x+16)%7===0));
-    if(window)continue;
-    solid(x,y,z,y%9===0?T:N);
-  }
-  for(const y of [22,33,40]){
-    deck(-KX,KX,y,ZN,ZP,y===40?T:D);
-    // Stairwell kept open where real stairs pass through the floors.
-    for(let z=-79;z<=-66;z++)for(let x=-14;x<=-11;x++){
-      if(y!==40)empty(x,y,z);
-    }
-  }
-  crenel(-KX,KX,41,ZN,ZP);
-  // Hoher zentraler Turm mit herausragenden leuchtenden Fenstern.
-  for(let y=41;y<=50;y++)for(let x=-9;x<=9;x++)for(let z=-77;z<=-69;z++){
-    if(Math.abs(x)===9||z===-77||z===-69){
-      const win=(Math.abs(x)<=1&&(z===-69||z===-77)&&y>=44&&y<=48);
-      solid(x,y,z,win?L:N);
-    }
-  }
-  deck(-10,10,51,-78,-68,T);crenel(-10,10,52,-78,-68);
-  // Obere Verbindung zu den seitlichen Gängen, mit echter Durchgangshöhe.
-  for(const sx of [-1,1])for(let x=sx*13;x!==sx*18;x+=sx)for(let z=-73;z<=-68;z++)
-    for(let y=24;y<=27;y++)empty(x,y,z);
-  // Continuity from the gallery to the inside of the upper hall.
-  deck(-20,-12,23,-72,-68,T);
-  // 9. Ornamentik: Lava-Lichtbänder an Außenseiten, keine offenen Flüsse
-  // auf Laufwegen. Kinder können die Festung gefahrlos erkunden.
-  for(const sx of [-1,1]){
-    for(let z=-74;z<=-50;z+=6)for(let y=15;y<=22;y++)solid(sx*47,y,z,(y+z)%4===0?L:T);
-    for(const x of [sx*30,sx*43])for(let y=28;y<=33;y++)solid(x,y,-42,(y%3===0)?L:T);
-  }
-  // Laternen an den Wegrändern, nicht im mittleren Laufraum.
-  for(let z=-60;z<=-48;z+=6)for(const x of [-8,8])lamp(x,15,z);
-  // Zur Festungsmitte führender Weg durch den Rasen, ohne Baumhindernisse.
-  for(let z=-11;z<=-6;z++)for(let x=-5;x<=5;x++)solid(x,4,z,D);
-  // V30: Glutkabinett – kleine Ausstellungsstücke im zentralen Bergfried.
-  // Die Mitte des Durchgangs (x -3 bis +3) bleibt durchgehend frei.
-  for(const cx of [-7,7]){
-    box(cx-1,cx+1,13,13,-75,-74,D);
-    solid(cx,14,-74,G);
-    solid(cx,15,-74,L);
-    box(cx-1,cx+1,34,34,-76,-75,T);
-    solid(cx,35,-75,G);
-    solid(cx,36,-75,L);
-  }
-  // Glühende Wandzeichen in der oberen Halle: von den Treppen fern.
-  for(const x of [-8,-4,4,8]){
-    solid(x,37,-79,G);
-    solid(x,38,-79,L);
-  }
-  // Jedes erreichte Dach bietet einen kleinen, sichtbaren Orientierungspunkt.
-  // Die Umgänge bleiben breit; alle begehbaren Zinnen werden nicht zugestellt.
-  for(const [tx,tz,h] of [
-    [-34,-46,39],[34,-46,39],[-44,-76,35],[44,-76,35],
-    [-69,-63,34],[69,-63,34]
-  ]){
-    solid(tx,h+1,tz,T);
-    solid(tx,h+2,tz,L);
-    solid(tx,13,tz,D);
-    solid(tx,14,tz,G);
-  }
-  // Zwei Wegmarken auf der Außenkante des Hofes statt im Hauptweg.
-  for(const side of [-1,1]){
-    box(side*28,side*28,13,15,-55,-55,D);
-    solid(side*28,16,-55,L);
-  }
-  // V31 – NETHERFESTUNG PREMIUM: Zusätzliche echte, bearbeitbare Baublöcke.
-  // Orientierung: Süd (z=-40) liegt vor dem Tor, Nord (z=-80) beim Bergfried.
-  // Alle Details bleiben neben dem 9 Felder breiten Hauptweg x=-4..4.
-  // A) Portal mit abgestuftem Bogen, Schlüsselsymbol und steinernen Flanken.
-  for(const side of [-1,1]){
-    // Zwei mächtige, tief gestaffelte Portalpfeiler; der Weg bleibt frei.
-    for(let z=-42;z<=-39;z++)for(let y=13;y<=27;y++){
-      const x=side*(8+(z===-42?0:z===-41?1:2));
-      solid(x,y,z,(y%5===0)?T:D);
-      if(y%7===1)solid(x+side,y,z,G);
-    }
-    // Sorgfältig proportioniertes Leuchtornament an der freien Toraußenwand.
-    for(let y=15;y<=23;y++){
-      solid(side*12,y,-41,y===15||y===23?G:T);
-      if(y===18||y===21)solid(side*13,y,-41,L);
-    }
-  }
-  for(let x=-7;x<=7;x++){
-    const archY=27+Math.max(0,3-Math.floor(Math.abs(x)/2));
-    solid(x,archY,-40,x===0?G:T);
-  }
-  // B) Innenhof: bewusst großzügig, vier glühende Wachtfeuer auf Sockeln.
-  // Jeweils mindestens 7 Blöcke Abstand zum unverbauten Hauptweg.
-  for(const [cx,cz] of [[-13,-54],[13,-54],[-13,-65],[13,-65]]){
-    deck(cx-2,cx+2,13,cz-2,cz+2,D);
-    // Stufenförmiger Sockel und geschützte Flammenmitte.
-    deck(cx-1,cx+1,14,cz-1,cz+1,T);
-    solid(cx,15,cz,G);solid(cx,16,cz,L);
-    for(const [dx,dz] of [[-2,0],[2,0],[0,-2],[0,2]]){
-      solid(cx+dx,14,cz+dz,T);
-    }
-  }
-  // C) Begehbare Relikt-/Thronkammer im hinteren Bergfried.
-  // Der mittige Laufweg und die alten Treppenschächte bleiben frei.
-  // Bewusst an der östlichen Wand statt im Hallenzentrum.
-  const throneX=9,throneZ=-76;
-  deck(6,12,13,-80,-74,T);
-  deck(7,11,14,-79,-76,D);
-  deck(8,10,15,-79,-77,N);
-  // Sitz und Rücken: Blick aus dem Thron nach Süden zum Halleneingang.
-  box(8,10,16,19,-79,-79,N);
-  for(const x of [7,11])box(x,x,15,17,-78,-77,T);
-  solid(9,20,-79,G);
-  for(const [x,z] of [[6,-75],[12,-75]]){
-    solid(x,14,z,D);solid(x,15,z,L);
-  }
-  // D) Bergfried-Wappen, Leuchtrahmen und Nebentüren – außerhalb der
-  // Hauptöffnung |x|<=4, die durchgehend frei bleibt.
-  for(const side of [-1,1]){
-    for(let y=15;y<=28;y++)solid(side*7,y,-63,(y%5===0)?G:T);
-    for(const y of [19,25,29])solid(side*7,y,-62,L);
-    for(let x=9;x<=13;x++)for(let y=16;y<=21;y++){
-      if(Math.abs(x-11)===2||y===21)solid(side*x,y,-63,T);
-    }
-  }
-  // E) Krönung: Turmsilhouetten mit Netherwappen an den Außenfassaden.
-  // Nur Wandaußenseiten, keine Treppen und keine Laufstege werden belegt.
-  for(const [cx,cz,h,w] of [
-    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],
-    [44,-76,35,5],[-69,-63,34,5],[69,-63,34,5]
-  ]){
-    const fx=cx,front=cz+w+1;
-    for(let y=h-9;y<=h-3;y++){
-      // Über der unteren Tür, vor der Turmwand (nur Deko an der Fassade).
-      solid(fx,y,front,(y===h-9||y===h-3)?G:T);
-      if(y===h-6){solid(fx-1,y,front,G);solid(fx+1,y,front,G);}
-    }
-    // Zwei sorgfältig gesetzte Ecktürmchen auf den Zinnen, nur am Außenrand.
-    for(const side of [-1,1]){
-      const cornerX=cx+side*w;
-      solid(cornerX,h+2,cz-w,T);
-      solid(cornerX,h+3,cz-w,L);
-    }
-  }
-  // F) Fernsicht bleibt lesbar: kontrastreiche horizontale Wandbänder.
-  for(const side of [-1,1])for(let z=-79;z<=-50;z+=3){
-    const x=side*47;
-    solid(x,23,z,G);
-  }
-  // Ground the outer towers on masonry piers and articulate the front plinth.
-  for(const x of [-69,69]){
-    box(x-4,x+4,5,6,-67,-59,D);
-    box(x-3,x+3,7,11,-66,-60,N);
-    deck(x-4,x+4,10,-67,-59,T);
-  }
-  for(let x=-46;x<=46;x++){
-    if(Math.abs(x)<12)continue;
-    for(const y of [5,10])solid(x,y,-43,T);
-    if(x%8===0)box(x,x,6,9,-43,-43,N);
-  }
-  // Recessed window motifs, trim and copper-colored insets in existing masonry.
-  for(const [cx,front] of [[-34,-40],[34,-40],[-69,-58],[69,-58],[-44,-71],[44,-71]]){
-    for(const x of [cx-3,cx+3])for(let y=17;y<=21;y++){
-      if(vox.has(key(x,y,front)))solid(x,y,front,y===17||y===21?T:L);
-    }
-  }
-  for(const z of [-58,-73])for(let x=-39;x<=39;x+=6){
-    for(const side of [-1,1]){
-      const railZ=z+side*3;
-      if(vox.has(key(x,24,railZ)))solid(x,24,railZ,T);
-    }
-  }
-  for(const x of [-13,-6,6,13])for(const z of [-77,-70]){
-    if(vox.has(key(x,22,z)))solid(x,22,z,L);
-    if(vox.has(key(x,33,z)))solid(x,33,z,L);
-  }
-
-  // Give the fortress a legible silhouette even in the simplified far view.
-  for(const [cx,cz,h,w] of [
-    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],[44,-76,35,5],
-    [-69,-63,34,5],[69,-63,34,5]
-  ]){
-    for(const sx of [-1,1])for(const sz of [-1,1]){
-      const x=cx+sx*w,z=cz+sz*w;
-      box(x,x,14,h-1,z,z,D);
-      box(x+sx,x+sx,14,h-2,z,z,D);
-      box(x,x,14,h-2,z+sz,z+sz,D);
-      for(const y of [16,h-4,h]){
-        solid(x,y,z,T);
-        solid(x+sx,y,z,T);solid(x,y,z+sz,T);
-      }
-      solid(x,h+1,z,D);solid(x,h+2,z,T);
-    }
-    // Corbels under the rim break up the tall uninterrupted tower faces.
-    for(let u=-w+2;u<=w-2;u+=2)for(const side of [-1,1]){
-      solid(cx+u,h-2,cz+side*w,D);
-      solid(cx+side*w,h-2,cz+u,D);
-    }
-    for(let u=-w+1;u<=w-1;u++){
-      solid(cx+u,h,cz-w,T);solid(cx+u,h,cz+w,T);
-      solid(cx-w,h,cz+u,T);solid(cx+w,h,cz+u,T);
-    }
-  }
-  // Broad stone runners and inset patterns are part of the existing floor.
-  for(const [y,xa,xb,za,zb] of [[12,-26,26,-61,-48],[22,-14,14,-79,-66],
-    [33,-14,14,-79,-66],[40,-15,15,-80,-65],[51,-9,9,-77,-69]]){
-    for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++){
-      if(!vox.has(key(x,y,z))||vox.get(key(x,y,z))===L)continue;
-      const edge=x===xa||x===xb||z===za||z===zb;
-      const mosaic=Math.abs(x)+Math.abs(z-Math.round((za+zb)/2))===4;
-      if(edge||mosaic||Math.abs(x)===2)solid(x,y,z,T);
-      else if(Math.abs(x)<=3||((x+z)&7)===0)solid(x,y,z,D);
-    }
-  }
-  for(const x of [-12,-6,6,12])for(const y of [22,33]){
-    for(let yy=y+3;yy<=y+6;yy++)solid(x,yy,-80,yy===y+5?G:D);
-  }
-
-  // Twin dragon guardians frame the courtyard without narrowing its axis.
-  for(const x of [-10,10]){
-    deck(x-2,x+2,13,-54,-52,D);
-    deck(x-1,x+1,14,-54,-52,T);
-    box(x-1,x+1,15,17,-54,-54,D);
-    solid(x,18,-54,T);solid(x,19,-54,D);
-    solid(x,18,-53,D);solid(x,17,-52,T);
-    for(const side of [-1,1]){
-      solid(x+side,19,-54,G);
-      solid(x+side,20,-54,D);
-      solid(x+side*2,17,-54,T);
-      solid(x+side*3,18,-54,D);
-    }
-  }
-
-  // The upper keep is a gallery: deep, stepped embrasures frame the views.
-  for(const side of [-1,1])for(const z of [-76,-71]){
-    for(let x=14;x<=16;x++)for(let y=35;y<=38;y++){
-      empty(x*side,y,z);
-      if(y<=37){
-        empty(x*side,y,z-1);
-        empty(x*side,y,z+1);
-      }
-    }
-    // Low sill keeps the overlook walkable and protects the outside edge.
-    for(let x=15;x<=16;x++)for(let dz=-1;dz<=1;dz++)solid(x*side,34,z+dz,T);
-    solid(14*side,38,z-1,G);solid(14*side,38,z+1,G);
-  }
-
-  for(let z=-79;z<=-70;z++){
-    solid(-14,33,z,T);
-    for(let y=34;y<=36;y++)empty(-14,y,z);
-  }
-
-  // Roof shrine. Its luminous core and crown rise above the far silhouette.
-  deck(3,7,52,-75,-71,D);
-  deck(4,6,53,-74,-72,T);
-  solid(5,54,-73,G);
-  solid(5,55,-73,L);
-  solid(5,56,-73,L);
-  solid(5,57,-73,G);
-  for(const [dx,dz] of [[-1,0],[1,0],[0,-1],[0,1]]){
-    solid(5+dx,54,-73+dz,D);
-    solid(5+dx,55,-73+dz,T);
-    solid(5+dx,56,-73+dz,G);
-  }
-  for(let x=0;x<=5;x++)solid(x,51,-76,x%2===0?G:T);
-
-  // Set floors first, then clear the entire walking envelope after all decoration.
   const routes=[];
-  const towerSpecs=[
-    [-34,-46,39,6],[34,-46,39,6],[-44,-76,35,5],[44,-76,35,5],
-    [-69,-63,34,5],[69,-63,34,5]
+  const arch=(x,y,z,half,height,depth)=>{
+    for(let dx=-half;dx<=half;dx++)for(let dz=0;dz<depth;dz++){
+      const top=height-Math.floor(Math.abs(dx)*.75);
+      for(let dy=1;dy<=top;dy++)empty(x+dx,y+dy,z+dz);
+      solid(x+dx,y+top+1,z+dz,T);
+    }
+  };
+  const tower=(cx,cz,r,h,base=4)=>{
+    deck(cx-r,cx+r,base,cz-r,cz+r,D);
+    for(let y=base+1;y<h;y++)for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+      if(Math.abs(dx)!==r&&Math.abs(dz)!==r)continue;
+      if(Math.abs(dx)+Math.abs(dz)===2*r)continue;
+      const slit=(dx===0||dz===0)&&y>9&&y<h-3&&y%8>=3&&y%8<=5;
+      if(slit)continue;
+      solid(cx+dx,y,cz+dz,y%8===0?T:Math.abs(dx)+Math.abs(dz)>=2*r-1?D:N);
+    }
+    deck(cx-r,cx+r,h,cz-r,cz+r,T);
+    crenel(cx-r,cx+r,h+1,cz-r,cz+r);
+    const ring=[],k=r-2;
+    for(let x=0;x<=k;x++)ring.push([x,k]);
+    for(let z=k-1;z>=-k;z--)ring.push([k,z]);
+    for(let x=k-1;x>=-k;x--)ring.push([x,-k]);
+    for(let z=-k+1;z<=k;z++)ring.push([-k,z]);
+    for(let x=-k+1;x<0;x++)ring.push([x,k]);
+    const path=[];
+    for(let z=cz+r+2;z>cz+k;z--)path.push([cx,4,z]);
+    for(let y=5;y<=h;y++){
+      const [x,z]=ring[(y-5)%ring.length];
+      path.push([cx+x,y,cz+z]);
+    }
+    routes.push(path);
+    return {cx,cz,r,h};
+  };
+
+  // Outer enceinte, broad approach and a tall pointed gatehouse.
+  for(let z=-84;z<=-36;z++)for(const x of [-42,42]){
+    box(x,x,5,17,z,z,N);
+    if(z%4<=-3)solid(x,18,z,T);
+  }
+  box(-42,42,5,17,-84,-84,N);
+  box(-42,42,5,19,-40,-38,N);
+  for(let x=-41;x<=41;x+=5)box(x,x+1,18,21,-39,-38,D);
+  box(-12,12,5,25,-43,-35,D);
+  for(let z=-43;z<=-35;z++)arch(0,4,z,7,13,1);
+  for(const x of [-11,11]){
+    box(x-1,x+1,5,24,-35,-34,T);
+    solid(x,19,-33,L);
+  }
+  for(let y=26;y<=32;y++){
+    const span=12-(y-25);
+    deck(-span,span,y,-43,-35,y%2?D:T);
+  }
+  solid(0,33,-39,G);
+  for(let z=-48;z<=14;z++)for(let x=-4;x<=4;x++){
+    solid(x,4,z,Math.abs(x)===4?T:Math.abs(x)===2?D:'cobble');
+  }
+  for(let z=-33;z<=-9;z+=8)for(const x of [-6,6]){
+    solid(x,5,z,D);
+    solid(x,6,z,'lantern');
+  }
+
+  // Six towers of different heights give the skyline a stepped silhouette.
+  const towers=[
+    tower(-29,-38,6,32),tower(29,-38,6,32),
+    tower(-42,-68,6,36),tower(42,-68,6,36),
+    tower(-24,-80,6,43),tower(24,-80,6,43)
   ];
-  for(const [cx,cz,height,wide] of towerSpecs){
-    const r=wide-3;
-    const ring=[];
-    for(let x=0;x<=r;x++)ring.push([cx+x,cz+r]);
-    for(let z=r-1;z>=-r;z--)ring.push([cx+r,cz+z]);
-    for(let x=r-1;x>=-r;x--)ring.push([cx+x,cz-r]);
-    for(let z=-r+1;z<=r;z++)ring.push([cx-r,cz+z]);
-    for(let x=-r+1;x<0;x++)ring.push([cx+x,cz+r]);
+  for(const {cx,cz,r,h} of towers){
+    for(const side of [-1,1]){
+      const x=cx+side*(r-1),z=cz-r+1;
+      box(x,x,h+1,h+5,z,z,D);
+      solid(x,h+6,z,G);
+    }
+  }
 
-    const route=[];
-    const entrance=cz===-46?cz-wide-1:cz+wide+1;
-    if(entrance<cz){
-      // Front towers are entered from the courtyard, on their north side.
-      for(let z=entrance;z<cz+r;z++)route.push([cx,12,z]);
-    }else{
-      // The outer watchtowers also have a direct approach from the meadow.
-      if(Math.abs(cx)===69){
-        for(let i=0;i<16;i++){
-          const floor=4+Math.floor(i/2), z=entrance+16-i;
-          if(floor>5)box(cx,cx,5,floor-1,z,z,D);
-          route.push([cx,floor,z]);
-        }
-        box(cx,cx,5,11,entrance,entrance,D);
+  // The great hall opens straight off the court. Structural ribs arch over
+  // the aisle while amber lights and violet glass frame the side passages.
+  deck(-16,16,4,-82,-59,D);
+  deck(-16,16,20,-82,-59,T);
+  for(const x of [-16,16])box(x,x,5,19,-82,-59,N);
+  box(-16,16,5,19,-82,-82,N);
+  box(-16,16,5,19,-59,-59,N);
+  arch(0,4,-59,5,10,1);
+  for(let z=-79;z<=-62;z+=4){
+    for(const side of [-1,1]){
+      const x=side*12;
+      box(x,x,5,14,z,z,D);
+      solid(x,8,z+1,'lantern');
+      for(let step=0;step<=6;step++){
+        box(side*(12-step),side*(12-step),15+Math.floor(step/2),19,z,z,T);
       }
-      for(let z=entrance;z>cz+r;z--)route.push([cx,12,z]);
+      for(let y=9;y<=14;y++)solid(side*16,y,z,y%3===0?G:'glass');
     }
-    for(let floor=13;floor<=height;floor++){
-      const [x,z]=ring[(floor-13)%ring.length];
-      route.push([x,floor,z]);
-    }
-    const [x,,z]=route.at(-1);
-    const landing=Math.abs(x-cx)===r
-      ? [x+Math.sign(x-cx),height,z]
-      : [x,height,z+Math.sign(z-cz)];
-    route.push(landing);
-    routes.push(route);
   }
-  // Courtyard to the bridges, then three independent flights through the keep.
-  for(let x=-23;x<=-21;x++){
-    routes.push(Array.from({length:25},(_,i)=>[x,Math.min(23,12+Math.floor(i/2)),-48-i]));
+  for(let z=-80;z<=-60;z++)for(let x=-4;x<=4;x++){
+    solid(x,4,z,Math.abs(x)===4?G:((x+z)&3)===0?T:D);
   }
-  for(let x=-13;x<=-11;x++){
-    routes.push(Array.from({length:15},(_,i)=>[x,23+Math.floor(i*10/14),-65-i]));
-  }
-  for(let x=11;x<=13;x++){
-    routes.push(Array.from({length:12},(_,i)=>[x,33+Math.floor(i*7/11),-79+i]));
-  }
-  routes.push([[-11,24,-67],[-10,23,-67],[-9,22,-67],[-8,22,-67]]);
-  // The summit opens directly onto the roof at the end of the upper staircase.
-  const summit=[[-6,40,-68],[-6,40,-69]];
-  for(let z=-70;z>=-76;z--)summit.push([-6,41+(-70-z),z]);
-  for(let x=-5;x<=-2;x++)summit.push([x,48+(x+5),-76]);
-  summit.push([-1,51,-76]);
-  routes.push(summit);
+  deck(-3,3,5,-81,-78,T);
+  box(-1,1,6,9,-81,-81,D);
+  solid(0,10,-81,G);
 
-  // Link the first bridge level to the gallery above the main gate.
-  routes.push(Array.from({length:10},(_,i)=>[-25,23+Math.min(4,Math.floor(i/2)),-56+i]));
-  for(const route of routes)for(let i=0;i<route.length;i++){
-    const [x,y,z]=route[i];
-    const previous=route[i-1], next=route[i+1];
-    const turn=previous&&next&&previous[0]!==next[0]&&previous[2]!==next[2];
-    solid(x,y,z,!previous||!next||turn?G:T);
+  // The east cloister conceals a lantern-lit passage into the great hall.
+  for(let z=-80;z<=-60;z++){
+    deck(17,24,4,z,z,T);
+    deck(17,24,9,z,z,D);
+    box(24,24,5,8,z,z,D);
+    if(z%5===0)solid(23,7,z,'lantern');
   }
-  // Replace existing stone with light. The wall keeps its shape and the
-  // subsequent clearance pass keeps the stair volume free.
-  for(const [cx,cz,height,wide] of towerSpecs){
-    for(let y=17;y<height-2;y+=6){
-      for(const side of [-1,1]){
-        const x=cx+side*(wide-1);
-        if(vox.has(key(x,y,cz)))solid(x,y,cz,L);
-      }
+  arch(20,4,-60,2,3,1);
+  for(let z=-80;z<=-78;z++)for(let y=5;y<=8;y++)empty(16,y,z);
+  box(17,24,5,8,-81,-81,D);
+
+  // West wing: a vaulted archive and a covered return into the great hall.
+  deck(-39,-17,4,-77,-61,D);
+  for(let z=-77;z<=-61;z++)for(let x=-39;x<=-17;x++){
+    const roof=13+Math.floor((11-Math.abs(x+28))/2);
+    solid(x,roof,z,T);
+    if(x===-39||x===-17||z===-77||z===-61)
+      box(x,x,5,roof-1,z,z,N);
+    if((x+28)**2+(z+70)**2<=13)solid(x,4,z,Math.abs(x+28)===Math.abs(z+70)?G:T);
+  }
+  arch(-28,4,-61,3,7,1);
+  for(const z of [-74,-69,-64]){
+    for(const x of [-36,-20]){
+      box(x-1,x+1,5,8,z,z,'planks');
+      solid(x,9,z,'lantern');
+      for(let y=10;y<=12;y++)solid(x<-28?-39:-17,y,z,'glass');
+    }
+    for(let x=-38;x<=-18;x++){
+      const roof=13+Math.floor((11-Math.abs(x+28))/2);
+      solid(x,roof-1,z,D);
     }
   }
-  for(const route of routes)for(const [x,y,z] of route){
-    for(let head=y+1;head<=y+3;head++)empty(x,head,z);
+  // The archive's central plinth is framed by a clear loop at floor level.
+  deck(-29,-27,5,-72,-70,T);
+  solid(-28,6,-71,G);solid(-28,7,-71,L);
+  for(let z=-76;z<=-73;z++){
+    for(let x=-19;x<=-15;x++)solid(x,4,z,T);
+    for(let x=-17;x<=-16;x++)for(let y=5;y<=8;y++)empty(x,y,z);
+  }
+
+  // Suspended copper lanterns hang above the archive's walking clearance.
+  for(const x of [-32,-24])for(const z of [-73,-66]){
+    box(x,x,12,15,z,z,D);
+    solid(x,11,z,'lantern');
+  }
+
+  // Two wide exterior stairs lead to the hall roof. A taller central
+  // tower rises above it and opens onto a ring of lookout terraces.
+  for(const x of [-14,-13,13,14]){
+    routes.push(Array.from({length:19},(_,i)=>[x,Math.min(20,4+i),-43-i]));
+  }
+  deck(-15,15,20,-61,-59,T);
+  tower(0,-70,9,56,20);
+  const keepRoute=routes.at(-1);
+  // Move the staircase base up to the great hall roof.
+  keepRoute.splice(0,keepRoute.findIndex(([,y])=>y===20));
+  for(let x=-8;x<=8;x++)for(let z=-78;z<=-62;z++)solid(x,20,z,T);
+  const [startX,,startZ]=keepRoute[0];
+  deck(startX-1,startX+1,20,startZ-1,startZ+1,T);
+  for(let x=startX-1;x<=startX+1;x++)for(let y=21;y<=23;y++){
+    empty(x,y,-61);
+  }
+  for(const side of [-1,1]){
+    box(side*8,side*8,57,63,-78,-78,D);
+    solid(side*8,64,-78,L);
+  }
+  deck(-3,3,57,-74,-70,D);
+  deck(-2,2,58,-73,-71,T);
+  solid(0,59,-72,G);
+  solid(0,60,-72,L);
+  solid(0,61,-72,G);
+  for(const path of routes)for(const [x,y,z] of path)solid(x,y,z,T);
+  for(const path of routes)for(const [x,y,z] of path){
+    for(let dy=1;dy<=3;dy++)empty(x,y+dy,z);
   }
   // The main building lawn remains open. The flanks have real voxel groves,
   // glacial stones, flowering shrubs and a clear paved approach to the gate.
@@ -709,8 +357,8 @@ function texture(type,face){
     snow:['#e3eff2','#f8ffff','#c5dce6','#e5f5f8','#f0faff','#d4e5ed'],
     blossom:['#e49bbc','#f3b5d0','#ffe0e7','#d98eae','#f8c8da','#efafd0'],
     lantern:['#f4b642','#ffdc72','#ffe7a1','#df8f2f','#ffd66a','#fff0b0'],
-    netherBrick:['#794750','#8d4e56','#9e5f64','#814851','#a36669','#70424c'],
-    netherDeep:['#595060','#66566a','#736275','#605368','#7c6877','#51495d'],
+    netherBrick:['#63404d','#794a58','#885764','#724654','#90606d','#5d3949'],
+    netherDeep:['#353448','#413d55','#51506a','#3c3a50','#5a566d','#302e43'],
     netherTrim:['#a85b62','#ba6e6b','#c78078','#ab6266','#c27a71','#9a535e'],
     netherGold:['#e8a23d','#f7c65d','#ffd98b','#b86732','#ffde92','#c7863d'],
     lavaGlow:['#f76613','#ff9a1d','#ffd256','#e84f13','#ffe17c','#ff7219']
@@ -827,9 +475,48 @@ function texture(type,face){
   map.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),MOBILE?4:8);
   return map;
 }
+// Each texture pair describes the same surface. Relief changes lighting only;
+// the block grid still owns collision, selection and saved edits.
+const reliefColors={
+  netherBrick:[100,83,81],netherDeep:[68,70,82],netherTrim:[128,106,98],
+  cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
+};
+function reliefMaterial(type,face){
+  const size=128,wood=type==='wood'||type==='planks';
+  const color=document.createElement('canvas'),height=document.createElement('canvas');
+  color.width=color.height=height.width=height.height=size;
+  const colorContext=color.getContext('2d'),heightContext=height.getContext('2d');
+  const pixels=colorContext.createImageData(size,size),heights=heightContext.createImageData(size,size);
+  const base=reliefColors[type];
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const row=Math.floor(y/32),u=(x+(row%2)*32)%64,v=y%32;
+    const grain=pixelHash(x,y,63),coarse=pixelHash(x>>2,y>>2,42);
+    const edge=wood?Math.min(x%32,31-x%32):Math.min(u,63-u,v,31-v);
+    const surface=Math.min(1,edge/3);
+    const pattern=wood?Math.sin(x*1.6+Math.sin(y*.055)*2)*10:
+      (pixelHash(Math.floor((x+row%2*32)/64)%2,row,21)-.5)*26;
+    const shade=pattern+(grain-.5)*20+(coarse-.5)*24;
+    const i=(y*size+x)*4;
+    for(let channel=0;channel<3;channel++){
+      pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade;
+      heights.data[i+channel]=38+surface*168+(grain-.5)*27+pattern;
+    }
+    pixels.data[i+3]=heights.data[i+3]=255;
+  }
+  colorContext.putImageData(pixels,0,0);heightContext.putImageData(heights,0,0);
+  const map=new THREE.CanvasTexture(color),bumpMap=new THREE.CanvasTexture(height);
+  map.colorSpace=THREE.SRGBColorSpace;
+  map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  return new THREE.MeshStandardMaterial({
+    map,bumpMap,bumpScale:face==='bottom'?.021:.035,
+    roughness:wood?.83:.91,metalness:0,
+    emissive:wood?'#26160d':'#24202e',emissiveIntensity:.28
+  });
+}
 const materialByType={};
 for(const type of BLOCK_TYPES){
   const makeFace=face=>{
+    if(reliefColors[type])return reliefMaterial(type,face);
     const map=texture(type,face);
     const material=new THREE.MeshLambertMaterial({map});
     if(type.startsWith('nether')){
@@ -2140,7 +1827,7 @@ function unloadChunkData(cx,cz){
 let netherFarMesh=null;
 const netherFarMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
 const netherFarPalette={
-  netherBrick:'#905860',netherDeep:'#65566a',netherTrim:'#b57473',
+  netherBrick:'#794f5e',netherDeep:'#45425a',netherTrim:'#b57483',
   netherGold:'#e3ac57',lavaGlow:'#ff842c',lantern:'#ffd079',
   grass:'#5e8c4b',dirt:'#73583b',stone:'#7d8285',
   wood:'#8c6849',leaves:'#538650',blossom:'#d988af',cobble:'#85948b',path:'#bda077'
@@ -2916,6 +2603,7 @@ function skyGradient(high,mid,low){
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
   tex.magFilter=THREE.LinearFilter;return tex;
 }
+const moonlitSky=skyGradient('#303861','#696e9c','#a19ab0');
 const skyTextures=[
   skyGradient('#65aff0','#b6ddf5','#e5f5e6'),
   skyGradient('#627bad','#f3bd96','#ffe0ab'),
@@ -3091,6 +2779,7 @@ function intersectsPlayer(x,y,z){
   return Math.abs((x+.5)-player.x)<PLAYER_R+.5&&Math.abs((z+.5)-player.z)<PLAYER_R+.5&&y<player.y+PLAYER_H&&y+1>player.y;
 }
 function modifyWorld(place,quiet=false){
+  castleLightCell=null;
   if(!gameRunning)return;
   updateTarget();
   if(!pointed){toast('Schau zuerst einen Block an');return;}
@@ -3630,11 +3319,11 @@ function makeNetherEnemy(type,x,z,feetY,idx){
 // Vor dem Tor, am Treppenaufgang, im Innenhof und auf zwei Wehrgängen.
 // Gezielt ausgesuchte begehbare Standflächen; weit entfernt werden alle Meshes verborgen.
 for(const [type,x,z,y] of [
-  ['zombie',-13,-14,5],['creeper',15,-16,5],
-  ['zombie',-8,-29,10],['creeper',9,-29,10],
-  ['zombie',-15,-53,13],['creeper',15,-53,13],
-  ['zombie',-28,-72,24],['creeper',23,-58,24],
-  ['zombie',0,-70,34],['creeper',35,-63,24]
+  ['zombie',-9,-30,5],['creeper',11,-31,5],
+  ['zombie',-13,-51,5],['creeper',15,-51,5],
+  ['zombie',-8,-69,5],['creeper',9,-73,5],
+  ['zombie',20,-74,5],['creeper',-6,-75,21],
+  ['zombie',-29,-38,33],['creeper',29,-38,33]
 ])makeNetherEnemy(type,x,z,y,netherCreatureList.length);
 
 // Dragon: zusammenhängendes, animiertes 3D-Wesen, keine Kulisse am Himmel.
@@ -3685,8 +3374,7 @@ const flagMat=new THREE.MeshLambertMaterial({color:'#ad4c56',emissive:'#783044',
 const crestMat=new THREE.MeshLambertMaterial({color:'#e5a851'});
 const emberMat=new THREE.MeshBasicMaterial({color:'#ffb049'});
 const accentTransform=new THREE.Object3D();
-const bannerPlaces=[[-33,27,-39],[33,27,-39],[-17,25,-40],[17,25,-40],
-  [-69,25,-57],[69,25,-57],[-44,25,-70],[44,25,-70]];
+const bannerPlaces=[[-9,21,-34],[9,21,-34],[-29,24,-31],[29,24,-31],[-24,34,-73],[24,34,-73]];
 const bannerMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(2.4,4.6,.15),flagMat,bannerPlaces.length);
 const crestMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.82,1,.21),crestMat,bannerPlaces.length);
 for(let i=0;i<bannerPlaces.length;i++){
@@ -3698,8 +3386,7 @@ for(let i=0;i<bannerPlaces.length;i++){
 }
 bannerMesh.instanceMatrix.needsUpdate=true;crestMesh.instanceMatrix.needsUpdate=true;
 fortressAccentGroup.add(bannerMesh,crestMesh);
-const torchPlaces=[[-34,41,-46],[34,41,-46],[-44,37,-76],[44,37,-76],
- [-69,36,-63],[69,36,-63],[-19,27,-41],[19,27,-41],[-8,26,-42],[8,26,-42]];
+const torchPlaces=[[-11,19,-33],[11,19,-33],[-6,7,-17],[6,7,-17]];
 const torchMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.65,1.05,.65),emberMat,torchPlaces.length);
 for(let i=0;i<torchPlaces.length;i++){
   const [x,y,z]=torchPlaces[i];accentTransform.position.set(x+.5,y+.5,z+.5);
@@ -3708,14 +3395,66 @@ for(let i=0;i<torchPlaces.length;i++){
 torchMesh.instanceMatrix.needsUpdate=true;fortressAccentGroup.add(torchMesh);
 fortressAccentGroup.visible=false;
 
+const hallGlow=new THREE.PointLight('#ba8dff',0,19,2);
+hallGlow.position.set(0,9,-75);scene.add(hallGlow);
+
+const castleLampSites=[];
+for(let z=-33;z<=-9;z+=8)for(const x of [-6,6])
+  castleLampSites.push([x,6,z,'lantern']);
+for(const x of [-32,-24])for(const z of [-73,-66])
+  castleLampSites.push([x,11,z,'lantern']);
+castleLampSites.push([-28,7,-71,'lavaGlow']);
+const castleLamps=Array.from({length:4},()=>new THREE.PointLight('#ffb36b',0,13,2));
+scene.add(...castleLamps);
+const mistMaterial=new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  vertexShader:`varying vec2 p;
+    void main(){p=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec2 p;
+    void main(){
+      float edge=1.-smoothstep(.20,.50,length(p-.5));
+      float streak=.58+.22*sin(p.x*24.+p.y*17.)+.13*sin(p.x*51.-p.y*30.);
+      gl_FragColor=vec4(.45,.52,.70,edge*streak*.21);
+    }`
+});
+const castleMist=new THREE.Group();
+const mistPlane=new THREE.PlaneGeometry(1,1);
+for(const [x,z,width] of [[-48,-53,40],[48,-50,38],[-33,-25,30],[33,-23,28],[-22,-87,40],[29,-86,36]]){
+  const sheet=new THREE.Mesh(mistPlane,mistMaterial);
+  sheet.position.set(x,5.4,z);
+  sheet.scale.set(width,2.8,1);
+  castleMist.add(sheet);
+}
+scene.add(castleMist);
+let castleLightCell='';
+function updateCastleLighting(){
+  castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
+  if(castleMist.visible)for(const sheet of castleMist.children)
+    sheet.rotation.y=Math.atan2(camera.position.x-sheet.position.x,camera.position.z-sheet.position.z);
+  const cell=isMeadow()?Math.floor(player.x/2)+','+Math.floor(player.y/2)+','+Math.floor(player.z/2):'';
+  if(cell===castleLightCell)return;
+  castleLightCell=cell;
+  const nearest=isMeadow()?castleLampSites
+    .filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type)
+    .map(([x,y,z])=>({x,y,z,distance:Math.hypot(x+.5-player.x,y+.5-player.y,z+.5-player.z)}))
+    .filter(site=>site.distance<27).sort((a,b)=>a.distance-b.distance):[];
+  castleLamps.forEach((lamp,i)=>{
+    const site=nearest[i];
+    lamp.intensity=site?105:0;
+    if(site)lamp.position.set(site.x+.5,site.y-.18,site.z+.5);
+  });
+}
+
 function updateNetherCreatures(dt,now){
   const active=isMeadow()&&showCreatures;
   const closeToFort=Math.hypot(player.x,player.z+55)<165;
   fortressAccentGroup.visible=isMeadow()&&closeToFort;
+  updateCastleLighting();
+  hallGlow.intensity=isMeadow()&&Math.hypot(player.x,player.z+75)<22?24:0;
   netherDragon.visible=active&&closeToFort;
   if(netherDragon.visible){
     const t=now*.001, a=t*.115;
-    netherDragon.position.set(28*Math.cos(a),60+4*Math.sin(t*.67),-64+17*Math.sin(a));
+    netherDragon.position.set(28*Math.cos(a),69+3*Math.sin(t*.67),-64+17*Math.sin(a));
     // Der Kopf ist entlang der negativen lokalen Z-Richtung ausgerichtet.
     const vx=-28*Math.sin(a),vz=17*Math.cos(a);
     netherDragon.rotation.set(Math.sin(t*.39)*.055,Math.atan2(-vx,-vz),Math.sin(t*.42)*.065);
@@ -3968,13 +3707,16 @@ $('mobsBtn').addEventListener('click',()=>{
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(isMeadow()?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   toast(showCreatures?'Die Welt ist lebendig!':'Die Figuren machen eine Pause.');
 });
+function castleMoonlight(){return isMeadow()&&lightMode===0;}
 function applyLighting(){
   const options=[
     {sky:'#8cc9f0',sun:'#fff2cb',power:1.80,hemi:1.46,exposure:1.02,label:'☀ Morgensonne'},
     {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
-  const p=options[lightMode];scene.background.set(p.sky);
+  const moonlit=castleMoonlight();
+  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:1.28,hemi:1.10,exposure:1.05,label:'☾ Blaue Stunde'}:options[lightMode];
+  scene.background.set(p.sky);
   netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
   rimLight.intensity=lightMode===2?.16:.31;
@@ -3984,16 +3726,16 @@ function applyLighting(){
   sunLampMaterial.emissiveIntensity=[.38,.85,1.15][lightMode];
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
-  skyDome.material.map=skyTextures[lightMode];
+  skyDome.material.map=moonlit?moonlitSky:skyTextures[lightMode];
   skyDome.material.needsUpdate=true;
-  sunSprite.visible=lightMode!==2;moonSprite.visible=lightMode===2;
+  sunSprite.visible=!moonlit&&lightMode!==2;moonSprite.visible=moonlit||lightMode===2;
   $('nightStars').classList.toggle('visible',lightMode===2);
   $('dayBtn').textContent=p.label;
   applyView();
 }
 function applyView(){
   const fogFar=isMeadow()?(farView?245:178):(farView?(MOBILE?178:220):(MOBILE?114:145));
-  scene.fog.near=isMeadow()?(farView?127:81):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
+  scene.fog.near=castleMoonlight()?42:isMeadow()?(farView?127:81):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));
@@ -4259,10 +4001,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V38 – Drachenwächter':'Legendenwelt · V38';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V43 – Stein und Mondlicht':'Legendenwelt · V43';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V38 · Drachenkrone':'Blockwelt V38 · Legendenwelt';
+  document.title=meadow?'Blockwelt V43 · Schloss Nachtrabe':'Blockwelt V43 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4283,7 +4025,7 @@ function switchWorld(next){
   npcTargetBtn.classList.remove('visible');
   baseWorld();loadEdits();respawn();yaw=.08;pitch=-.22;
   rebuild();updateCamera();updateWorldSelector();updateTarget();
-  applyView();
+  applyLighting();
   toast(isMeadow()?'Die Drachenfestung wartet auf dich!':'Willkommen zurück im Abenteuer!');
 }
 $('worldAdventureBtn').addEventListener('click',()=>switchWorld('abenteuer'));
@@ -4316,15 +4058,18 @@ let regionName='';
 function updateRegion(){
   if(isMeadow()){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
-    let name=inside?'🔥 Netherfestung':'🌿 Große Wiese';
-    if(inside&&Math.abs(player.x)<17&&player.z>=-82&&player.z<=-64){
-      if(player.y>=51.8)name='🐉 Drachenkrone';
-      else if(player.y>=40.8)name='🏰 Dachterrasse';
-      else if(player.y>=33.8)name='🏰 Drachengalerie';
-      else if(player.y>=22.8)name='🏰 Bergfried';
-      else if(player.y>=12.8)name='🔥 Thronhalle';
-    }else if(inside&&player.y>=12.8&&Math.abs(player.x)<27&&player.z>-64&&player.z<-46){
-      name=player.y>=23.8?'🧱 Wehrgang':'🔥 Gluthof';
+    let name=inside?'🏰 Schloss Nachtrabe':'🌿 Große Wiese';
+    if(player.x>=-39&&player.x<-16&&player.z>=-77&&player.z<=-61&&player.y<13){
+      name='📜 Rabenarchiv';
+    }else if(player.z>=-84&&player.z<-59&&Math.abs(player.x)<25){
+      if(player.y>=56.8)name='🐉 Kronenturm';
+      else if(player.y>=20.8)name='🏰 Hochterrasse';
+      else if(player.x>16&&player.y<9)name='🕯️ Geheimgang';
+      else if(Math.abs(player.x)<16)name='🏰 Große Halle';
+    }else if(player.z>=-43&&player.z<=-35&&Math.abs(player.x)<12){
+      name='🦇 Torhalle';
+    }else if(player.z<-43&&player.z>=-59&&Math.abs(player.x)<29){
+      name='🔥 Innenhof';
     }
     if(regionName!==name){regionName=name;$('regionLabel').textContent=name;}
     return;
@@ -4389,7 +4134,7 @@ function animate(now){
   let near=0;if(!isMeadow())for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
   const shadowRange=Math.hypot(player.x-RUIN.x,player.z-RUIN.z);
   const mystery=isMeadow()?0:Math.max(0,Math.min(1,(34-shadowRange)/22));
-  const baseFog=lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
+  const baseFog=castleMoonlight()?'#777e9d':lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
   scene.fog.color.set(baseFog).lerp(shadowFogColor,mystery*.4);
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
   const inSunVillage=!isMeadow()&&Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<25;
