@@ -1,4 +1,4 @@
-// BLOCKWELT V43 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V45 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -495,7 +495,8 @@ function reliefMaterial(type,face){
     const surface=Math.min(1,edge/3);
     const pattern=wood?Math.sin(x*1.6+Math.sin(y*.055)*2)*10:
       (pixelHash(Math.floor((x+row%2*32)/64)%2,row,21)-.5)*26;
-    const shade=pattern+(grain-.5)*20+(coarse-.5)*24;
+    const weather=wood?0:Math.sin(x*.075+y*.09)*5+Math.cos(x*.14-y*.12)*4;
+    const shade=pattern+(grain-.5)*20+(coarse-.5)*24+weather;
     const i=(y*size+x)*4;
     for(let channel=0;channel<3;channel++){
       pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade;
@@ -510,7 +511,7 @@ function reliefMaterial(type,face){
   return new THREE.MeshStandardMaterial({
     map,bumpMap,bumpScale:face==='bottom'?.021:.035,
     roughness:wood?.83:.91,metalness:0,
-    emissive:wood?'#26160d':'#24202e',emissiveIntensity:.28
+    emissive:wood?'#352519':'#383340',emissiveIntensity:.42
   });
 }
 const materialByType={};
@@ -1826,6 +1827,21 @@ function unloadChunkData(cx,cz){
 // Dadurch bleiben Turmsilhouetten sichtbar, ohne 30 weitere Echt-Chunks zu laden.
 let netherFarMesh=null;
 const netherFarMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,fog:true});
+// A single mipmapped atlas keeps the same stone pattern across chunk boundaries.
+const farAtlas=document.createElement('canvas');
+farAtlas.width=farAtlas.height=512;
+const farContext=farAtlas.getContext('2d');
+const farTiles=new Map();
+for(const [i,type] of Object.keys(reliefColors).entries()){
+  const x=(i%4)*128,y=Math.floor(i/4)*128;
+  farContext.drawImage(materialByType[type][0].map.image,x,y,128,128);
+  farTiles.set(type,[x,y]);
+}
+farContext.fillStyle='#fff';
+farContext.fillRect(0,384,128,128);
+const farMap=new THREE.CanvasTexture(farAtlas);
+farMap.colorSpace=THREE.SRGBColorSpace;
+netherFarMaterial.map=farMap;
 const netherFarPalette={
   netherBrick:'#794f5e',netherDeep:'#45425a',netherTrim:'#b57483',
   netherGold:'#e3ac57',lavaGlow:'#ff842c',lantern:'#ffd079',
@@ -1837,7 +1853,7 @@ function rebuildNetherFarView(cx,cz,radius){
   if(!isMeadow())return;
   const plan=makeNetherPlan();
   const all=netherPlanVoxels;
-  const vertices=[],colors=[];
+  const vertices=[],colors=[],uvs=[];
   const faceTable=[
     {d:[1,0,0],shade:.81,v:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]]},
     {d:[-1,0,0],shade:.70,v:[[0,0,1],[0,1,1],[0,1,0],[0,0,0]]},
@@ -1856,15 +1872,18 @@ function rebuildNetherFarView(cx,cz,radius){
       const k=key(x,y,z);
       const type=edits.has(k)?edits.get(k)[3]:baseType;
       if(!type)continue;
-      const base=getTone(type);
+      const tile=farTiles.get(type);
+      const base=tile?null:getTone(type);
       for(const face of faceTable){
         const nx=x+face.d[0],ny=y+face.d[1],nz=z+face.d[2];
         const nk=key(nx,ny,nz),neighbor=edits.has(nk)?edits.get(nk)[3]:all.get(nk);
         if(neighbor)continue;
-        const c=base.clone().multiplyScalar(face.shade);
+        const c=tile?new THREE.Color().setScalar(face.shade*.58):base.clone().multiplyScalar(face.shade);
+        const [tx,ty]=tile??[0,384];
         for(const j of order){
           const v=face.v[j];vertices.push(x+v[0],y+v[1],z+v[2]);
           colors.push(c.r,c.g,c.b);
+          uvs.push((tx+(j>=2?125:3))/512,1-(ty+(j===1||j===2?3:125))/512);
         }
       }
     }
@@ -1873,6 +1892,7 @@ function rebuildNetherFarView(cx,cz,radius){
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
   netherFarMesh=new THREE.Mesh(geometry,netherFarMaterial);
   netherFarMesh.renderOrder=-1;
@@ -2092,6 +2112,7 @@ function loadEdits(){
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
 function saveEdits(){
+  castleLightCell=null;
   try{localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));}
   catch(e){toast('Speichern ist auf diesem Gerät nicht möglich');}
 }
@@ -3403,7 +3424,9 @@ for(let z=-33;z<=-9;z+=8)for(const x of [-6,6])
   castleLampSites.push([x,6,z,'lantern']);
 for(const x of [-32,-24])for(const z of [-73,-66])
   castleLampSites.push([x,11,z,'lantern']);
-castleLampSites.push([-28,7,-71,'lavaGlow']);
+castleLampSites.push([-28,7,-71,'lavaGlow'],[-11,19,-33,'lavaGlow'],[11,19,-33,'lavaGlow']);
+for(let z=-79;z<=-62;z+=4)for(const x of [-12,12])
+  castleLampSites.push([x,8,z+1,'lantern']);
 const castleLamps=Array.from({length:4},()=>new THREE.PointLight('#ffb36b',0,13,2));
 scene.add(...castleLamps);
 const mistMaterial=new THREE.ShaderMaterial({
@@ -3413,8 +3436,8 @@ const mistMaterial=new THREE.ShaderMaterial({
   fragmentShader:`varying vec2 p;
     void main(){
       float edge=1.-smoothstep(.20,.50,length(p-.5));
-      float streak=.58+.22*sin(p.x*24.+p.y*17.)+.13*sin(p.x*51.-p.y*30.);
-      gl_FragColor=vec4(.45,.52,.70,edge*streak*.21);
+      float streak=.54+.18*sin(p.x*24.+p.y*17.)+.11*sin(p.x*51.-p.y*30.);
+      gl_FragColor=vec4(.45,.52,.70,edge*streak*.28);
     }`
 });
 const castleMist=new THREE.Group();
@@ -3426,22 +3449,70 @@ for(const [x,z,width] of [[-48,-53,40],[48,-50,38],[-33,-25,30],[33,-23,28],[-22
   castleMist.add(sheet);
 }
 scene.add(castleMist);
+// Ironwork is attached to the actual light block, never to a fixed overlay.
+const lanternIron=new THREE.MeshStandardMaterial({color:'#352b29',roughness:.68,metalness:.42});
+const lanternFrames=new THREE.Group();
+for(const [x,y,z,type] of castleLampSites){
+  if(type!=='lantern')continue;
+  const frame=new THREE.Group();
+  frame.position.set(x+.5,y+.5,z+.5);
+  for(const dx of [-.51,.51])for(const dz of [-.51,.51])
+    part(frame,.075,1.08,.075,lanternIron,dx,0,dz);
+  for(const dy of [-.5,.5])part(frame,1.08,.08,1.08,lanternIron,0,dy,0);
+  frame.userData.site=[x,y,z,type];
+  lanternFrames.add(frame);
+}
+scene.add(lanternFrames);
+
+// Render distant ridges as silhouettes beyond the playable grid.
+const ridgeGeometry=new THREE.BufferGeometry();
+const ridgeVertices=[],ridgeColors=[];
+for(let layer=0;layer<3;layer++){
+  const radius=147+layer*24;
+  const tone=new THREE.Color(['#354858','#46536b','#59617e'][layer]);
+  const height=i=>6+layer*7+Math.sin(i*.25+layer)*6+pixelHash(i%120,layer,91)*4;
+  for(let i=0;i<120;i++){
+    const a=i*Math.PI/60,b=(i+1)*Math.PI/60;
+    const ax=Math.cos(a)*radius,az=Math.sin(a)*radius-28;
+    const bx=Math.cos(b)*radius,bz=Math.sin(b)*radius-28;
+    ridgeVertices.push(ax,-4,az,bx,-4,bz,bx,height(i+1),bz,ax,-4,az,bx,height(i+1),bz,ax,height(i),az);
+    for(let j=0;j<6;j++)ridgeColors.push(tone.r,tone.g,tone.b);
+  }
+}
+ridgeGeometry.setAttribute('position',new THREE.Float32BufferAttribute(ridgeVertices,3));
+ridgeGeometry.setAttribute('color',new THREE.Float32BufferAttribute(ridgeColors,3));
+const castleRidges=new THREE.Mesh(ridgeGeometry,new THREE.MeshBasicMaterial({
+  vertexColors:true,side:THREE.DoubleSide,fog:false
+}));
+scene.add(castleRidges);
+
 let castleLightCell='';
 function updateCastleLighting(){
+  castleRidges.visible=castleMoonlight();
+  lanternFrames.visible=isMeadow()&&graphicMode==='schoen';
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
   if(castleMist.visible)for(const sheet of castleMist.children)
     sheet.rotation.y=Math.atan2(camera.position.x-sheet.position.x,camera.position.z-sheet.position.z);
   const cell=isMeadow()?Math.floor(player.x/2)+','+Math.floor(player.y/2)+','+Math.floor(player.z/2):'';
   if(cell===castleLightCell)return;
   castleLightCell=cell;
-  const nearest=isMeadow()?castleLampSites
+  if(isMeadow())for(const frame of lanternFrames.children){
+    const [x,y,z,type]=frame.userData.site;
+    frame.visible=netherBlockAt(x,y,z)===type;
+  }
+  const sites=[...castleLampSites];
+  if(isMeadow())for(const [x,y,z,type] of edits.values()){
+    if(type==='lantern'||type==='lavaGlow')sites.push([x,y,z,type]);
+  }
+  const uniqueSites=new Map(sites.map(site=>[key(site[0],site[1],site[2]),site]));
+  const nearest=isMeadow()?[...uniqueSites.values()]
     .filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type)
     .map(([x,y,z])=>({x,y,z,distance:Math.hypot(x+.5-player.x,y+.5-player.y,z+.5-player.z)}))
     .filter(site=>site.distance<27).sort((a,b)=>a.distance-b.distance):[];
   castleLamps.forEach((lamp,i)=>{
     const site=nearest[i];
-    lamp.intensity=site?105:0;
-    if(site)lamp.position.set(site.x+.5,site.y-.18,site.z+.5);
+    lamp.intensity=site?76:0;
+    if(site)lamp.position.set(site.x+.5,site.y+.48,site.z+.5);
   });
 }
 
@@ -4001,10 +4072,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V43 – Stein und Mondlicht':'Legendenwelt · V43';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V45 – Nachtrabe im Nebel':'Legendenwelt · V45';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V43 · Schloss Nachtrabe':'Blockwelt V43 · Legendenwelt';
+  document.title=meadow?'Blockwelt V45 · Schloss Nachtrabe':'Blockwelt V45 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);

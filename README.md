@@ -1,7 +1,7 @@
-# Blockwelt V43 – Stein und Mondlicht
+# Blockwelt V45 – Nachtrabe im Nebel
 
-V43 verwendet für Mauerwerk, Pflaster und Holz neue Farb- und Relieftexturen. Die Beleuchtung zeichnet die Fugen und die Maserung nach. Bauen, Abbauen und Speichern verwenden weiterhin das vorhandene Blockraster. V42-Laternen, Mondlicht und Nebel sind enthalten.
+Dieses Paket enthält V44 und die neuen Grafikdetails. Die blaue Stunde zeigt drei gestaffelte Hügelkulissen. Im Modus „Schön“ sind der Bodennebel kräftiger und die Schlosslaternen mit dunklen Metallrahmen eingefasst. Wird eine dieser Laternen abgebaut, verschwindet auch ihr Rahmen. Steintexturen erhalten zusätzliche Farbnuancen.
 
-ZIP entpacken und die vier Dateien im bestehenden Blockwelt-Repository ersetzen. Anschließend veröffentlichen und die Seite neu laden. Auf der Großen Wiese erscheint V43 – Stein und Mondlicht.
+ZIP entpacken, index.html, styles.css, game.js und README.md im Blockwelt-Repository ersetzen, veröffentlichen und die Seite neu laden. Oben auf der Großen Wiese erscheint V45 – Nachtrabe im Nebel.
 
-Das Referenzbild ist ein fotorealistisches Standbild. V43 setzt einen Teil des Materiallooks um. Waldlandschaft, Schatten und Bildwirkung des Standbilds sind damit noch nicht erreicht. Die WebGL-Darstellung auf dem iPhone ist noch nicht geprüft.
+JavaScript-Syntax und 648 Treppenübergänge wurden geprüft. Darstellung und Bildrate auf dem iPhone wurden nicht gemessen. Die Landschaft ist eine vereinfachte Kulisse. Das fotorealistische Referenzbild bleibt das Grafikziel.
