@@ -1,4 +1,5 @@
-// BLOCKWELT V67 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture} from './nachtrabe.js?v=70';
+// BLOCKWELT V70 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -60,262 +61,12 @@ function makeNetherPlan(){
   const lamp=(x,y,z)=>{
     solid(x,y-1,z,D);solid(x,y,z,'lantern');
   };
-  const crenel=(xa,xb,y,za,zb)=>{
-    for(let x=xa;x<=xb;x++)for(let z=za;z<=zb;z++){
-      if(x!==xa&&x!==xb&&z!==za&&z!==zb)continue;
-      if(((x+z)&3)!==0)continue;
-      solid(x,y,z,T);
-    }
-  };
   const routes=[];
-  const arch=(x,y,z,half,height,depth)=>{
-    for(let dx=-half;dx<=half;dx++)for(let dz=0;dz<depth;dz++){
-      const top=height-Math.floor(Math.abs(dx)*.75);
-      for(let dy=1;dy<=top;dy++)empty(x+dx,y+dy,z+dz);
-      solid(x+dx,y+top+1,z+dz,T);
-    }
-  };
-  const tower=(cx,cz,r,h,base=4)=>{
-    deck(cx-r,cx+r,base,cz-r,cz+r,D);
-    for(let y=base+1;y<h;y++)for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
-      if(Math.abs(dx)!==r&&Math.abs(dz)!==r)continue;
-      if(Math.abs(dx)+Math.abs(dz)===2*r)continue;
-      const slit=(dx===0||dz===0)&&y>9&&y<h-3&&y%8>=3&&y%8<=5;
-      if(slit)continue;
-      solid(cx+dx,y,cz+dz,y%8===0?T:Math.abs(dx)+Math.abs(dz)>=2*r-1?D:N);
-    }
-    deck(cx-r,cx+r,h,cz-r,cz+r,T);
-    crenel(cx-r,cx+r,h+1,cz-r,cz+r);
-    const ring=[],k=r-2;
-    for(let x=0;x<=k;x++)ring.push([x,k]);
-    for(let z=k-1;z>=-k;z--)ring.push([k,z]);
-    for(let x=k-1;x>=-k;x--)ring.push([x,-k]);
-    for(let z=-k+1;z<=k;z++)ring.push([-k,z]);
-    for(let x=-k+1;x<0;x++)ring.push([x,k]);
-    const path=[];
-    for(let z=cz+r+2;z>cz+k;z--)path.push([cx,base,z]);
-    // Each straight flight ends at a level corner landing.
-    let y=base, index=0;
-    while(y<h){
-      const [x,z]=ring[index%ring.length];
-      const corner=Math.abs(x)===k&&Math.abs(z)===k;
-      if(!corner)y++;
-      path.push([cx+x,y,cz+z]);
-      if(corner){
-        deck(cx+x-1,cx+x+1,y,cz+z-1,cz+z+1,T);
-      }
-      index++;
-    }
-    // Floors across the central shaft leave a continuous stairwell at the walls.
-    for(let level=base+7;level<h-2;level+=7){
-      deck(cx-k+1,cx+k-1,level,cz-k+1,cz+k-1,D);
-    }
-    routes.push(path);
-    return {cx,cz,r,h};
-  };
-
-  // Outer enceinte, broad approach and a tall pointed gatehouse.
-  for(let z=-84;z<=-36;z++)for(const x of [-42,42]){
-    box(x,x,5,17,z,z,N);
-    if(z%4<=-3)solid(x,18,z,T);
-  }
-  box(-42,42,5,17,-84,-84,N);
-  box(-42,42,5,19,-40,-38,N);
-  for(let x=-41;x<=41;x+=5)box(x,x+1,18,21,-39,-38,D);
-  box(-12,12,5,25,-43,-35,D);
-  for(let z=-43;z<=-35;z++)arch(0,4,z,7,13,1);
-  for(const x of [-11,11]){
-    box(x-1,x+1,5,24,-35,-34,T);
-    solid(x,19,-33,L);
-  }
-  // Wall walk on the gatehouse, with crenellated parapets.
-  deck(-12,12,26,-43,-35,T);
-  crenel(-12,12,27,-43,-35);
-  for(const x of [-9,9]){
-    box(x-2,x+2,27,31,-42,-36,N);
-    deck(x-2,x+2,32,-42,-36,T);
-    crenel(x-2,x+2,33,-42,-36);
-  }
-  for(let z=-48;z<=14;z++)for(let x=-4;x<=4;x++){
-    solid(x,4,z,Math.abs(x)===4?T:'cobble');
-  }
-  for(let z=-33;z<=-9;z+=8)for(const x of [-6,6]){
-    solid(x,5,z,D);
-    solid(x,6,z,'lantern');
-  }
-
-  // Six towers of different heights give the skyline a stepped silhouette.
-  const towers=[
-    tower(-29,-38,6,32),tower(29,-38,6,32),
-    tower(-42,-68,6,36),tower(42,-68,6,36),
-    tower(-24,-80,6,43),tower(24,-80,6,43)
-  ];
-  for(const {cx,cz,r,h} of towers){
-    for(const side of [-1,1]){
-      const x=cx+side*(r-1),z=cz-r+1;
-      box(x,x,h+1,h+5,z,z,D);
-      solid(x,h+6,z,G);
-    }
-  }
-
-  // The great hall opens straight off the court. Structural ribs arch over
-  // the aisle while amber lights and violet glass frame the side passages.
-  deck(-16,16,4,-82,-59,D);
-  deck(-16,16,20,-82,-59,T);
-  for(const x of [-16,16])box(x,x,5,19,-82,-59,N);
-  box(-16,16,5,19,-82,-82,N);
-  box(-16,16,5,19,-59,-59,N);
-  arch(0,4,-59,5,10,1);
-  for(let z=-79;z<=-62;z+=4){
-    for(const side of [-1,1]){
-      const x=side*12;
-      box(x,x,5,14,z,z,D);
-      solid(x,8,z+1,'lantern');
-      for(let step=0;step<=6;step++){
-        box(side*(12-step),side*(12-step),15+Math.floor(step/2),19,z,z,T);
-      }
-      for(let y=9;y<=14;y++)solid(side*16,y,z,y%3===0?G:'glass');
-    }
-  }
-  for(let z=-80;z<=-60;z++)for(let x=-4;x<=4;x++){
-    solid(x,4,z,Math.abs(x)===4?G:((x+z)&3)===0?T:D);
-  }
-  deck(-3,3,5,-81,-78,T);
-  box(-1,1,6,9,-81,-81,D);
-  solid(0,10,-81,G);
-
-  // The east cloister conceals a lantern-lit passage into the great hall.
-  for(let z=-80;z<=-60;z++){
-    deck(17,24,4,z,z,T);
-    deck(17,24,9,z,z,D);
-    box(24,24,5,8,z,z,D);
-    if(z%5===0)solid(23,7,z,'lantern');
-  }
-  arch(20,4,-60,2,3,1);
-  for(let z=-80;z<=-78;z++)for(let y=5;y<=8;y++)empty(16,y,z);
-  box(17,24,5,8,-81,-81,D);
-
-  // West wing: a vaulted archive and a covered return into the great hall.
-  deck(-39,-17,4,-77,-61,D);
-  for(let z=-77;z<=-61;z++)for(let x=-39;x<=-17;x++){
-    const roof=13+Math.floor((11-Math.abs(x+28))/2);
-    solid(x,roof,z,T);
-    if(x===-39||x===-17||z===-77||z===-61)
-      box(x,x,5,roof-1,z,z,N);
-    if((x+28)**2+(z+70)**2<=13)solid(x,4,z,Math.abs(x+28)===Math.abs(z+70)?G:T);
-  }
-  arch(-28,4,-61,3,7,1);
-  for(const z of [-74,-69,-64]){
-    for(const x of [-36,-20]){
-      box(x-1,x+1,5,8,z,z,'planks');
-      solid(x,9,z,'lantern');
-      for(let y=10;y<=12;y++)solid(x<-28?-39:-17,y,z,'glass');
-    }
-    for(let x=-38;x<=-18;x++){
-      const roof=13+Math.floor((11-Math.abs(x+28))/2);
-      solid(x,roof-1,z,D);
-    }
-  }
-  // The archive's central plinth is framed by a clear loop at floor level.
-  deck(-29,-27,5,-72,-70,T);
-  solid(-28,6,-71,G);solid(-28,7,-71,L);
-  for(let z=-76;z<=-73;z++){
-    for(let x=-19;x<=-15;x++)solid(x,4,z,T);
-    for(let x=-17;x<=-16;x++)for(let y=5;y<=8;y++)empty(x,y,z);
-  }
-
-  // Suspended copper lanterns hang above the archive's walking clearance.
-  for(const x of [-32,-24])for(const z of [-73,-66]){
-    box(x,x,12,15,z,z,D);
-    solid(x,11,z,'lantern');
-  }
-
-  // Two wide exterior stairs lead to the hall roof. A taller central
-  // tower rises above it and opens onto a ring of lookout terraces.
-  for(const x of [-14,-13,13,14]){
-    routes.push(Array.from({length:19},(_,i)=>[x,Math.min(20,4+i),-43-i]));
-  }
-  // Stone stair galleries flank the hall, with deep window reveals.
-  for(const side of [-1,1]){
-    const outer=side*16, inner=side*12;
-    for(let step=0;step<18;step++){
-      const z=-43-step, floor=Math.min(20,4+step);
-      for(const x of [outer,outer+side,inner]){
-        box(x,x,floor-2,floor+4,z,z,N);
-        if(x!==inner&&step%5===2)box(x,x,floor+2,floor+3,z,z,null);
-      }
-      const x1=Math.min(inner,outer+side),x2=Math.max(inner,outer+side);
-      deck(x1,x2,floor+5,z,z,T);
-      if(step%5===2)solid(outer,floor+1,z,T);
-    }
-    const a=Math.min(side*13,side*15),b=Math.max(side*13,side*15);
-    deck(a,b,4,-42,-41,T);
-    deck(a,b,20,-62,-61,T);
-  }
-  deck(-15,15,20,-61,-59,T);
-  tower(0,-70,9,56,20);
-  const keepRoute=routes.at(-1);
-  // Move the staircase base up to the great hall roof.
-  keepRoute.splice(0,keepRoute.findIndex(([,y])=>y===20));
-  for(let x=-8;x<=8;x++)for(let z=-78;z<=-62;z++)solid(x,20,z,T);
-  const [startX,,startZ]=keepRoute[0];
-  deck(startX-1,startX+1,20,startZ-1,startZ+1,T);
-  for(let x=startX-1;x<=startX+1;x++)for(let y=21;y<=23;y++){
-    empty(x,y,-61);
-  }
-  for(const side of [-1,1]){
-    box(side*8,side*8,57,63,-78,-78,D);
-    solid(side*8,64,-78,L);
-  }
-  deck(-3,3,57,-74,-70,D);
-  deck(-2,2,58,-73,-71,T);
-  solid(0,59,-72,G);
-  solid(0,60,-72,L);
-  solid(0,61,-72,G);
+  buildCastleArchitecture({box,solid,deck,empty,routes});
   for(const path of routes)for(const [x,y,z] of path)solid(x,y,z,T);
-  for(const path of routes)for(const [x,y,z] of path){
+  for(const path of routes)for(const [x,y,z] of path)
     for(let dy=1;dy<=3;dy++)empty(x,y+dy,z);
-  }
-  // The main building lawn remains open. The flanks have real voxel groves,
-  // glacial stones, flowering shrubs and a clear paved approach to the gate.
-  for(let z=-10;z<=15;z++)for(let x=-2;x<=2;x++){
-    solid(x,4,z,Math.abs(x)===2?'cobble':'path');
-  }
-  // Main court axis connects the gateway, hall and both covered stairs.
-  for(let z=-58;z<=-44;z++)for(let x=-4;x<=4;x++)
-    solid(x,4,z,Math.abs(x)===4?T:'cobble');
-  for(let x=-24;x<=24;x++)for(let z=-46;z<=-44;z++)
-    if(Math.abs(x)<12||Math.abs(x)>17)solid(x,4,z,z===-46?T:'cobble');
-  for(const side of [-1,1]){
-    const a=Math.min(side*13,side*15),b=Math.max(side*13,side*15);
-    deck(a,b,4,-42,-40,T);
-    deck(a,b,20,-63,-61,T);
-    for(let z=-56;z<=-48;z+=4){
-      solid(side*6,5,z,D);
-      solid(side*6,6,z,'lantern');
-    }
-  }
-  // Buttresses frame the gate and taper into its facade.
-  for(const x of [-12,12]){
-    box(x,x,5,9,-34,-32,D);
-    box(x,x,10,15,-34,-33,N);
-    solid(x,10,-32,T);
-    solid(x,16,-33,T);
-  }
-  // Side aisles receive a contrasting stone border and paired pilaster bases.
-  for(const side of [-1,1]){
-    for(let z=-79;z<=-61;z++){
-      solid(side*9,4,z,T);
-      if(z%4===1)solid(side*10,4,z,'cobble');
-    }
-    for(let z=-79;z<=-63;z+=4){
-      const x=side*12;
-      box(Math.min(x,x+side),Math.max(x,x+side),5,5,z,z,T);
-    }
-  }
-  // Court paving is staggered in broad panels with a darker drainage edge.
-  for(let z=-57;z<=-47;z++)for(let x=-4;x<=4;x++)
-    solid(x,4,z,Math.abs(x)===4?D:(x+2*z)%5===0?T:'cobble');
+  deck(-2,2,4,-34,15,'cobble');
   // Bunker tucked beneath the meadow east of the approach.
   box(13,25,-6,4,-24,-10,N);
   box(14,24,-5,-1,-23,-11,null);
@@ -3740,7 +3491,7 @@ for(let x=-7;x<=7;x++){
   voussoir.userData.site=[x,y,-35];
   gateMolding.add(voussoir);
 }
-scene.add(gateMolding);
+
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
 const castleDoors=new THREE.Group();
@@ -3775,7 +3526,7 @@ for(const [half,z,height] of [[7,-35,7.6],[5,-59,6.1]]){
     castleDoors.add(door);
   }
 }
-scene.add(castleDoors);
+
 
 // Interior details are attached to editable masonry, outside the walking clearance.
 const hallDetails=new THREE.Group();
@@ -3812,7 +3563,7 @@ for(const x of [-6,6])for(let z=-80;z<=-60;z++){
   const purlin=part(hallDetails,.24,.34,1,oakDoor,x+.5,19.63,z+.5);
   anchorHallDetail(purlin,x,20,z);
 }
-scene.add(hallDetails);
+
 
 makeNetherPlan();
 const stairMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),
@@ -4009,7 +3760,7 @@ cornices.count=0;
 const courseTransform=new THREE.Object3D();
 const copings=new THREE.InstancedMesh(copingGeometry,gateStone,copingSites.length);
 copings.count=0;
-scene.add(cornices,copings);
+
 function refreshCornices(){
   let count=0;
   for(const [x,y,z,angle] of courses){
@@ -4052,7 +3803,7 @@ for(const [cx,cz,r,top] of towerProfiles){
     }
   }
 }
-scene.add(towerDressings);
+
 
 // Clustered grass uses one instanced draw call. Anchors follow terrain edits.
 const meadowBlades=new THREE.BufferGeometry();
@@ -4114,7 +3865,7 @@ function updateCastleLighting(){
   if(cell===castleLightCell)return;
   castleLightCell=cell;
   refreshStairTreads();
-  refreshCornices();
+
   for(const {mesh,x,y,z,type} of hallAnchors)
     mesh.visible=Boolean(type)&&netherBlockAt(x,y,z)===type;
   for(const door of castleDoors.children)
@@ -4700,7 +4451,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V67';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V70';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
