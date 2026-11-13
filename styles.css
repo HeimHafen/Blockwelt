@@ -238,3 +238,14 @@ html{-webkit-text-size-adjust:100%}
 #zoomRecovery{position:fixed;top:0;left:0;z-index:100;transform-origin:top left;
   min-height:44px;padding:0 14px;border:1px solid #fff;border-radius:12px;
   background:#fffdf3;color:#26473a;font-weight:800;box-shadow:0 2px 12px #0005}
+
+/* Matte, compact surfaces leave the landscape visible behind the controls. */
+.topbar{gap:8px}
+.topbar .identity{min-width:0;background:#1d2429e8;border-color:#9c8a6c80;color:#fff4df}
+.identity>div{min-width:0}
+.identity small{color:#d1c4ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .round{flex-shrink:0;background:#252b30ed;color:#fff4df;border-color:#9c8a6c}
+.hotbar{background:#20262be8;border-color:#9c8a6c80}
+.hotbar .slot{background:#393a38;color:#fff4df}
+.hotbar .slot.active{background:#534332;border-color:#d2ab71}
+.hotbar .cube{transform:none;border-radius:4px;box-shadow:inset 0 -3px 8px #0004}

@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V49 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
-  <title>Blockwelt V49 · Große Wiese · Labor</title>
-  <link rel="stylesheet" href="styles.css?v=49">
+  <meta name="description" content="Blockwelt V54 mit dem begehbaren Schloss Nachtrabe und einer frei bebaubaren Umgebung.">
+  <title>Blockwelt V54 · Große Wiese · Labor</title>
+  <link rel="stylesheet" href="styles.css?v=54">
   <script>
     // Register before the WebGL module loads. Block native pinch before
     // movement begins, including a second finger landing on a HUD control.
@@ -16,6 +16,14 @@
     for (const event of ['gesturestart','gesturechange','gestureend']) {
       document.addEventListener(event, e => e.preventDefault(), noZoom);
     }
+    let lastTapTime=0,lastTapTarget=null;
+    document.addEventListener('touchend', e => {
+      if(e.touches.length||!e.target.closest?.('#game,.controls,.hotbar'))return;
+      const now=performance.now();
+      if(e.cancelable&&e.target===lastTapTarget&&now-lastTapTime<300&&e.target.closest('#game'))e.preventDefault();
+      lastTapTime=now;
+      lastTapTarget=e.target;
+    },noZoom);
     for (const event of ['touchstart','touchmove']) {
       document.addEventListener(event, e => {
         if (e.cancelable && e.touches.length > 1) e.preventDefault();
@@ -29,7 +37,7 @@
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V49 – Stein und Stahl</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Schloss Nachtrabe · V54</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -86,31 +94,11 @@
       <div class="dialog-main">
         <p class="eyebrow">DEIN EIGENES BAUABENTEUER</p>
         <h1 id="dialogTitle">Willkommen in der Blockwelt!</h1>
-        <p>Wähle deine Welt: Erkunde die Legendenwelt oder die Große Wiese mit der neuen Netherfestung.</p>
-        <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span><span>🏘️ Dörfer</span></div>
-        <button id="startBtn" class="start-btn" type="button">▶ Losspielen</button>
+        <p>Erkunde Schloss Nachtrabe und baue in seiner Umgebung.</p>
+        <div class="explain"><span>👣 Bewegen</span><span>👀 Umsehen</span><span>🧱 Bauen</span></div>
+        <button id="startBtn" class="start-btn" type="button">▶ Nachtrabe betreten</button>
         <div class="menu-options" aria-label="Spieloptionen">
-          <details class="menu-panel" open>
-            <summary>🌍 Welten auswählen <span>2 Welten</span></summary>
-            <div class="option-grid world-select">
-              <button id="worldAdventureBtn" class="option-btn" type="button" aria-pressed="true">✓ 🏰 Abenteuerwelt</button>
-              <button id="worldMeadowBtn" class="option-btn" type="button" aria-pressed="false">🌿 Große Wiese</button>
-            </div>
-            <p class="world-description">Jede Welt speichert deine Bauwerke getrennt. Auf der Großen Wiese erwarten dich eine riesige Netherfestung mit begehbaren Türmen, ein fliegender Drache, Zombies und Creeper. Die Gegner zerstören keine Bauwerke.</p>
-            <button id="fortressBtn" class="option-btn fortress-visit" type="button" hidden>🐉 Zu Schloss Nachtrabe reisen</button>
-          </details>
-          <details class="menu-panel adventure-only">
-            <summary>🧭 Orte entdecken <span>7 Ziele</span></summary>
-            <div class="option-grid">
-              <button id="homeBtn" class="option-btn" type="button">⌂ Startwiese</button>
-              <button id="villageBtn" class="option-btn" type="button">🏘️ Sonnen-Dorf</button>
-              <button id="lookoutBtn" class="option-btn" type="button">🏰 Himmelswarte</button>
-              <button id="birchVillageBtn" class="option-btn" type="button">🏡 Birken-Dorf</button>
-              <button id="waterfallBtn" class="option-btn" type="button">💦 Kristallfall</button>
-              <button id="ruinBtn" class="option-btn" type="button">🗝️ Schattenruine</button>
-              <button id="campBtn" class="option-btn" type="button">⛺ Waldlager</button>
-            </div>
-          </details>
+          <button id="fortressBtn" class="option-btn fortress-visit" type="button">Zum Burgtor reisen</button>
           <details class="menu-panel">
             <summary>✨ Welt &amp; Grafik <span>Spieloptionen</span></summary>
             <div class="option-grid">
@@ -155,6 +143,6 @@
     </div>
   </section>
 
-  <script type="module" src="game.js?v=49"></script>
+  <script type="module" src="game.js?v=54"></script>
 </body>
 </html>

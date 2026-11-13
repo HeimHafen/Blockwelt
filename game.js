@@ -1,4 +1,4 @@
-// BLOCKWELT V49 — Schloss Nachtrabe – Stein und Stahl.
+// BLOCKWELT V54 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -30,10 +30,8 @@ const OLD_MIN = -18, OLD_MAX = 17, CHUNK = 16, MAX_Y = 70;
 // Separate world slots: the original adventure key MUST stay exactly unchanged.
 const ADVENTURE_KEY = 'blockwelt-kleine-baumeister-v1';
 const MEADOW_KEY = 'blockwelt-grosse-wiese-v26';
-const ACTIVE_WORLD_KEY = 'blockwelt-aktive-welt-v26';
-let activeWorld = 'abenteuer';
-try { if(localStorage.getItem(ACTIVE_WORLD_KEY)==='wiese')activeWorld='wiese'; }catch(_){}
-const isMeadow = () => activeWorld === 'wiese';
+const activeWorld = 'wiese';
+const isMeadow = () => true;
 const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
 const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
 // V27 — EIGENSTÄNDIGE NETHERFESTUNG AUF DER GROSSEN WIESE.
@@ -481,6 +479,36 @@ const reliefColors={
   netherBrick:[100,83,81],netherDeep:[68,70,82],netherTrim:[128,106,98],
   grass:[65,81,49],cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
 };
+// World-space patina stays continuous across adjacent editable blocks.
+function addSurfacePatina(material,stone){
+  material.onBeforeCompile=shader=>{
+    shader.vertexShader='varying vec3 surfacePosition;\n'+shader.vertexShader;
+    shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>',`
+      vec4 surfaceVertex=vec4(transformed,1.0);
+      #ifdef USE_INSTANCING
+        surfaceVertex=instanceMatrix*surfaceVertex;
+      #endif
+      surfacePosition=(modelMatrix*surfaceVertex).xyz;
+      #include <project_vertex>
+    `);
+    shader.fragmentShader='varying vec3 surfacePosition;\n'+shader.fragmentShader;
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
+      #include <map_fragment>
+      {
+      vec3 p=surfacePosition;
+      float blotch=sin(p.x*.37+p.z*.19+p.y*.14)*cos(p.z*.44-p.x*.13+p.y*.28);
+      float fine=sin(p.x*2.3+p.y*.82)*sin(p.z*1.93+p.y*1.5);
+      float stain=smoothstep(.20,.82,blotch*.74+fine*.26);
+      diffuseColor.rgb*=.85+.24*blotch+.10*fine;
+      ${stone?`float damp=stain*(.25+.75*(1.0-smoothstep(5.0,17.0,p.y)));
+      diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.48,.74,.42),damp*.72);`:
+      'diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.22,1.02,.74),stain*.72);'}
+      }
+    `);
+  };
+  material.customProgramCacheKey=()=>stone?'stone-patina-v53':'grass-patina-v53';
+  return material;
+}
 function reliefMaterial(type,face){
   const size=256,wood=type==='wood'||type==='planks';
   const color=document.createElement('canvas'),height=document.createElement('canvas');
@@ -514,11 +542,12 @@ function reliefMaterial(type,face){
   const map=new THREE.CanvasTexture(color),bumpMap=new THREE.CanvasTexture(height);
   map.colorSpace=THREE.SRGBColorSpace;
   map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
-  return new THREE.MeshStandardMaterial({
+  const material=new THREE.MeshStandardMaterial({
     map,bumpMap,bumpScale:face==='bottom'?.021:.035,
     roughness:wood?.83:.91,metalness:0,
-    emissive:wood?'#352519':'#383340',emissiveIntensity:.42
+    emissive:wood?'#352519':'#383340',emissiveIntensity:.31
   });
+  return grass||type.startsWith('nether')||type==='cobble'?addSurfacePatina(material,!grass):material;
 }
 const materialByType={};
 for(const type of BLOCK_TYPES){
@@ -1900,7 +1929,9 @@ function rebuildNetherFarView(cx,cz,radius){
         for(const j of order){
           const v=face.v[j];vertices.push(x+v[0],y+v[1],z+v[2]);
           colors.push(c.r,c.g,c.b);
-          uvs.push((tx+((j===1||j===2)?125:3))/512,1-(ty+(j>=2?3:125))/512);
+          const u=j>=2?125:3;
+          const height=face.d[1]===0?v[1]:(j===1||j===2?1:0);
+          uvs.push((tx+u)/512,1-(ty+(height?3:125))/512);
         }
       }
     }
@@ -2130,6 +2161,7 @@ function loadEdits(){
 }
 function saveEdits(){
   castleLightCell=null;
+  tuftRegion='';
   try{localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));}
   catch(e){toast('Speichern ist auf diesem Gerät nicht möglich');}
 }
@@ -2573,6 +2605,7 @@ function rebuildDecoration(cx,cz){
 }
 function rebuild(){
   castleLightCell=null;
+  tuftRegion='';
   for(const id of [...chunkMeshes.keys()])disposeChunkMesh(id);
   for(const id of [...generatedChunks]){const [cx,cz]=id.split(',').map(Number);unloadChunkData(cx,cz);}
   lastStreamCenter='';updateWorldStream(true);
@@ -2761,6 +2794,7 @@ let thirdPerson=true;
 try{thirdPerson=localStorage.getItem('blockwelt-kamera')!=='ego';}catch(_){}
 const eye=new THREE.Vector3(),cameraOffset=new THREE.Vector3(),viewDirection=new THREE.Vector3();
 const cameraProbe=new THREE.Vector3(),probeOffset=new THREE.Vector3();
+const orbitRotation=new THREE.Euler(0,0,0,'YXZ');
 const cameraCorners=[[0,0],[-.15,-.12],[-.15,.12],[.15,-.12],[.15,.12]];
 let cameraDistance=0;
 function updateCamera(dt=0){
@@ -2769,7 +2803,9 @@ function updateCamera(dt=0){
   camera.position.copy(eye);
   if(thirdPerson){
     const portrait=camera.aspect<.85;
-    cameraOffset.set(portrait?.32:.62,.12,portrait?4.15:3.75).applyQuaternion(camera.quaternion);
+    // Looking up must not drive the trailing camera down into the ground.
+    orbitRotation.set(Math.max(-.52,Math.min(.18,pitch)),yaw,0);
+    cameraOffset.set(portrait?.32:.62,.48,portrait?4.15:3.75).applyEuler(orbitRotation);
     const length=cameraOffset.length();
     cameraOffset.multiplyScalar(1/length);
     let clearDistance=length;
@@ -2783,6 +2819,10 @@ function updateCamera(dt=0){
       ? Math.min(clearDistance,cameraDistance+(clearDistance-cameraDistance)*(1-Math.exp(-9*dt)))
       : clearDistance;
     camera.position.addScaledVector(cameraOffset,cameraDistance);
+    // Keep the crosshair aligned with the same aim point as in first person.
+    viewDirection.set(0,0,-1).applyQuaternion(camera.quaternion);
+    cameraProbe.copy(eye).addScaledVector(viewDirection,12);
+    camera.lookAt(cameraProbe);
   }else cameraDistance=0;
   guardian.visible=thirdPerson&&cameraDistance>1.18;
 }
@@ -2815,6 +2855,7 @@ function intersectsPlayer(x,y,z){
 }
 function modifyWorld(place,quiet=false){
   castleLightCell=null;
+  tuftRegion='';
   if(!gameRunning)return;
   updateTarget();
   if(!pointed){toast('Schau zuerst einen Block an');return;}
@@ -2841,6 +2882,7 @@ function syncUndo(){
 }
 function undo(){
   castleLightCell=null;
+  tuftRegion='';
   if(!undoStack.length){toast('Noch nichts zum Rückgängigmachen');return;}
   const {x,y,z,oldType,oldEdit}=undoStack.pop();
   const k=key(x,y,z);
@@ -3525,6 +3567,35 @@ const castleRidges=new THREE.Mesh(ridgeGeometry,new THREE.MeshBasicMaterial({
 }));
 scene.add(castleRidges);
 
+// Rolling ground outside the editable square meets the flat build area at its edge.
+const foothillsGeometry=new THREE.PlaneGeometry(420,420,140,140);
+foothillsGeometry.rotateX(-Math.PI/2);
+const hillPositions=foothillsGeometry.attributes.position;
+const hillColors=[];
+const hillColor=new THREE.Color();
+for(let i=0;i<hillPositions.count;i++){
+  const x=hillPositions.getX(i),z=hillPositions.getZ(i);
+  const edge=Math.max(Math.abs(x),Math.abs(z))-HALF;
+  const blend=THREE.MathUtils.smoothstep(edge,0,40);
+  const rolls=5+4*Math.sin(x*.039+Math.sin(z*.03))+3*Math.cos(z*.053-x*.019);
+  hillPositions.setY(i,MEADOW_HEIGHT-.16+blend*rolls);
+  hillColor.setHSL(.24+Math.sin(x*.051+z*.041)*.025,.21,.19+Math.cos(x*.055-z*.041)*.027);
+  hillColors.push(hillColor.r,hillColor.g,hillColor.b);
+}
+// Drop triangles within the build area, so digging reveals the real ground.
+const hillIndices=[];
+const originalIndices=foothillsGeometry.index.array;
+for(let i=0;i<originalIndices.length;i+=3){
+  const a=originalIndices[i],b=originalIndices[i+1],c=originalIndices[i+2];
+  const x=(hillPositions.getX(a)+hillPositions.getX(b)+hillPositions.getX(c))/3;
+  const z=(hillPositions.getZ(a)+hillPositions.getZ(b)+hillPositions.getZ(c))/3;
+  if(Math.max(Math.abs(x),Math.abs(z))>=HALF)hillIndices.push(a,b,c);
+}
+foothillsGeometry.setIndex(hillIndices);
+foothillsGeometry.setAttribute('color',new THREE.Float32BufferAttribute(hillColors,3));
+foothillsGeometry.computeVertexNormals();
+scene.add(new THREE.Mesh(foothillsGeometry,new THREE.MeshLambertMaterial({vertexColors:true})));
+
 // The valley beyond the building grid uses three instanced tree silhouettes.
 const valleyTreeCount=570;
 const valleyTrees=new THREE.InstancedMesh(
@@ -3536,11 +3607,13 @@ const valleyTreeTransform=new THREE.Object3D();
 const valleyTreeColor=new THREE.Color();
 for(let i=0;i<valleyTreeCount;i++){
   const angle=i*2.399963;
-  const radius=137+pixelHash(i,0,43)*35;
+  const radius=154+pixelHash(i,0,43)*25;
   const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius-28;
   const treeHeight=3+pixelHash(i,2,71)*5.8;
   const width=treeHeight*(.19+pixelHash(i,3,71)*.10);
-  const base=3+Math.sin(angle*4)*2+pixelHash(i,4,43)*1.7;
+  const edge=Math.max(Math.abs(x),Math.abs(z))-HALF;
+  const base=MEADOW_HEIGHT-.16+THREE.MathUtils.smoothstep(edge,0,40)*
+    (5+4*Math.sin(x*.039+Math.sin(z*.03))+3*Math.cos(z*.053-x*.019));
   for(let tier=0;tier<3;tier++){
     valleyTreeTransform.position.set(x,base+treeHeight*(.33+tier*.23),z);
     valleyTreeTransform.rotation.y=angle;
@@ -3554,19 +3627,157 @@ for(let i=0;i<valleyTreeCount;i++){
 }
 scene.add(valleyTrees);
 
-const gateMolding=new THREE.Group();
 const gateStone=materialByType.netherTrim[0];
+const gateMolding=new THREE.Group();
+// The exposed stonework follows a smooth pointed curve just outside the wall.
+const archProfile=x=>18.83-.50*Math.abs(x)-.033*x*x;
 for(let x=-7;x<=7;x++){
   const y=18-Math.floor(Math.abs(x)*.75);
-  const slope=-Math.sign(x)*.75;
-  const voussoir=part(gateMolding,Math.hypot(1,slope)+.025,.31,.32,gateStone,x+.5,y+.65,-34);
-  voussoir.rotation.z=Math.atan(slope);
+  const shape=new THREE.Shape();
+  const left=archProfile(x-.47),right=archProfile(x+.47);
+  shape.moveTo(x+.03,left);
+  shape.lineTo(x+.97,right);
+  shape.lineTo(x+.97,right+.58);
+  shape.lineTo(x+.03,left+.58);
+  shape.closePath();
+  const geometry=new THREE.ExtrudeGeometry(shape,{
+    depth:.21,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.035,bevelThickness:.035
+  });
+  const voussoir=new THREE.Mesh(geometry,gateStone);
+  voussoir.position.z=-34.02;
   voussoir.userData.site=[x,y,-35];
+  gateMolding.add(voussoir);
 }
 scene.add(gateMolding);
 
+const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
+  [42,-68,6,36],[-24,-80,6,43],[24,-80,6,43],[0,-70,9,56]];
+// A shared profile adds chamfered stringcourses to all four faces of each tower.
+const corniceShape=new THREE.Shape();
+corniceShape.moveTo(-.06,-.22);
+corniceShape.lineTo(.13,-.15);
+corniceShape.lineTo(.25,.05);
+corniceShape.lineTo(.25,.19);
+corniceShape.lineTo(-.06,.19);
+corniceShape.closePath();
+const corniceGeometry=new THREE.ExtrudeGeometry(corniceShape,{depth:1,bevelEnabled:false});
+corniceGeometry.translate(0,0,-.5);
+const copingGeometry=new THREE.CylinderGeometry(.64,.81,.22,4,1);
+copingGeometry.rotateY(Math.PI/4);
+const copingSites=[];
+const courses=[];
+for(const [cx,cz,r,top] of towerProfiles){
+  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+    if(Math.max(Math.abs(dx),Math.abs(dz))===r&&netherBlockAt(cx+dx,top+1,cz+dz)==='netherTrim')
+      copingSites.push([cx+dx,top+1,cz+dz]);
+  }
+  for(let y=8;y<=top;y++){
+    if(y!==top&&(y%8!==0||(cx===0&&y<24)))continue;
+    for(let along=-r+1;along<r;along++)for(const side of [-1,1]){
+      courses.push([cx+side*r,y,cz+along,side===1?0:Math.PI]);
+      courses.push([cx+along,y,cz+side*r,side===1?-Math.PI/2:Math.PI/2]);
+    }
+  }
+}
+const cornices=new THREE.InstancedMesh(corniceGeometry,gateStone,courses.length);
+cornices.count=0;
+const courseTransform=new THREE.Object3D();
+const copings=new THREE.InstancedMesh(copingGeometry,gateStone,copingSites.length);
+copings.count=0;
+scene.add(cornices,copings);
+function refreshCornices(){
+  let count=0;
+  for(const [x,y,z,angle] of courses){
+    if(netherBlockAt(x,y,z)!=='netherTrim')continue;
+    courseTransform.rotation.y=angle;
+    courseTransform.position.set(x+.5+Math.cos(angle)*.5,y+.56,z+.5-Math.sin(angle)*.5);
+    courseTransform.updateMatrix();
+    cornices.setMatrixAt(count++,courseTransform.matrix);
+  }
+  cornices.count=count;
+  cornices.instanceMatrix.needsUpdate=true;
+  cornices.computeBoundingSphere();
+  count=0;
+  courseTransform.rotation.y=0;
+  for(const [x,y,z] of copingSites){
+    if(netherBlockAt(x,y,z)!=='netherTrim'||netherBlockAt(x,y+1,z))continue;
+    courseTransform.position.set(x+.5,y+1.09,z+.5);
+    courseTransform.updateMatrix();
+    copings.setMatrixAt(count++,courseTransform.matrix);
+  }
+  copings.count=count;
+  copings.instanceMatrix.needsUpdate=true;
+  copings.computeBoundingSphere();
+}
+
+// Recessed tower windows: cut-stone sills and jambs follow their owning blocks.
+const towerDressings=new THREE.Group();
+const jambStone=materialByType.netherBrick[0];
+for(const [cx,cz,r,top] of towerProfiles){
+  const wallZ=cz+r;
+  for(let y=10;y+3<top-3;y++){
+    if(y%8!==2||netherBlockAt(cx,y+1,wallZ))continue;
+    const sill=part(towerDressings,1.65,.20,.42,gateStone,cx+.5,y+.97,wallZ+1.14);
+    sill.userData.site=[cx,y,wallZ];
+    sill.userData.type=netherBlockAt(cx,y,wallZ);
+    for(const side of [-1,1])for(let h=1;h<=3;h++){
+      const x=cx+side,stone=part(towerDressings,.28,.99,.31,jambStone,cx+.5+side*.55,y+h+.5,wallZ+1.09);
+      stone.userData.site=[x,y+h,wallZ];
+      stone.userData.type=netherBlockAt(x,y+h,wallZ);
+    }
+  }
+}
+scene.add(towerDressings);
+
+// Clustered grass uses one instanced draw call. Anchors follow terrain edits.
+const meadowBlades=new THREE.BufferGeometry();
+const bladeVertices=[];
+for(let i=0;i<11;i++){
+  const a=i*2.39996,r=.05+pixelHash(i,2,93)*.23;
+  const x=Math.cos(a)*r,z=Math.sin(a)*r;
+  const h=.16+pixelHash(i,5,13)*.28,w=.016+pixelHash(i,3,88)*.014;
+  const dx=Math.cos(a)*w,dz=Math.sin(a)*w;
+  bladeVertices.push(x-dz,0,z+dx,x+dz,0,z-dx,x*1.65,h,z*1.65);
+}
+meadowBlades.setAttribute('position',new THREE.Float32BufferAttribute(bladeVertices,3));
+meadowBlades.computeVertexNormals();
+const meadowTufts=new THREE.InstancedMesh(meadowBlades,new THREE.MeshLambertMaterial({
+  color:'#ffffff',side:THREE.DoubleSide
+}),3200);
+const tuftTransform=new THREE.Object3D();
+const tuftColor=new THREE.Color();
+meadowTufts.count=0;
+scene.add(meadowTufts);
+let tuftRegion='';
+function updateMeadowTufts(){
+  meadowTufts.visible=isMeadow()&&graphicMode==='schoen';
+  if(!meadowTufts.visible)return;
+  const cx=Math.floor(player.x/8)*8,cz=Math.floor(player.z/8)*8;
+  const region=key(cx,0,cz);
+  if(region===tuftRegion)return;
+  tuftRegion=region;
+  let count=0;
+  for(let x=cx-32;x<cx+32;x++)for(let z=cz-32;z<cz+32;z++){
+    if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||Math.hypot(x-cx,z-cz)>32)continue;
+    if(pixelHash(x,z,91)>.35+.33*Math.sin(x*.29)*Math.cos(z*.23))continue;
+    if(get(x,MEADOW_HEIGHT-1,z)!=='grass'||get(x,MEADOW_HEIGHT,z))continue;
+    const scale=.52+pixelHash(x,z,40)*.88;
+    tuftTransform.position.set(x+.23+.54*pixelHash(x,z,77),MEADOW_HEIGHT,z+.23+.54*pixelHash(x,z,78));
+    tuftTransform.rotation.y=pixelHash(x,z,79)*Math.PI*2;
+    tuftTransform.scale.set(scale,scale,scale);
+    tuftTransform.updateMatrix();
+    meadowTufts.setMatrixAt(count,tuftTransform.matrix);
+    tuftColor.setHSL(.16+pixelHash(x,z,21)*.08,.23+pixelHash(x,z,22)*.24,.20+pixelHash(x,z,23)*.16);
+    meadowTufts.setColorAt(count++,tuftColor);
+  }
+  meadowTufts.count=count;
+  meadowTufts.instanceMatrix.needsUpdate=true;
+  if(meadowTufts.instanceColor)meadowTufts.instanceColor.needsUpdate=true;
+  meadowTufts.computeBoundingSphere();
+}
 let castleLightCell='';
 function updateCastleLighting(){
+  updateMeadowTufts();
   castleRidges.visible=isMeadow();
   gateMolding.visible=isMeadow();
   valleyTrees.visible=isMeadow();
@@ -3577,12 +3788,15 @@ function updateCastleLighting(){
   const cell=isMeadow()?Math.floor(player.x/2)+','+Math.floor(player.y/2)+','+Math.floor(player.z/2):'';
   if(cell===castleLightCell)return;
   castleLightCell=cell;
+  refreshCornices();
   if(isMeadow())for(const frame of lanternFrames.children){
     const [x,y,z,type]=frame.userData.site;
     frame.visible=netherBlockAt(x,y,z)===type;
   }
   if(isMeadow())for(const stone of gateMolding.children)
     stone.visible=netherBlockAt(...stone.userData.site)==='netherTrim';
+  for(const stone of towerDressings.children)
+    stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
   const sites=[...castleLampSites];
   if(isMeadow())for(const [x,y,z,type] of edits.values()){
     if(type==='lantern'||type==='lavaGlow')sites.push([x,y,z,type]);
@@ -3861,7 +4075,7 @@ function visitVillage(){
   // Werkstätten links und rechts der Sichtachse statt hinter dem Spieler.
   teleportTo(v.x+13,v.z,'Willkommen im Sonnen-Dorf!',v.x-3,v.z);
 }
-$('villageBtn').addEventListener('click',visitVillage);
+$('villageBtn')?.addEventListener('click',visitVillage);
 $('mobsBtn').addEventListener('click',()=>{
   showCreatures=!showCreatures;
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(isMeadow()?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
@@ -3875,7 +4089,7 @@ function applyLighting(){
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
   const moonlit=castleMoonlight();
-  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:1.28,hemi:1.10,exposure:1.05,label:'☾ Blaue Stunde'}:options[lightMode];
+  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:1.42,hemi:1.28,exposure:1.12,label:'☾ Blaue Stunde'}:options[lightMode];
   scene.background.set(p.sky);
   netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
@@ -3930,21 +4144,21 @@ $('dayBtn').addEventListener('click',()=>{
   lightMode=(lightMode+1)%3;applyLighting();
   toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
 });
-$('lookoutBtn').addEventListener('click',()=>{
+$('lookoutBtn')?.addEventListener('click',()=>{
   teleportTo(LOOKOUT.x+10,LOOKOUT.z+9,'Die Himmelswarte wartet auf dich!',LOOKOUT.x,LOOKOUT.z);
 });
-$('birchVillageBtn').addEventListener('click',()=>{
+$('birchVillageBtn')?.addEventListener('click',()=>{
   const v=VILLAGES[1];
   teleportTo(v.x+2,v.z+14,'Willkommen im Birken-Dorf!',v.x,v.z);
 });
-$('waterfallBtn').addEventListener('click',()=>{
+$('waterfallBtn')?.addEventListener('click',()=>{
   teleportTo(FALL.x-10,FALL.z+7,'Entdecke den Kristallfall!',FALL.x,FALL.z);
 });
 
-$('ruinBtn').addEventListener('click',()=>{
+$('ruinBtn')?.addEventListener('click',()=>{
   teleportTo(RUIN.x+2,RUIN.z+13,'Die Schattenruine ist ganz still …',RUIN.x,RUIN.z);
 });
-$('campBtn').addEventListener('click',()=>{
+$('campBtn')?.addEventListener('click',()=>{
   teleportTo(CAMP.x,CAMP.z+9,'Willkommen am Waldlager!',CAMP.x,CAMP.z);
 });
 const discovered=new Set();
@@ -4154,50 +4368,19 @@ function selectBlock(type){
   });
 }
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
-function updateWorldSelector(){
-  const meadow=isMeadow();
-  document.body.classList.toggle('meadow-mode',meadow);
-  $('worldAdventureBtn').setAttribute('aria-pressed',String(!meadow));
-  $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
-  $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
-  $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V49 – Nachtrabe – Stein und Stahl':'Legendenwelt · V49';
-  $('fortressBtn').hidden=!meadow;
-  $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V49 · Schloss Nachtrabe':'Blockwelt V49 · Legendenwelt';
-  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
+function refreshNachtrabeMenu(){
+  document.body.classList.add('meadow-mode');
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V54';
+  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
-  updateSunVillageSignVisibility(false);
 }
-function switchWorld(next){
-  if(next!== 'wiese' && next!== 'abenteuer')return;
-  if(next===activeWorld){updateWorldSelector();return;}
-  // Everything built so far is already saved in its own storage slot.
-  activeWorld=next;
-  try{localStorage.setItem(ACTIVE_WORLD_KEY,activeWorld);}catch(_){}
-  edits.clear();undoStack.length=0;syncUndo();
-  flying=false;document.body.classList.remove('flying');
-  $('flightBtn').setAttribute('aria-pressed','false');
-  $('flightBtn').textContent='✦ Flugmodus einschalten';
-  $('jumpBtn').querySelector('small').textContent='SPRINGEN';
-  jumpHeld=false;descendHeld=false;stick.x=0;stick.y=0;centerStick();
-  workshopSparkles.visible=false;selectedNpc=null;selectedWorkshop=null;
-  npcTargetBtn.classList.remove('visible');
-  baseWorld();loadEdits();respawn();yaw=.08;pitch=-.22;
-  rebuild();updateCamera();updateWorldSelector();updateTarget();
-  applyLighting();
-  toast(isMeadow()?'Die Drachenfestung wartet auf dich!':'Willkommen zurück im Abenteuer!');
-}
-$('worldAdventureBtn').addEventListener('click',()=>switchWorld('abenteuer'));
-$('worldMeadowBtn').addEventListener('click',()=>switchWorld('wiese'));
 $('fortressBtn').addEventListener('click',()=>{
-  if(!isMeadow())switchWorld('wiese');
   // Der Weg zur Festung bleibt bewusst frei: keine Teleportation in Mauern.
   teleportTo(0,-7,'Die Netherfestung wartet auf dich!',0,-45);
 });
-function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;resetControls();$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';updateWorldSelector();}
+function openMenu(){$('discoveryPanel').classList.add('hidden');gameRunning=false;resetControls();$('overlay').classList.remove('hidden');$('dialogTitle').textContent='Deine Blockwelt';refreshNachtrabeMenu();}
 $('menuBtn').addEventListener('click',openMenu);
-$('homeBtn').addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
+$('homeBtn')?.addEventListener('click',()=>{respawn();updateCamera();toast('Zurück bei deiner Startwiese!');});
 $('undoBtn').addEventListener('click',undo);
 $('flightBtn').addEventListener('click',()=>setFlying(!flying));
 $('exportBtn').addEventListener('click',exportWorld);
@@ -4207,7 +4390,7 @@ $('startBtn').addEventListener('click',()=>{
   $('discoveryPanel').classList.add('hidden');$('overlay').classList.add('hidden');gameRunning=true;toast('Viel Spaß beim Bauen!');
 });
 $('resetBtn').addEventListener('click',()=>{
-  if(!confirm(`Soll nur die Welt „${isMeadow()?'Große Wiese':'Abenteuerwelt'}“ neu begonnen werden? Die andere Welt bleibt erhalten.`))return;
+  if(!confirm(`Soll Schloss Nachtrabe neu begonnen werden?`))return;
   try{localStorage.removeItem(currentSaveKey());}catch(e){console.warn(e);}
   edits.clear();undoStack.length=0;syncUndo();baseWorld();rebuild();respawn();updateCamera();toast('Nur diese Welt wurde zurückgesetzt!');
 });
@@ -4278,7 +4461,7 @@ function resize(){
 resize();
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
-baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();updateWorldSelector();
+baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();refreshNachtrabeMenu();
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){

@@ -1,7 +1,7 @@
-# Blockwelt V49 – Stein und Stahl
+# Blockwelt V54 – Schloss Nachtrabe
 
-Ersetze im Blockwelt-Ordner index.html, styles.css und game.js gemeinsam. V49 basiert auf V48 und verwendet dieselben Speicherkennungen. Das Spiel bleibt über die bestehende Seite erreichbar.
+Die drei Dateien index.html, styles.css und game.js gemeinsam austauschen. Zwischenversionen müssen nicht installiert werden. Der Nachtrabe-Spielstand nutzt dieselbe Speicherkennung.
 
-Die Spielerfigur verwendet ein neues 3D-Modell mit gerundetem Helm, Plattenrüstung, Lederstiefeln und einem gefalteten, beim Gehen bewegten Umhang. Am Haupttor ergänzen schräge Keilsteine die abbaubaren Bogenblöcke. Die Keilsteine folgen den Änderungen am jeweiligen Block, auch beim Rückgängigmachen. Der Himmel verwendet Wolkenbänder in allen Lichtstimmungen. Feste Lichtzonen aus V48 bleiben aktiv.
+Der Torbogen erhält einzelne abgeschrägte Keilsteine. Die sieben Türme bekommen profilierte, umlaufende Gesimse und Steinabdeckungen an vorhandenen Zinnen. Die Architekturdetails sind mit ihren jeweiligen Baublöcken verbunden und verschwinden beim Abbau. Die spielbare Grundgeometrie bleibt erhalten.
 
-Die übrige Schlossgeometrie, das Gelände und die Kreaturen stammen überwiegend aus V48. JavaScript-Syntax und 648 simulierte Treppenübergänge sind geprüft. Darstellung und Leistung auf iPhone-Safari sind offen.
+JavaScript-Syntax, Archiv und 648 simulierte Treppenübergänge geprüft. Die Darstellung und Bildrate auf iPhone-Safari sind offen.
