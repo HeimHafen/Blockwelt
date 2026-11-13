@@ -2,20 +2,34 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V36 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
-  <title>Blockwelt V36 · Große Wiese · Labor</title>
-  <link rel="stylesheet" href="styles.css?v=36">
+  <meta name="description" content="Blockwelt V37 mit zwei getrennten Welten: der unveränderten Abenteuerwelt und der Großen Wiese mit einer gigantischen, begehbaren Netherfestung aus echten Baublöcken.">
+  <title>Blockwelt V37 · Große Wiese · Labor</title>
+  <link rel="stylesheet" href="styles.css?v=37">
+  <script>
+    // Register before the WebGL module loads. Block native pinch before
+    // movement begins, including a second finger landing on a HUD control.
+    const noZoom = {capture:true, passive:false};
+    for (const event of ['gesturestart','gesturechange','gestureend']) {
+      document.addEventListener(event, e => e.preventDefault(), noZoom);
+    }
+    for (const event of ['touchstart','touchmove']) {
+      document.addEventListener(event, e => {
+        if (e.cancelable && e.touches.length > 1) e.preventDefault();
+      }, noZoom);
+    }
+  </script>
 </head>
 <body>
+  <button id="zoomRecovery" type="button" hidden>Normalansicht laden</button>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V36 – Drachenkrone</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Legendenwelt · V37 – Drachenwächter</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -100,6 +114,7 @@
           <details class="menu-panel">
             <summary>✨ Welt &amp; Grafik <span>Spieloptionen</span></summary>
             <div class="option-grid">
+              <button id="cameraBtn" class="option-btn" type="button" aria-pressed="true">Kamera · Von hinten</button>
               <button id="resetViewBtn" class="option-btn" type="button">Ansicht neu laden</button>
               <button id="mobsBtn" class="option-btn" type="button">✓ Tiere und Bewohner: an</button>
               <button id="viewBtn" class="option-btn" type="button" aria-pressed="true">🏔️ Sichtweite: Weit</button>
@@ -140,6 +155,6 @@
     </div>
   </section>
 
-  <script type="module" src="game.js?v=36"></script>
+  <script type="module" src="game.js?v=37"></script>
 </body>
 </html>
