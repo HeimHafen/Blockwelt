@@ -1,4 +1,4 @@
-// BLOCKWELT V58 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V59 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -251,26 +251,6 @@ function makeNetherPlan(){
   for(let z=-10;z<=15;z++)for(let x=-2;x<=2;x++){
     solid(x,4,z,Math.abs(x)===2?'cobble':'path');
   }
-  for(const [cx,cz] of [[-29,12],[31,10],[-53,28],[53,30],[-76,-22],[77,-26],[-31,65],[34,65]]){
-    for(const [dx,dz,h] of [[0,0,6],[-5,4,5],[5,5,7]]){
-      const x=cx+dx,z=cz+dz;
-      box(x,x,5,4+h,z,z,'wood');
-      for(let layer=0;layer<3;layer++){
-        const r=2-layer;
-        for(let i=-r;i<=r;i++)for(let j=-r;j<=r;j++){
-          if(Math.abs(i)+Math.abs(j)>r+1)continue;
-          solid(x+i,4+h+layer,z+j,'leaves');
-        }
-      }
-      solid(x,4+h,z,'wood');
-    }
-    for(const offset of [-5,4]){
-      solid(cx+offset,5,cz-3,'blossom');
-      solid(cx+offset+1,5,cz-3,'leaves');
-    }
-    box(cx-3,cx-1,5,5,cz-7,cz-6,'cobble');
-    solid(cx-2,6,cz-6,'stone');
-  }
   // Bunker tucked beneath the meadow east of the approach.
   box(13,25,-6,4,-24,-10,N);
   box(14,24,-5,-1,-23,-11,null);
@@ -284,9 +264,9 @@ function makeNetherPlan(){
   }
   for(const z of [-13,-18,-22]){
     box(14,24,-1,-1,z,z,'wood');
-    solid(22,-2,z,'lantern');
+
   }
-  for(const z of [-13,-20])for(const x of [14,24])solid(x,-3,z,'lantern');
+
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
   netherPlanVoxels=vox;
@@ -3749,10 +3729,17 @@ const bunkerCloth=new THREE.MeshStandardMaterial({color:'#713324',roughness:1});
 const bunkerLinen=new THREE.MeshStandardMaterial({color:'#d5c6a7',roughness:1});
 const bunkerAmber=new THREE.MeshStandardMaterial({color:'#aa7137',roughness:.36});
 const bunkerProp=(material,x,y,z,w,h,d)=>part(bunkerFurnishings,w,h,d,material,x,y,z);
-const hatch=bunkerProp(oakDoor,19.5,6.2,-.8,3.2,.18,2.9);
-hatch.rotation.x=1.13;
-const turf=bunkerProp(materialByType.grass[2],19.5,6.29,-.84,3.2,.16,2.9);
-turf.rotation.x=1.13;
+// Side hinge keeps the open lid entirely outside the stair lane.
+const hatchAssembly=new THREE.Group();
+hatchAssembly.position.set(18,5.06,-.52);
+hatchAssembly.rotation.z=1.68;
+bunkerFurnishings.add(hatchAssembly);
+for(let i=0;i<9;i++){
+  const x=(i+.5)*3/9;
+  part(hatchAssembly,.325,.17,1.14,oakDoor,x,0,0);
+  part(hatchAssembly,.333,.15,1.14,materialByType.grass[2],x,.15,0);
+}
+for(const z of [-.38,.38])part(hatchAssembly,2.88,.065,.09,doorIron,1.5,-.10,z);
 for(let step=0;step<9;step++){
   const rail=bunkerProp(oakDoor,18.12,5.02-step,-step,.12,.13,1.42);
   rail.rotation.x=-Math.PI/4;
@@ -3812,6 +3799,22 @@ for(const z of [-13.5,-20.5]){
   bunkerProp(doorIron,23,-2.43,z,.36,.08,.36);
   bunkerProp(materialByType.lantern[0],23,-2.59,z,.24,.29,.24);
   bunkerProp(doorIron,23,-2.77,z,.33,.07,.33);
+}
+// Hearth and workshop fittings, kept along the room's edges.
+for(const [z,width] of [[-14,.8],[-20,2.5]]){
+  bunkerProp(oakDoor,24.87,-3.35,z,.14,1.05,width);
+  for(let j=0;j<5;j++){
+    const pegZ=z+(j-2)*width/6;
+    bunkerProp(doorIron,24.73,-3.08,pegZ,.12,.07,.07);
+    bunkerProp(oakDoor,24.66,-3.33,pegZ,.065,.48,.068);
+    bunkerProp(doorIron,24.63,-3.13,pegZ,.11,.105,.16);
+  }
+}
+for(const z of [-18.43,-15.57])bunkerProp(bunkerAmber,19,-4.955,z,3.4,.015,.075);
+for(const x of [17.34,20.66])bunkerProp(bunkerAmber,x,-4.955,-17,.075,.015,2.9);
+for(let i=0;i<7;i++){
+  bunkerProp(bunkerAmber,17.7+i*.43,-4.954,-18.25,.12,.015,.14).rotation.y=Math.PI/4;
+  bunkerProp(bunkerAmber,17.7+i*.43,-4.954,-15.75,.12,.015,.14).rotation.y=Math.PI/4;
 }
 scene.add(bunkerFurnishings);
 
@@ -4539,7 +4542,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V58';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V59';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
@@ -4630,6 +4633,15 @@ function resize(){
 resize();
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
+try {
+  if(localStorage.getItem('blockwelt-nachtrabe-bereinigung-v59')!=='1'){
+    localStorage.removeItem(MEADOW_KEY);
+    localStorage.removeItem(ADVENTURE_KEY);
+    localStorage.setItem('blockwelt-nachtrabe-bereinigung-v59','1');
+  }
+} catch(error) {
+  console.warn('Blockwelt-Weltbereinigung fehlgeschlagen.',error);
+}
 baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();refreshNachtrabeMenu();
 try {
   localStorage.removeItem(ADVENTURE_KEY);

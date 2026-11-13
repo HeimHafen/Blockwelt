@@ -1,7 +1,7 @@
-# Blockwelt V58 – Nachtrabe und Bunker
+# Blockwelt V59
 
-index.html, styles.css und game.js zusammen ersetzen. Nach dem Start der neuen Version löscht Blockwelt im aktuellen Browser den alten Abenteuerwelt-Spielstand. Der bestehende Nachtrabe-Spielstand und die Einstellungen bleiben erhalten. Exportdateien und andere Geräte werden nicht erfasst.
+index.html, styles.css und game.js gemeinsam ersetzen. Beim ersten Laden entfernt V59 die alten Bauänderungen der Abenteuerwelt und der Nachtrabe-Welt im aktuellen Browser. Danach sind Burg und Bunker wieder im vorgegebenen Zustand. Neue Änderungen werden ab dann normal gespeichert. Exportdateien werden nicht gelöscht.
 
-Der Bunker liegt östlich vom Schlossweg bei X 19, Z 0. Neu sind Bettleiter, eisenbeschlagene Truhen und zusätzliche Hängeleuchten. Die Große Halle hat neue steinerne Balkenauflager und durchgehende Längsbalken, die an die einzelnen Deckenblöcke gebunden sind.
+Der Bunker bei X 19, Z 0 hat eine seitlich angeschlagene Grasluke, kleinere Hängelaternen, Werkstattdetails und einen eingefassten Teppich. Die bisherige Steintreppe bleibt der Ein- und Ausgang.
 
-Geprüft wurden JavaScript-Syntax und ZIP. Darstellung und Bildrate auf dem iPhone sind offen.
+Geprüft: JavaScript-Syntax und ZIP. Darstellung auf iPhone-Safari offen.
