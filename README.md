@@ -185,3 +185,11 @@ Eine eiserne Deckenlaterne ergänzt das Kaminfeuer mit warmem Licht.
 ## V121 – Laufzeit- und Speicherfehler
 
 Die Lichtaktualisierung verwendet die Richtungswerte der Leuchten. Beim Start bleiben vorhandene Weltdaten und Blockänderungen erhalten.
+
+## V122 – Aussichtstürme an der Haupthalle
+
+Zwei Türme mit beleuchteten Treppenläufen, Wendepodesten und begehbaren Zinnenplattformen. Die Zugänge liegen in den hinteren Räumen der Seitenflügel.
+
+## V123 – Aussichtstürme
+
+Die Treppenläufe erhalten einen gemauerten Unterbau. Gesims, durchgehende Brüstung und erhöhte Eckzinnen schließen beide Aussichtsplattformen ab.

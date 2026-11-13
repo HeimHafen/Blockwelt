@@ -150,6 +150,50 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
   }
   deck(-4,4,32,-81,-63,slate);
   solid(0,24,-63,'glass');
+  // Two rear towers flank the great hall and open directly onto the courtyard routes.
+  for(const left of towerLeftEdges){
+    const right=left+8, middle=left+4;
+    for(const x of [left,right])box(x,x,5,38,-86,-75,stone);
+    for(const z of [-86,-75])box(left,right,5,38,z,z,stone);
+    deck(left,right,4,-86,-75,trim);
+    opening(left+1,left+3,5,8,-75,-75);
+    opening(left+1,left+3,5,7,-74,-74);
+    deck(left+1,left+3,4,-74,-73,trim);
+    box(middle,middle,5,38,-84,-77,stone);
+    for(let flight=0;flight<4;flight++){
+      const level=4+8*flight;
+      const north=flight%2===0;
+      const start=north?-76:-85, end=north?-85:-76, direction=north?-1:1;
+      for(let lane=0;lane<3;lane++){
+        const x=left+(north?1:5)+lane;
+        routes.push([[x,level,start],...Array.from({length:8},(_,step)=>
+          [x,level+step+1,start+direction*(step+1)]),[x,level+8,end]]);
+      }
+      deck(left+1,right-1,level+8,end,end,trim);
+      // Carry the stone steps on a continuous stepped masonry beam.
+      for(let step=1;step<=8;step++){
+        const z=start+direction*step;
+        const x=left+(north?1:5);
+        deck(x,x+2,level+step-1,z,z,stone);
+      }
+      const nextEdge=north?left:right;
+      for(let y=level+4;y<=level+5;y++)solid(nextEdge,y,start+direction*3,'glass');
+    }
+    // Leave the last flight open to the sky at its top; stone walls protect the stairwell.
+    deck(left+1,middle,36,-85,-76,trim);
+    deck(middle+1,right-1,36,-85,-81,trim);
+    deck(left+1,right-1,36,-76,-76,trim);
+    box(middle,middle,37,38,-80,-77,stone);
+    box(middle+1,right-1,37,38,-81,-81,stone);
+    // Corbel courses and capped corners give the parapet a continuous base.
+    for(const x of [left-1,right+1])deck(x,x,36,-86,-75,trim);
+    for(const z of [-87,-74])deck(left,right,36,z,z,trim);
+    for(const x of [left,right])for(const z of [-86,-75])box(x,x,39,40,z,z,trim);
+    for(const z of [-86,-75])deck(left,right,37,z,z,trim);
+    for(const x of [left,right])deck(x,x,37,-86,-75,trim);
+    for(const x of [left,right])for(let z=-86;z<=-75;z+=2)solid(x,39,z,trim);
+    for(const z of [-86,-75])for(let x=left;x<=right;x+=2)solid(x,39,z,trim);
+  }
   for(const [x,y,z,type] of interiorLampSites){
     solid(x,y,z,type);
   }
@@ -161,6 +205,7 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
 
 export const wingWindows=[-35,34].flatMap(x=>[-70,-60,-50].map(z=>[x,z]));
 
+const towerLeftEdges=[-27,19];
 const stairwellBounds=[[-15,-9],[9,15]];
 const stairwellLamps=stairwellBounds.flatMap(([left,right])=>[
   [left-1,8,-70,'lantern',-1,0],
@@ -170,6 +215,12 @@ const stairwellLamps=stairwellBounds.flatMap(([left,right])=>[
 ]);
 
 export const interiorLampSites=[
+  ...towerLeftEdges.flatMap(left=>[
+    [left+2,8,-75,'lantern',0,1],
+    [left+2,15,-86,'lantern',0,-1],
+    [left+6,23,-75,'lantern',0,1],
+    [left+2,31,-86,'lantern',0,-1],
+  ]),
   ...stairwellLamps,
   ...[-3,3].flatMap(x=>[-41,-38].map(z=>[x,8,z,'lantern',Math.sign(x),0])),
   ...[-34,33].flatMap(x=>(x<0?[-67,-57,-47]:[-67,-47]).map(z=>[x,7,z,'lantern',x<0?-1:1,0])),
