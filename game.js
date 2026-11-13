@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V129 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V130 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5342,27 +5342,39 @@ const mewtwoTail=new THREE.CatmullRomCurve3([[0,1.16,-.18],[.11,.72,-.61],[.52,.
 mewtwo.add(new THREE.Mesh(new THREE.TubeGeometry(mewtwoTail,18,.13,8,false),deepViolet));
 dragonShape(mewtwo,deepViolet,1.16,1.47,-.99,.16,.18,.15);
 
-// Separate display models keep the arena fighters tied to their own world.
+// Guard routes stay outside the curtain walls and leave the gate itself clear.
 const castlePokemon=[
-  {model:bellsprout,x:-41.5,z:-31.5,yaw:-.55},
-  {model:gengar.clone(),x:41,z:-31.5,yaw:.55},
-  {model:sudowoodo,x:-41.5,z:-85.5,yaw:Math.PI+.55},
-  {model:mewtwo,x:41,z:-85.5,yaw:Math.PI-.55}
+  {model:bellsprout,x:-41.5,z:-31.5,dx:5,dz:0},
+  {model:gengar.clone(),x:41,z:-31.5,dx:-5,dz:0},
+  {model:sudowoodo,x:-41.5,z:-85.5,dx:5,dz:0},
+  {model:mewtwo,x:41,z:-85.5,dx:-5,dz:0},
+  {model:mewtwo.clone(),x:0,z:-29,dx:10,dz:0},
+  {model:mewtwo.clone(),x:0,z:-89,dx:-10,dz:0},
+  {model:mewtwo.clone(),x:-43,z:-58.5,dx:0,dz:9},
+  {model:mewtwo.clone(),x:43,z:-58.5,dx:0,dz:-9}
 ];
-for(const {model,x,z,yaw} of castlePokemon){
+for(const {model,x,z,dx,dz} of castlePokemon){
   model.position.set(x,MEADOW_HEIGHT,z);
-  model.rotation.y=yaw;
+  model.rotation.y=Math.atan2(dx,dz);
   model.visible=false;
   scene.add(model);
 }
-function updateCastlePokemon(now){
-  for(const [index,{model,x,z,yaw}] of castlePokemon.entries()){
-    model.visible=isMeadow()&&!inFuture(player.x)&&Math.hypot(player.x-x,player.z-z)<100;
+let castlePatrolTime=0;
+function updateCastlePokemon(dt){
+  const active=isMeadow()&&!inFuture(player.x);
+  if(active&&gameRunning)castlePatrolTime+=dt;
+  for(const {model,x,z,dx,dz} of castlePokemon){
+    model.visible=active&&Math.hypot(player.x-x,player.z-z)<100;
     if(!model.visible)continue;
-    const sway=Math.sin(now*.002+index);
-    model.rotation.y=yaw+sway*.10;
-    model.rotation.z=index===0?sway*.04:0;
-    model.position.y=MEADOW_HEIGHT+(index===1||index===3?.15+sway*.12:0);
+    const phase=castlePatrolTime*1.8/Math.hypot(dx,dz);
+    const offset=Math.sin(phase);
+    const heading=Math.atan2(dx,dz);
+    const turn=THREE.MathUtils.smoothstep(Math.cos(phase),-.14,.14);
+    const stride=castlePatrolTime*10;
+    const pace=Math.abs(Math.cos(phase));
+    model.position.set(x+dx*offset,MEADOW_HEIGHT+Math.abs(Math.sin(stride))*.095*pace,z+dz*offset);
+    model.rotation.y=heading+(1-turn)*Math.PI;
+    model.rotation.z=Math.sin(stride)*.045*pace;
   }
 }
 const attacks=[
@@ -5880,7 +5892,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V129';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V130';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5982,7 +5994,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCastlePokemon(now);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
