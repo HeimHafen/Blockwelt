@@ -1,5 +1,5 @@
-import {buildCastleArchitecture} from './nachtrabe.js?v=70';
-// BLOCKWELT V70 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture} from './nachtrabe.js?v=71';
+// BLOCKWELT V71 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3256,8 +3256,7 @@ for(const [type,x,z,y] of [
   ['zombie',-9,-30,5],['creeper',11,-31,5],
   ['zombie',-13,-51,5],['creeper',15,-51,5],
   ['zombie',-8,-69,5],['creeper',9,-73,5],
-  ['zombie',20,-74,5],['creeper',-6,-75,21],
-  ['zombie',-29,-38,33],['creeper',29,-38,33]
+  ['zombie',23,-73,5],['creeper',-24,-72,5]
 ])makeNetherEnemy(type,x,z,y,netherCreatureList.length);
 
 // Dragon: zusammenhängendes, animiertes 3D-Wesen, keine Kulisse am Himmel.
@@ -3306,41 +3305,23 @@ netherDragon.visible=false;
 const fortressAccentGroup=new THREE.Group();scene.add(fortressAccentGroup);
 const flagMat=new THREE.MeshLambertMaterial({color:'#ad4c56',emissive:'#783044',emissiveIntensity:.23,side:THREE.DoubleSide});
 const crestMat=new THREE.MeshLambertMaterial({color:'#e5a851'});
-const emberMat=new THREE.MeshBasicMaterial({color:'#ffb049'});
-const accentTransform=new THREE.Object3D();
-const bannerPlaces=[[-9,21,-34],[9,21,-34],[-29,24,-31],[29,24,-31],[-24,34,-73],[24,34,-73]];
-const bannerMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(2.4,4.6,.15),flagMat,bannerPlaces.length);
-const crestMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.82,1,.21),crestMat,bannerPlaces.length);
-for(let i=0;i<bannerPlaces.length;i++){
-  const [x,y,z]=bannerPlaces[i];accentTransform.position.set(x+.5,y+.5,z+.5);
-  accentTransform.rotation.set(0,0,0);accentTransform.scale.set(1,1,1);
-  accentTransform.updateMatrix();bannerMesh.setMatrixAt(i,accentTransform.matrix);
-  accentTransform.position.y=y+.2;accentTransform.position.z=z+.6;
-  accentTransform.updateMatrix();crestMesh.setMatrixAt(i,accentTransform.matrix);
+for(const x of [-8,8]){
+  const banner=new THREE.Group();
+  banner.position.set(x+.5,10,-33.84);
+  part(banner,2.4,4.6,.15,flagMat,0,0,0);
+  part(banner,.82,1,.05,crestMat,0,-.3,.09);
+  part(banner,2.75,.15,.18,flagMat,0,2.35,0);
+  fortressAccentGroup.add(banner);
 }
-bannerMesh.instanceMatrix.needsUpdate=true;crestMesh.instanceMatrix.needsUpdate=true;
-fortressAccentGroup.add(bannerMesh,crestMesh);
-const torchPlaces=[[-11,19,-33],[11,19,-33],[-6,7,-17],[6,7,-17]];
-const torchMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.65,1.05,.65),emberMat,torchPlaces.length);
-for(let i=0;i<torchPlaces.length;i++){
-  const [x,y,z]=torchPlaces[i];accentTransform.position.set(x+.5,y+.5,z+.5);
-  accentTransform.updateMatrix();torchMesh.setMatrixAt(i,accentTransform.matrix);
-}
-torchMesh.instanceMatrix.needsUpdate=true;fortressAccentGroup.add(torchMesh);
 fortressAccentGroup.visible=false;
 
 const hallGlow=new THREE.PointLight('#ba8dff',0,19,2);
 hallGlow.position.set(0,9,-75);scene.add(hallGlow);
 
 const castleLampSites=[];
-for(let z=-33;z<=-9;z+=8)for(const x of [-6,6])
+for(const x of [-8,8])for(const z of [-60,-51,-42,-32,-24,-16])
   castleLampSites.push([x,6,z,'lantern']);
-for(const x of [-32,-24])for(const z of [-73,-66])
-  castleLampSites.push([x,11,z,'lantern']);
-castleLampSites.push([-28,7,-71,'lavaGlow'],[-11,19,-33,'lavaGlow'],[11,19,-33,'lavaGlow']);
-for(let z=-79;z<=-62;z+=4)for(const x of [-12,12])
-  castleLampSites.push([x,8,z+1,'lantern']);
-// Fixed lighting zones keep the architecture lit regardless of player distance.
+
 const castleLightZones=[
   [-5,7,-12,15], [5,7,-12,15], [-5,7,-27,17], [5,7,-27,17], [0,15,-33,19],
   [-10,8,-65,17], [10,8,-75,17], [0,10,-81,18],
@@ -3904,6 +3885,10 @@ function updateNetherCreatures(dt,now){
   const active=isMeadow()&&showCreatures;
   const closeToFort=Math.hypot(player.x,player.z+55)<165;
   fortressAccentGroup.visible=isMeadow()&&closeToFort;
+  for(const banner of fortressAccentGroup.children){
+    const x=Math.floor(banner.position.x);
+    banner.visible=netherBlockAt(x,12,-34)==='netherBrick';
+  }
   updateCastleLighting();
   hallGlow.intensity=isMeadow()?15:0;
   netherDragon.visible=active&&closeToFort;
@@ -4451,7 +4436,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V70';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V71';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }

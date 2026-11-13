@@ -93,7 +93,7 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes}){
     for(const z of [-81,-63])deck(-span,span,y,z,z,stone);
   }
   deck(-4,4,32,-81,-63,slate);
-  for(const x of [-8,8])for(const z of [-60,-51,-42]){
+  for(const x of [-8,8])for(const z of [-60,-51,-42,-32,-24,-16]){
     solid(x,5,z,slate);
     solid(x,6,z,'lantern');
   }
