@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=127';
-// BLOCKWELT V127 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
+// BLOCKWELT V128 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5298,6 +5298,46 @@ const attacks=[
   scene.add(group);
   return group;
 });
+function buildRockSerpent(steel){
+  const root=new THREE.Group();
+  const material=new THREE.MeshStandardMaterial({
+    color:steel?'#a3b4bf':'#766d61',roughness:steel?.42:.94,metalness:steel?.57:0,flatShading:true
+  });
+  const stone=new THREE.IcosahedronGeometry(1,1);
+  const segments=[];
+  for(let index=0;index<8;index++){
+    const segment=new THREE.Mesh(stone,material);
+    const size=(1-index*.078)*(steel?1.20:.94);
+    segment.scale.set(size,size*.88,size);
+    segment.rotation.set(index*.51,index*.67,index*.29);
+    root.add(segment);
+    segments.push(segment);
+    if(steel&&index>1&&index<6)for(const side of [-1,1])
+      dragonLimb(segment,material,[side*.62,0,0],[side*1.48,.18,0],.26,.025);
+  }
+  dragonShape(root,material,0,3.26,.32,steel?1.24:.91,.73,.78);
+  dragonShape(root,dragonEye,0,3.05,.94,steel?.84:.62,.20,.24);
+  dragonShape(root,material,0,2.91,.84,steel?.97:.67,.23,.40);
+  for(const side of [-1,1]){
+    const eye=dragonShape(root,gengarEyes,side*.41,3.48,.93,.19,.075,.08);
+    eye.rotation.z=side*.31;
+    dragonLimb(root,material,[side*.64,3.11,.86],[side*.56,3.38,1.03],.16,.012);
+  }
+  if(!steel)dragonLimb(root,material,[0,3.72,.32],[0,4.68,.03],.29,.015);
+  scene.add(root);
+  return {root,segments};
+}
+const onix=buildRockSerpent(false),steelix=buildRockSerpent(true);
+const fighters=[
+  {root:charizard,homeX:-15,homeZ:-15,range:13,muzzle:2.48,speed:7.9},
+  {root:gengar,homeX:15,homeZ:-15,range:11,muzzle:1.22,speed:8.8},
+  {...onix,homeX:-15,homeZ:15,range:3.3,muzzle:3.2,speed:11.6},
+  {...steelix,homeX:15,homeZ:15,range:3.6,muzzle:3.2,speed:11.2},
+];
+for(const fighter of fighters){
+  fighter.root.position.set(arena.x+fighter.homeX,5.04,arena.z+fighter.homeZ);
+  fighter.hit=0;
+}
 const shotStart=new THREE.Vector3(),shotEnd=new THREE.Vector3();
 const impactColors=['#ff9c42','#bd78ff'];
 const sparks=new THREE.BufferGeometry();
@@ -5315,6 +5355,7 @@ scene.add(battleFlash);
 let battleAudio;
 let battleTime=0;
 let previousTurn=-1,previousImpact=-1;
+let impactLanded=false;
 $('startBtn').addEventListener('click',()=>{
   const Audio=window.AudioContext||window.webkitAudioContext;
   if(Audio&&!battleAudio){
@@ -5339,54 +5380,82 @@ function playBattleImpact(shadow){
 }
 function updateBattle(dt){
   const nearby=inFuture(player.x)&&Math.hypot(player.x-arena.x,player.z-arena.z)<83;
-  gengar.visible=charizard.visible=nearby;
+  for(const fighter of fighters)fighter.root.visible=nearby;
   battleSparks.visible=impactRing.visible=battleFlash.visible=false;
   for(const attack of attacks)attack.visible=false;
   if(!nearby)return;
-  if(gameRunning)battleTime+=dt;
-  const turn=Math.floor(battleTime/3.55);
-  const phase=battleTime%3.55;
-  const kind=turn%2;
-  const angle=battleTime*.41;
-  const approach=Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,0,1.65))*5;
-  const attacker=kind===0?charizard:gengar;
-  const defender=kind===0?gengar:charizard;
-  const dodge=Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,.16,.91))*4.2;
-  const recoil=phase>=1.78?Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,1.78,2.48))*2.9:0;
-  charizard.position.set(arena.x+Math.cos(angle)*(19-approach),5.04+Math.max(0,Math.sin(battleTime*2.1))*.95,arena.z+Math.sin(angle)*(22-approach));
-  gengar.position.set(arena.x-Math.cos(angle)*(18-approach),5.04+Math.max(0,Math.sin(battleTime*3.0))*.46,arena.z-Math.sin(angle)*(23-approach));
-  defender.position.x+=Math.sin(angle)*dodge;
-  defender.position.z-=Math.cos(angle)*dodge;
-  const dx=defender.position.x-attacker.position.x,dz=defender.position.z-attacker.position.z;
-  const distance=Math.hypot(dx,dz);
-  defender.position.x+=dx/distance*recoil;
-  defender.position.z+=dz/distance*recoil;
-  attacker.rotation.y=Math.atan2(dx,dz);
-  defender.rotation.y=attacker.rotation.y+Math.PI;
-  defender.rotation.z=recoil*.095;
-  attacker.rotation.z=0;
-  if(phase>=1.04&&previousTurn!==turn){
-    previousTurn=turn;
-    shotStart.copy(attacker.position);shotStart.y+=kind===0?2.48:1.16;
+  const step=gameRunning?dt:0;
+  battleTime+=step;
+  const turn=Math.floor(battleTime/5.2);
+  const phase=battleTime%5.2;
+  const order=[0,2,1,3];
+  const attackerIndex=order[turn%4];
+  const lane=attackerIndex%2;
+  const targetLane=(lane+Math.floor(turn/4))%2;
+  const attacker=fighters[attackerIndex];
+  const defender=fighters[(attackerIndex<2?2:0)+targetLane];
+  const ranged=attackerIndex<2;
+  const impactAt=ranged?2.62:4.22;
+  const kind=attackerIndex%2;
+  const impactColor=ranged?impactColors[kind]:attackerIndex===2?'#c9a06f':'#bde4ff';
+  const from=attacker.root.position,to=defender.root.position;
+  const dx=to.x-from.x,dz=to.z-from.z;
+  const distance=Math.max(.01,Math.hypot(dx,dz));
+  const nx=dx/distance,nz=dz/distance;
+  for(const fighter of fighters){
+    const position=fighter.root.position;
+    let vx=0,vz=0;
+    if(fighter===attacker&&phase<impactAt){
+      const advance=Math.min(fighter.speed,Math.max(0,distance-fighter.range)*4);
+      vx=nx*advance;
+      vz=nz*advance;
+    }else if(fighter===defender&&phase<1.12){
+      const sidestep=Math.sin(phase/1.12*Math.PI)*3.8;
+      vx=-nz*sidestep;
+      vz=nx*sidestep;
+    }else if(fighter!==defender||phase>impactAt+.5){
+      vx=THREE.MathUtils.clamp((arena.x+fighter.homeX-position.x)*1.8,-7,7);
+      vz=THREE.MathUtils.clamp((arena.z+fighter.homeZ-position.z)*1.8,-7,7);
+    }
+    position.x=THREE.MathUtils.clamp(position.x+vx*step,arena.x-17,arena.x+17);
+    position.z=THREE.MathUtils.clamp(position.z+vz*step,arena.z-19,arena.z+19);
+    fighter.hit=Math.max(0,fighter.hit-step*2.3);
+    position.y=5.04+fighter.hit*.31;
+    fighter.root.rotation.z=fighter.hit*.24;
+    const facing=fighter===attacker?defender:attacker;
+    fighter.root.rotation.y=Math.atan2(facing.root.position.x-position.x,facing.root.position.z-position.z);
+    if(fighter.segments)fighter.segments.forEach((segment,index)=>{
+      const stride=Math.min(1,Math.hypot(vx,vz)/4);
+      segment.position.set(Math.sin(battleTime*4-index*.63)*index*.064*stride,
+        .47+2.46*Math.exp(-index*.49),.28-index*.69);
+    });
   }
-  if(phase>=1.04&&phase<1.78){
+  if(ranged&&phase>=2.04&&phase<impactAt){
+    if(previousTurn!==turn){
+      previousTurn=turn;
+      shotStart.copy(from);shotStart.y+=attacker.muzzle;
+    }
+    const progress=(phase-2.04)/(impactAt-2.04);
     const orb=attacks[kind];
-    const progress=(phase-1.04)/.74;
-    shotEnd.copy(defender.position);shotEnd.y+=1.15;
-    orb.visible=true;orb.position.copy(shotStart).lerp(shotEnd,progress);
-    orb.position.y+=Math.sin(progress*Math.PI)*1.1;
-    orb.rotation.y=battleTime*14;
-    orb.scale.set(.76,.76,1.1+Math.sin(progress*Math.PI)*1.2);
-    orb.rotation.y=Math.atan2(dx,dz);
+    shotEnd.copy(to);shotEnd.y+=1.53;
+    orb.visible=true;
+    orb.position.copy(shotStart).lerp(shotEnd,progress);
+    orb.position.y+=Math.sin(progress*Math.PI)*.60;
+    orb.rotation.y=attacker.root.rotation.y;
+    orb.scale.set(.92,.92,1.8);
   }
-  if(phase>=1.78&&phase<2.60){
+  if(phase>=impactAt&&phase<impactAt+.82){
     if(previousImpact!==turn){
       previousImpact=turn;
-      shotEnd.copy(defender.position);shotEnd.y+=1.15;
+      impactLanded=ranged||distance<=attacker.range+.7;
+      if(!impactLanded)return;
+      defender.hit=1;
+      shotEnd.copy(to);shotEnd.y+=1.53;
       playBattleImpact(kind===1);
     }
-    const age=phase-1.78,opacity=1-age/.82;
-    sparkMaterial.color.set(impactColors[kind]);
+    if(!impactLanded)return;
+    const age=phase-impactAt,opacity=1-age/.82;
+    sparkMaterial.color.set(impactColor);
     sparkMaterial.opacity=opacity;
     for(let index=0;index<36;index++){
       const azimuth=index*2.39996;
@@ -5399,10 +5468,10 @@ function updateBattle(dt){
     battleSparks.visible=impactRing.visible=true;
     impactRing.position.set(shotEnd.x,5.055,shotEnd.z);
     impactRing.scale.setScalar(.6+age*9);
-    ringMaterial.color.set(impactColors[kind]);
+    ringMaterial.color.set(impactColor);
     ringMaterial.opacity=opacity*.75;
     battleFlash.visible=age<.24;
-    battleFlash.color.set(impactColors[kind]);
+    battleFlash.color.set(impactColor);
     battleFlash.position.copy(shotEnd);
     battleFlash.intensity=22*Math.max(0,1-age/.24);
   }
@@ -5735,7 +5804,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V127';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V128';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

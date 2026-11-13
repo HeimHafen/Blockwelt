@@ -209,3 +209,7 @@ Hinter dem Rückportal liegt eine etwa 50 × 60 Blöcke große Arena. Glurak und
 ## V127 – Arenakampf
 
 Glurak und Gengar gehen aufeinander zu, weichen aus und reagieren auf Treffer. Feuer und Schatten erzeugen Funken, Bodenwellen und kurze, distanzabhängige Impactsounds.
+
+## V128 – Kampf zu viert
+
+Onix und Stahlos treten gegen Glurak und Gengar an. Die Kämpfer wechseln ihre Ziele, verkürzen die Distanz und reagieren auf Treffer. Feuerbälle und Schattenkugeln treffen aus der Distanz, während Onix und Stahlos im Nahkampf angreifen.
