@@ -1,4 +1,4 @@
-# Blockwelt V83 – Schloss Nachtrabe
+# Blockwelt V84 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -45,3 +45,7 @@ Die Öffnung unter der Falltür hat freie Kopfhöhe. Eine halbe Stufe verbindet 
 ## V83 – Treppenreparatur
 
 Beim ersten Laden wird der Treppenschacht lokal wiederhergestellt. Beim Betreten der offenen Falltür endet der Flugmodus. Die Fackeln sitzen paarweise an gemauerten Wänden.
+
+## V84 – Treppenabstieg
+
+Beim Hinuntergehen folgt die Spielfigur den Trittstufen direkt.

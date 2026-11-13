@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=83';
-// BLOCKWELT V83 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=84';
+// BLOCKWELT V84 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -2613,7 +2613,19 @@ function updateMovement(dt){
   const dx=(Math.cos(yaw)*x-Math.sin(yaw)*f)*speed;
   const dz=(-Math.sin(yaw)*x-Math.cos(yaw)*f)*speed;
   const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.12));
-  for(let i=0;i<steps;i++){horizontal('x',dx/steps);horizontal('z',dz/steps);}
+  for(let i=0;i<steps;i++){
+    const previousZ=player.z;
+    horizontal('x',dx/steps);
+    horizontal('z',dz/steps);
+    // Follow the next tread before forward momentum reaches the low roof.
+    if(!flying&&isMeadow()&&player.grounded&&player.vy<=0&&player.z<previousZ&&
+      player.x>=18.25&&player.x<=20.75&&player.z>=-10&&player.z<1&&
+      player.y<=5.08&&(bunkerHatchOpen||player.z<=-3.25)){
+      for(let drop=0;drop<.60&&!blocked(player.x,player.y-.04,player.z);drop+=.04)
+        player.y-=.04;
+      player.grounded=groundedAt(player.x,player.y,player.z);
+    }
+  }
   if(flying){
     const ascend=jumpHeld||keys.has('Space')||keys.has('KeyE');
     const descend=descendHeld||keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('KeyQ');
@@ -4584,7 +4596,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V83';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V84';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
