@@ -1,4 +1,4 @@
-// BLOCKWELT V47 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V48 — Schloss Nachtrabe bei Mondschein.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -482,15 +482,16 @@ const reliefColors={
   grass:[65,81,49],cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
 };
 function reliefMaterial(type,face){
-  const size=128,wood=type==='wood'||type==='planks';
+  const size=256,wood=type==='wood'||type==='planks';
   const color=document.createElement('canvas'),height=document.createElement('canvas');
   color.width=color.height=height.width=height.height=size;
   const colorContext=color.getContext('2d'),heightContext=height.getContext('2d');
   const pixels=colorContext.createImageData(size,size),heights=heightContext.createImageData(size,size);
   const base=reliefColors[type],grass=type==='grass';
-  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  for(let py=0;py<size;py++)for(let px=0;px<size;px++){
+    const x=px/2,y=py/2;
     const row=Math.floor(y/32),u=(x+(row%2)*32)%64,v=y%32;
-    const grain=pixelHash(x,y,63),coarse=pixelHash(x>>2,y>>2,42);
+    const grain=pixelHash(px,py,63),coarse=pixelHash(x>>2,y>>2,42);
     const edge=wood?Math.min(x%32,31-x%32):Math.min(u,63-u,v,31-v);
     const chip=(pixelHash(x>>2,y>>2,82)-.5)*2.8;
     const surface=grass?1:Math.max(0,Math.min(1,(edge+chip)/3));
@@ -499,11 +500,13 @@ function reliefMaterial(type,face){
     const weather=wood?0:Math.sin(x*.075+y*.09)*5+Math.cos(x*.14-y*.12)*4;
     const stain=Math.sin(x*.052+y*.064)*Math.cos(y*.083-x*.039);
     const mineral=wood||grass?0:Math.max(0,Math.sin(x*.27+y*.19+coarse*2)-.65)*20;
-    const shade=pattern+(grain-.5)*20+(coarse-.5)*24+weather+stain*12+mineral;
-    const i=(y*size+x)*4;
+    const fracture=wood||grass?0:Math.exp(-Math.abs(u-18-v*.39-Math.sin(v*.71)*2)*2)*pixelHash(row,Math.floor(x/64),137);
+    const moss=wood?0:Math.max(0,stain-.46)*(grass?31:17);
+    const shade=pattern+(grain-.5)*14+(coarse-.5)*20+weather+stain*12+mineral-fracture*26;
+    const i=(py*size+px)*4;
     for(let channel=0;channel<3;channel++){
-      pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade;
-      heights.data[i+channel]=38+surface*168+(grain-.5)*27+pattern;
+      pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade+moss*[-.7,.8,-.9][channel];
+      heights.data[i+channel]=38+surface*168+(grain-.5)*27+pattern-fracture*28;
     }
     pixels.data[i+3]=heights.data[i+3]=255;
   }
@@ -1892,12 +1895,12 @@ function rebuildNetherFarView(cx,cz,radius){
         const nx=x+face.d[0],ny=y+face.d[1],nz=z+face.d[2];
         const nk=key(nx,ny,nz),neighbor=edits.has(nk)?edits.get(nk)[3]:all.get(nk);
         if(neighbor)continue;
-        const c=tile?new THREE.Color().setScalar(face.shade*.58):base.clone().multiplyScalar(face.shade);
+        const c=tile?new THREE.Color().setScalar(face.shade*.92):base.clone().multiplyScalar(face.shade);
         const [tx,ty]=tile??[0,384];
         for(const j of order){
           const v=face.v[j];vertices.push(x+v[0],y+v[1],z+v[2]);
           colors.push(c.r,c.g,c.b);
-          uvs.push((tx+(j>=2?125:3))/512,1-(ty+(j===1||j===2?3:125))/512);
+          uvs.push((tx+((j===1||j===2)?125:3))/512,1-(ty+(j>=2?3:125))/512);
         }
       }
     }
@@ -2631,15 +2634,24 @@ for(let i=0;i<12;i++){
 }
 
 // Procedural three-tone sky: a single inexpensive sphere, no remote image assets.
-function skyGradient(high,mid,low){
-  const c=document.createElement('canvas');c.width=16;c.height=256;
+function skyGradient(high,mid,low,clouded=false){
+  const c=document.createElement('canvas');c.width=clouded?512:16;c.height=256;
   const ctx=c.getContext('2d'),g=ctx.createLinearGradient(0,0,0,256);
   g.addColorStop(0,high);g.addColorStop(.56,mid);g.addColorStop(1,low);
-  ctx.fillStyle=g;ctx.fillRect(0,0,16,256);
+  ctx.fillStyle=g;ctx.fillRect(0,0,c.width,256);
+  if(clouded){
+    for(let y=29;y<155;y++)for(let x=0;x<c.width;x++){
+      const a=x*Math.PI*2/c.width;
+      const band=Math.sin(y*.18+Math.sin(a*3)*1.9)+.5*Math.cos(y*.42+a*7);
+      const shape=Math.sin(a*9+y*.039)*.44+Math.cos(a*19-y*.025)*.22+band*.58;
+      const opacity=Math.max(0,shape-.39)*Math.sin((y-29)*Math.PI/126)*.53;
+      if(opacity>.02){ctx.fillStyle='rgba(20,28,54,'+opacity+')';ctx.fillRect(x,y,1,1);}
+    }
+  }
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
   tex.magFilter=THREE.LinearFilter;return tex;
 }
-const moonlitSky=skyGradient('#303861','#696e9c','#a19ab0');
+const moonlitSky=skyGradient('#141f40','#53688c','#bba0a2',true);
 const skyTextures=[
   skyGradient('#65aff0','#b6ddf5','#e5f5e6'),
   skyGradient('#627bad','#f3bd96','#ffe0ab'),
@@ -3444,8 +3456,8 @@ for(let z=-79;z<=-62;z+=4)for(const x of [-12,12])
   castleLampSites.push([x,8,z+1,'lantern']);
 // Fixed lighting zones keep the architecture lit regardless of player distance.
 const castleLightZones=[
-  [-10,7,-20,19], [10,7,-28,19], [0,15,-33,19],
-  [-10,8,-65,17], [10,8,-75,17],
+  [-5,7,-12,15], [5,7,-12,15], [-5,7,-27,17], [5,7,-27,17], [0,15,-33,19],
+  [-10,8,-65,17], [10,8,-75,17], [0,10,-81,18],
   [-28,8,-69,16]
 ].map(([x,y,z,range])=>{
   const light=new THREE.PointLight('#ffab65',0,range,2);
@@ -3494,9 +3506,9 @@ scene.add(lanternFrames);
 const ridgeGeometry=new THREE.BufferGeometry();
 const ridgeVertices=[],ridgeColors=[];
 for(let layer=0;layer<3;layer++){
-  const radius=147+layer*24;
-  const tone=new THREE.Color(['#354858','#46536b','#59617e'][layer]);
-  const height=i=>6+layer*7+Math.sin(i*.25+layer)*6+pixelHash(i%120,layer,91)*4;
+  const radius=142+layer*23;
+  const tone=new THREE.Color(['#233b42','#344857','#485971'][layer]);
+  const height=i=>6+layer*7+Math.sin(i*.25+layer)*6+pixelHash(i%120,layer,91)*2.7;
   for(let i=0;i<120;i++){
     const a=i*Math.PI/60,b=(i+1)*Math.PI/60;
     const ax=Math.cos(a)*radius,az=Math.sin(a)*radius-28;
@@ -3512,9 +3524,39 @@ const castleRidges=new THREE.Mesh(ridgeGeometry,new THREE.MeshBasicMaterial({
 }));
 scene.add(castleRidges);
 
+// The valley beyond the building grid uses three instanced tree silhouettes.
+const valleyTreeCount=570;
+const valleyTrees=new THREE.InstancedMesh(
+  new THREE.ConeGeometry(1,1,7),
+  new THREE.MeshBasicMaterial({fog:false}),
+  valleyTreeCount*3
+);
+const valleyTreeTransform=new THREE.Object3D();
+const valleyTreeColor=new THREE.Color();
+for(let i=0;i<valleyTreeCount;i++){
+  const angle=i*2.399963;
+  const radius=137+pixelHash(i,0,43)*35;
+  const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius-28;
+  const treeHeight=3+pixelHash(i,2,71)*5.8;
+  const width=treeHeight*(.19+pixelHash(i,3,71)*.10);
+  const base=3+Math.sin(angle*4)*2+pixelHash(i,4,43)*1.7;
+  for(let tier=0;tier<3;tier++){
+    valleyTreeTransform.position.set(x,base+treeHeight*(.33+tier*.23),z);
+    valleyTreeTransform.rotation.y=angle;
+    valleyTreeTransform.scale.set(width*(1-tier*.23),treeHeight*.59,width*(1-tier*.23));
+    valleyTreeTransform.updateMatrix();
+    const index=i*3+tier;
+    valleyTrees.setMatrixAt(index,valleyTreeTransform.matrix);
+    valleyTreeColor.set(radius<151?'#263c42':'#3a4b56').multiplyScalar(.85+tier*.11+pixelHash(i,5,43)*.24);
+    valleyTrees.setColorAt(index,valleyTreeColor);
+  }
+}
+scene.add(valleyTrees);
+
 let castleLightCell='';
 function updateCastleLighting(){
-  castleRidges.visible=castleMoonlight();
+  castleRidges.visible=isMeadow();
+  valleyTrees.visible=isMeadow();
   lanternFrames.visible=isMeadow()&&graphicMode==='schoen';
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
   if(castleMist.visible)for(const sheet of castleMist.children)
@@ -3838,7 +3880,7 @@ function applyLighting(){
 }
 function applyView(){
   const fogFar=isMeadow()?(farView?245:178):(farView?(MOBILE?178:220):(MOBILE?114:145));
-  scene.fog.near=castleMoonlight()?42:isMeadow()?(farView?127:81):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
+  scene.fog.near=castleMoonlight()?56:isMeadow()?(farView?127:81):(farView?76:51);scene.fog.far=lightMode===2?fogFar*.88:fogFar;
   camera.far=fogFar+20;camera.updateProjectionMatrix();
   $('viewBtn').textContent=farView?'🏔️ Sichtweite: Weit':'🌿 Sichtweite: Normal';
   $('viewBtn').setAttribute('aria-pressed',String(farView));
@@ -4104,10 +4146,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V47 – Nachtrabe im Laternenlicht':'Legendenwelt · V47';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V48 – Nachtrabe bei Mondschein':'Legendenwelt · V48';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V47 · Schloss Nachtrabe':'Blockwelt V47 · Legendenwelt';
+  document.title=meadow?'Blockwelt V48 · Schloss Nachtrabe':'Blockwelt V48 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4237,7 +4279,7 @@ function animate(now){
   let near=0;if(!isMeadow())for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
   const shadowRange=Math.hypot(player.x-RUIN.x,player.z-RUIN.z);
   const mystery=isMeadow()?0:Math.max(0,Math.min(1,(34-shadowRange)/22));
-  const baseFog=castleMoonlight()?'#777e9d':lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
+  const baseFog=castleMoonlight()?'#566982':lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6';
   scene.fog.color.set(baseFog).lerp(shadowFogColor,mystery*.4);
   villageGlow.intensity=near?(lightMode===2?1.8:.55):0;
   const inSunVillage=!isMeadow()&&Math.hypot(player.x-VILLAGES[0].x,player.z-VILLAGES[0].z)<25;
