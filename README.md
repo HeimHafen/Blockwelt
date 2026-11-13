@@ -1,4 +1,4 @@
-# Blockwelt V93 – Schloss Nachtrabe
+# Blockwelt V95 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -85,3 +85,11 @@ Runde Ecktürmchen mit Schieferhauben, Steinabdeckungen und Konsolen an der Torf
 ## V93 – Burganlage
 
 Steinabdeckungen an den seitlichen und rückwärtigen Ringmauern, profilierte Fensterrahmen an der Großen Halle, sichtbare Eichenbalken in den Seitenflügeln und Steinbänke im Innenhof.
+
+## V94 – Torfront
+
+Ein segmentierter Torbogen mit einzelnen abgeschrägten Keilsteinen, geneigte Abdeckungen auf den Strebepfeilern und Metallsprossen in den tiefen Turmfenstern.
+
+## V95 – Bunkerraum
+
+Fässer mit Eisenreifen, eine eingefasste Feuerstelle und eine Tischlaterne mit Buch ergänzen die Einrichtung.

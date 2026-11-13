@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=93';
-// BLOCKWELT V93 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=95';
+// BLOCKWELT V95 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3496,17 +3496,40 @@ for(const side of [-1,1]){
   for(let y=5;y<11;y++){
     facadePart([x,y,-34],'netherBrick',.68,.96,.36,gateStone,x+.5,y+.5,-33.87);
   }
-  for(let i=0;i<6;i++){
-    const angle=(i+.5)*Math.PI/12;
-    const px=.5+side*3.46*Math.cos(angle);
-    const py=11.02+1.54*Math.sin(angle);
-    const block=facadePart([Math.floor(px),11,-35],'netherBrick',
-      .63,.43,.43,gateStone,px,py,-33.82);
-    block.rotation.z=side*Math.atan2(1.54*Math.cos(angle),-3.46*Math.sin(angle));
-  }
+}
+const archCenter=.5;
+const archSpring=10.98;
+for(let i=0;i<17;i++){
+  const shape=new THREE.Shape();
+  const start=i*Math.PI/17+.006,end=(i+1)*Math.PI/17-.006;
+  const point=(angle,width,height)=>[archCenter+width*Math.cos(angle),archSpring+height*Math.sin(angle)];
+  shape.moveTo(...point(start,3.50,1.12));
+  shape.lineTo(...point(end,3.50,1.12));
+  shape.lineTo(...point(end,3.92,1.78));
+  shape.lineTo(...point(start,3.92,1.78));
+  shape.closePath();
+  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.45,bevelEnabled:true,
+    bevelSize:.026,bevelThickness:.024,bevelSegments:1,steps:1});
+  const stone=new THREE.Mesh(geometry,gateStone);
+  stone.position.z=-34.02+(i===8?.09:0);
+  stone.userData.site=[Math.floor(point((start+end)/2,3.5,1.12)[0]),11,-35];
+  stone.userData.type='netherBrick';
+  gateMolding.add(stone);
 }
 
-facadePart([0,12,-35],"netherBrick",.46,.62,.53,gateStone,.5,12.62,-34.02);
+// Sloped masonry caps cast a distinct edge above the front buttresses.
+for(const x of [-33,-26,-19,19,26,33]){
+  for(const [y,z,depth] of [[8.03,-32.52,1.06],[11.03,-33.51,1.03]]){
+    const cap=facadePart([x,Math.floor(y)-1,Math.floor(z)],'netherBrick',
+      3.13,.15,depth,gateStone,x+.5,y,z);
+    cap.rotation.x=.16;
+  }
+}
+for(const x of towerWindows){
+  const site=[x,11,-35];
+  for(const y of [10.7,11.65,12.55])
+    facadePart(site,'glass',.98,.058,.105,roofStone,x+.5,y,-34.82);
+}
 
 // Each roof strip follows the slope above the matching editable roof course.
 for(const [a,b] of [[-12,-4],[4,12]]){
@@ -3947,6 +3970,43 @@ for(const z of [-19.22,-19.62,-20.02]){
   bunkerProp(oakDoor,23.86,-3.88,z,.41,.11,.31);
   bunkerProp(doorIron,23.67,-3.8,z,.075,.10,.21);
 }
+// Furnish the wall recesses and existing surfaces without narrowing the aisle.
+const barrelWood=oakDoor;
+const barrelBody=new THREE.CylinderGeometry(.34,.30,.73,12);
+const barrelHoop=new THREE.CylinderGeometry(.346,.346,.045,12,1,true);
+for(const z of [-12.55,-13.38]){
+  const barrel=new THREE.Mesh(barrelBody,barrelWood);
+  barrel.position.set(14.66,-4.635,z);
+  bunkerFurnishings.add(barrel);
+  for(const [y,radius] of [[-.24,.92],[.24,.99]]){
+    const hoop=new THREE.Mesh(barrelHoop,doorIron);
+    hoop.position.set(14.66,-4.635+y,z);
+    hoop.scale.set(radius,1,radius);
+    bunkerFurnishings.add(hoop);
+  }
+  for(const offset of [-.12,.12])
+    bunkerProp(doorIron,14.66+offset,-4.267,z,.018,.012,.57);
+}
+// A dressed stone fireplace surrounds the existing ember opening.
+for(const z of [-14.44,-13.56])
+  bunkerProp(gateStone,23.49,-4.57,z,.22,.83,.18);
+bunkerProp(gateStone,23.94,-4.075,-14,1.24,.19,1.25);
+bunkerProp(gateStone,23.35,-4.932,-14,.40,.13,1.25);
+for(const z of [-14.29,-13.71])
+  bunkerProp(doorIron,23.46,-4.48,z,.055,.34,.055);
+bunkerProp(doorIron,23.46,-4.43,-14,.045,.048,.66);
+
+// A reading lamp and a closed book sit beside the map on the oak table.
+const bookCover=new THREE.MeshStandardMaterial({color:'#493b26',roughness:.89});
+bunkerProp(bunkerLinen,18.36,-3.91,-17.28,.25,.055,.33);
+for(const y of [-3.943,-3.878])
+  bunkerProp(bookCover,18.36,y,-17.28,.28,.018,.36);
+const lampZ=-16.64;
+bunkerProp(doorIron,19.66,-3.90,lampZ,.21,.07,.21);
+bunkerProp(materialByType.lantern[0],19.66,-3.77,lampZ,.13,.19,.13);
+for(const dx of [-.082,.082])for(const dz of [-.082,.082])
+  bunkerProp(doorIron,19.66+dx,-3.77,lampZ+dz,.019,.22,.019);
+bunkerProp(doorIron,19.66,-3.65,lampZ,.21,.046,.21);
 scene.add(bunkerFurnishings);
 
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
@@ -4681,7 +4741,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V93';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V95';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
