@@ -133,3 +133,7 @@ Holzschilder markieren die vier Kellerräume. Flache gemauerte Rippen gliedern i
 ## V105 – Flüssigeres Spiel
 
 Die Mondnacht zeigt keine Sternpunkte. Auf Mobilgeräten sinkt der Renderaufwand durch weniger gleichzeitig dargestellte Weltabschnitte und eine niedrigere interne Auflösung. Statische Kellerdetails werden nach Material gebündelt und entfernte Punktlichter beim Rendern ausgelassen.
+
+## V106 – Weniger Renderaufwand bei schöner Grafik
+
+Weltabschnitte zeichnen nur freiliegende Blockflächen. Diese werden je Material in einer Geometrie zusammengefasst. Texturen, Blockschattierung und die Einstellung „Schön“ bleiben erhalten.

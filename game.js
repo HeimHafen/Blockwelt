@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=105';
-// BLOCKWELT V105 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=106';
+// BLOCKWELT V106 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -433,6 +433,9 @@ const waterTopMaterial=new THREE.MeshPhongMaterial({map:waterSurfaceMap,color:'#
 const waterWallMaterial=new THREE.MeshLambertMaterial({map:waterSurfaceMap,color:'#c5ecf8',transparent:true,opacity:.73,depthWrite:false,side:THREE.DoubleSide});
 
 const blockGeo=new THREE.BoxGeometry(1,1,1);
+const blockFaceOffsets=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+const chunkSurfaceMaterials=new Map();
+
 const key=(x,y,z)=>`${x},${y},${z}`;
 const get=(x,y,z)=>blocks.get(key(x,y,z));
 function put(x,y,z,type){const k=key(x,y,z);if(type)blocks.set(k,type);else blocks.delete(k);}
@@ -1689,7 +1692,11 @@ function generateChunkData(cx,cz){
   generatedChunks.add(chunkKey(cx,cz));
 }
 function disposeChunkMesh(id){
-  for(const mesh of chunkMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
+  for(const mesh of chunkMeshes.get(id)||[]){
+    scene.remove(mesh);
+    if(mesh.isInstancedMesh)mesh.dispose();
+    else mesh.geometry.dispose();
+  }
   chunkMeshes.delete(id);
   for(const mesh of decorativeMeshes.get(id)||[]){scene.remove(mesh);mesh.dispose();}
   decorativeMeshes.delete(id);
@@ -2007,14 +2014,11 @@ function saveEdits(){
 // Chunked instanced rendering avoids reconstructing the entire world after each tap.
 const dummy=new THREE.Object3D();
 const chunkKey=(cx,cz)=>`${cx},${cz}`;
-function visible(x,y,z){
-  return !get(x+1,y,z)||!get(x-1,y,z)||!get(x,y+1,z)||!get(x,y-1,z)||!get(x,y,z+1)||!get(x,y,z-1);
-}
 function rebuildChunk(cx,cz){
   if(cx<-HALF/CHUNK||cx>=HALF/CHUNK||cz<-HALF/CHUNK||cz>=HALF/CHUNK)return;
   const id=chunkKey(cx,cz);
   disposeChunkMesh(id);
-  const byType=Object.fromEntries(BLOCK_TYPES.map(t=>[t,[]]));
+  const surfaces=new Map();
   const waterFaces={top:[],left:[],right:[],front:[],back:[]};
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
     for(let y=BUNKER_FLOOR;y<=MAX_Y+8;y++){
@@ -2028,22 +2032,20 @@ function rebuildChunk(cx,cz){
         if(air(x+1,y,z))waterFaces.right.push([x,y,z]);
         if(air(x,y,z-1))waterFaces.front.push([x,y,z]);
         if(air(x,y,z+1))waterFaces.back.push([x,y,z]);
-      }else if(visible(x,y,z))byType[type].push([x,y,z]);
-    }
-  }
-  const chunk=[];
-  function addInstanced(type,positions){
-    if(!positions.length)return;
-    const fortressStone=type.startsWith('nether');
-    const mesh=new THREE.InstancedMesh(blockGeo,materialByType[type],positions.length);
-    mesh.userData.positions=positions;
-    for(let i=0;i<positions.length;i++){
-      const [x,y,z]=positions[i];
-      dummy.position.set(x+.5,y+.5,z+.5);
-      dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
-      mesh.setMatrixAt(i,dummy.matrix);
+        continue;
+      }
+
       // Cheap voxel AO: shadow the base of walls and sheltered nooks without GPU shadow maps.
       // This is evaluated only when a chunk is built, not every render frame.
+      let faceMask=0;
+      for(let face=0;face<6;face++){
+        const [dx,dy,dz]=blockFaceOffsets[face];
+        const neighbor=get(x+dx,y+dy,z+dz);
+        if(!neighbor||neighbor==='water'||(neighbor==='glass'&&type!=='glass'))
+          faceMask|=1<<face;
+      }
+      if(!faceMask)continue;
+      const fortressStone=type.startsWith('nether');
       const variation=.95+pixelHash(x,z,y+811)*.10;
       const overhead=!!get(x,y+1,z);
       const closeWalls=Number(!!get(x-1,y,z))+Number(!!get(x+1,y,z))+
@@ -2051,14 +2053,47 @@ function rebuildChunk(cx,cz){
       const shade=fortressStone
         ? Math.max(.88,variation*(overhead?.98:1)*(1-Math.min(3,closeWalls)*.017))
         : Math.max(.67,variation*(overhead?.88:1)*(1-Math.min(3,closeWalls)*.037));
-      mesh.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));
+      for(let face=0;face<6;face++){
+        const [dx,dy,dz]=blockFaceOffsets[face];
+        if(!(faceMask&(1<<face)))continue;
+        const material=materialByType[type][face];
+        let surface=surfaces.get(material);
+        if(!surface){
+          surface={positions:[],normals:[],uvs:[],colors:[],indices:[],glass:type==='glass'};
+          surfaces.set(material,surface);
+        }
+        const base=surface.positions.length/3;
+        const position=blockGeo.attributes.position;
+        const uv=blockGeo.attributes.uv;
+        for(let vertex=face*4;vertex<face*4+4;vertex++){
+          surface.positions.push(x+.5+position.getX(vertex),y+.5+position.getY(vertex),z+.5+position.getZ(vertex));
+          surface.normals.push(dx,dy,dz);
+          surface.uvs.push(uv.getX(vertex),uv.getY(vertex));
+          surface.colors.push(shade,shade,shade);
+        }
+        for(let index=face*6;index<face*6+6;index++)
+          surface.indices.push(base+blockGeo.index.getX(index)-face*4);
+      }
     }
-    mesh.instanceColor.needsUpdate=true;
-    if(type==='glass')mesh.renderOrder=2;
-    mesh.instanceMatrix.needsUpdate=true;
-    mesh.computeBoundingSphere();scene.add(mesh);chunk.push(mesh);
   }
-  for(const type of BLOCK_TYPES)if(type!=='water')addInstanced(type,byType[type]);
+  const chunk=[];
+  for(const [material,surface] of surfaces){
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(surface.positions,3));
+    geometry.setAttribute('normal',new THREE.Float32BufferAttribute(surface.normals,3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(surface.uvs,2));
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(surface.colors,3));
+    geometry.setIndex(surface.indices);
+    if(!chunkSurfaceMaterials.has(material)){
+      const shaded=material.clone();
+      shaded.vertexColors=true;
+      chunkSurfaceMaterials.set(material,shaded);
+    }
+    const mesh=new THREE.Mesh(geometry,chunkSurfaceMaterials.get(material));
+    if(surface.glass)mesh.renderOrder=2;
+    scene.add(mesh);
+    chunk.push(mesh);
+  }
   function waterSurface(positions,geometry,material,side){
     if(!positions.length)return;
     const mesh=new THREE.InstancedMesh(geometry,material,positions.length);
@@ -5053,7 +5088,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V105';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V106';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
