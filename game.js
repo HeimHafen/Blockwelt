@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V136 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V137 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -310,7 +310,7 @@ function texture(type,face){
 // Each texture pair describes the same surface. Relief changes lighting only;
 // the block grid still owns collision, selection and saved edits.
 const reliefColors={
-  netherBrick:[114,108,96],netherDeep:[71,77,82],netherTrim:[139,127,108],
+  netherBrick:[145,137,120],netherDeep:[82,89,98],netherTrim:[164,151,129],
   grass:[65,81,49],cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
 };
 // World-space patina stays continuous across adjacent editable blocks.
@@ -364,10 +364,10 @@ function reliefMaterial(type,face){
     const mineral=wood||grass?0:Math.max(0,Math.sin(x*.27+y*.19+coarse*2)-.65)*20;
     const fracture=wood||grass?0:Math.exp(-Math.abs(u-18-v*.39-Math.sin(v*.71)*2)*2)*pixelHash(row,Math.floor(x/64),137);
     const moss=wood?0:Math.max(0,stain-.46)*(grass?31:17);
-    const shade=pattern+(grain-.5)*14+(coarse-.5)*20+weather+stain*12+mineral-fracture*26;
+    const shade=pattern+(grain-.5)*7+(coarse-.5)*13+weather+stain*12+mineral-fracture*26;
     const i=(py*size+px)*4;
     for(let channel=0;channel<3;channel++){
-      pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade+moss*[-.7,.8,-.9][channel];
+      pixels.data[i+channel]=base[channel]*(.66+.34*surface)+shade+moss*[-.7,.8,-.9][channel];
       heights.data[i+channel]=38+surface*168+(grain-.5)*27+pattern-fracture*28;
     }
     pixels.data[i+3]=heights.data[i+3]=255;
@@ -417,7 +417,17 @@ for(const type of BLOCK_TYPES){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.72,depthWrite:false});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='glass'){
-    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.78,depthWrite:false});
+    const mat=new THREE.MeshPhysicalMaterial({
+      color:0x8baebb,roughness:.24,metalness:.08,clearcoat:.55,
+      transparent:true,opacity:.55,depthWrite:false
+    });
+    // Keep the atlas input available for distant terrain.
+    mat.map=new THREE.CanvasTexture(Object.assign(document.createElement('canvas'),{width:2,height:2}));
+    const glassContext=mat.map.image.getContext('2d');
+    glassContext.fillStyle='#dbeaf0';
+    glassContext.fillRect(0,0,2,2);
+    mat.map.colorSpace=THREE.SRGBColorSpace;
+    mat.map.needsUpdate=true;
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else materialByType[type]=[side,side,top,bottom,side,side];
 }
@@ -3867,8 +3877,6 @@ for(const z of [-42,-40,-37]){
   }
 }
 // Carved limestone surrounds and planted forecourt for Schloss Nachtrabe.
-const forecourt=new THREE.Group();
-scene.add(forecourt);
 const limestone=new THREE.MeshStandardMaterial({color:0xbab09a,roughness:.88});
 const darkIron=new THREE.MeshStandardMaterial({color:0x34363b,roughness:.48,metalness:.48});
 const bronze=new THREE.MeshStandardMaterial({color:0x9d723f,roughness:.44,metalness:.46});
@@ -3902,27 +3910,6 @@ for(const side of [-1,1]){
   ring.userData.type='netherBrick';
   gateMolding.add(ring);
 }
-const foliage=new THREE.IcosahedronGeometry(1,1);
-const leavesMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1});
-const shrubs=new THREE.InstancedMesh(foliage,leavesMaterial,48);
-const shrubPose=new THREE.Object3D();
-const shrubColor=new THREE.Color();
-let shrubIndex=0;
-for(const side of [-1,1])for(const z of [-25,-16,-7,2]){
-  const x=.5+side*7.4;
-  part(forecourt,2.34,.48,1.60,gateStone,x,5.24,z);
-  part(forecourt,2.46,.13,1.69,limestone,x,5.50,z);
-  for(let i=0;i<6;i++){
-    shrubPose.position.set(x+(i%3-1)*.58,5.66+.16*(i%2),z+(i<3?-.23:.23));
-    shrubPose.rotation.set(i*.55,i*1.42,0);
-    shrubPose.scale.set(.52,.53,.47);
-    shrubPose.updateMatrix();
-    shrubs.setMatrixAt(shrubIndex,shrubPose.matrix);
-    shrubs.setColorAt(shrubIndex++,shrubColor.set(i%2?0x3e6334:0x597743));
-  }
-}
-forecourt.add(shrubs);
-
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4965,7 +4952,6 @@ function updateCastleLighting(){
   castleRidges.visible=isMeadow();
   wingWindowDetails.visible=isMeadow();
   gateMolding.visible=isMeadow();
-  forecourt.visible=isMeadow()&&Math.hypot(player.x,player.z+14)<110;
   valleyTrees.visible=isMeadow();
   lanternFrames.visible=isMeadow();
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
@@ -5955,11 +5941,11 @@ function applyLighting(){
   const options=[
     {sky:'#d4e8ee',sun:'#fff5e1',power:2.12,hemi:1.31,exposure:1.08,label:'☀ Tag · Hell'},
     {sky:'#dfae8c',sun:'#ffd09a',power:1.95,hemi:1.14,exposure:1.04,label:'🌅 Goldene Stunde'},
-    {sky:'#1d3551',sun:'#9bb7df',power:.55,hemi:.76,exposure:1.02,label:'☾ Mondnacht'}
+    {sky:'#1d3551',sun:'#9bb7df',power:.68,hemi:1.04,exposure:1.07,label:'☾ Mondnacht'}
   ];
   const moonlit=castleMoonlight();
   const p=options[lightMode];
-  outdoorLanternGain=[.38,.72,1][lightMode];
+  outdoorLanternGain=[.38,.66,.79][lightMode];
   castleLightCell=null;
   const direction=[[-44,68,37],[-73,25,36],[38,53,-48]][lightMode];
   sunlight.position.set(...direction);
@@ -6249,7 +6235,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V136';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V137';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
