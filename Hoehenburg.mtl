@@ -1,0 +1,45 @@
+newmtl stone
+Kd 0.48 0.43 0.37
+Ks .08 .08 .08
+Ns 12
+
+newmtl darkStone
+Kd 0.31 0.29 0.26
+Ks .08 .08 .08
+Ns 12
+
+newmtl ashlar
+Kd 0.58 0.53 0.46
+Ks .08 .08 .08
+Ns 12
+
+newmtl rock
+Kd 0.35 0.36 0.3
+Ks .08 .08 .08
+Ns 12
+
+newmtl paving
+Kd 0.42 0.39 0.35
+Ks .08 .08 .08
+Ns 12
+
+newmtl slate
+Kd 0.18 0.23 0.26
+Ks .08 .08 .08
+Ns 12
+
+newmtl slateLight
+Kd 0.22 0.28 0.3
+Ks .08 .08 .08
+Ns 12
+
+newmtl oak
+Kd 0.33 0.21 0.12
+Ks .08 .08 .08
+Ns 12
+
+newmtl iron
+Kd 0.14 0.14 0.13
+Ks .08 .08 .08
+Ns 12
+
