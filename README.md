@@ -129,3 +129,7 @@ Drei Blöcke breite Läufe treffen auf drei Blöcke tiefe Wendepodeste. Die Läu
 ## V104 – Burgkeller
 
 Holzschilder markieren die vier Kellerräume. Flache gemauerte Rippen gliedern ihre Decken. Die Vorratskammer erhält Keramikgefäße auf einem Wandregal, das Fasslager Fassdeckel mit Spund, die Zisterne einen Zulauf und das Archiv beschriftete Schriftstücke.
+
+## V105 – Flüssigeres Spiel
+
+Die Mondnacht zeigt keine Sternpunkte. Auf Mobilgeräten sinkt der Renderaufwand durch weniger gleichzeitig dargestellte Weltabschnitte und eine niedrigere interne Auflösung. Statische Kellerdetails werden nach Material gebündelt und entfernte Punktlichter beim Rendern ausgelassen.

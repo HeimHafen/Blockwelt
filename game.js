@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=104';
-// BLOCKWELT V104 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=105';
+// BLOCKWELT V105 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -146,7 +146,7 @@ scene.fog = new THREE.Fog('#b1d9ed', MOBILE ? 62 : 70, MOBILE ? 170 : 190);
 const camera = new THREE.PerspectiveCamera(74, 1, .06, MOBILE ? 165 : 195);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({antialias:!MOBILE, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? (graphicMode==='schoen'?1.35:1.0) : (graphicMode==='schoen'?1.65:1.3)));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? (graphicMode==='schoen'?1.05:.8) : (graphicMode==='schoen'?1.65:1.3)));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
@@ -1782,9 +1782,7 @@ function rebuildNetherFarView(cx,cz,radius){
 
 function updateWorldStream(force=false){
   const cx=Math.floor(player.x/CHUNK),cz=Math.floor(player.z/CHUNK);
-  // Ein zusätzlicher Sicht-Chunk im schönen Grafikmodus zeigt die Burg bereits
-  // von der Wiese aus. Sparmodus behält den bewährten iPhone-Radius.
-  const radius=isMeadow()&&graphicMode==='schoen'?Math.max(STREAM_RADIUS,3):STREAM_RADIUS;
+  const radius=STREAM_RADIUS;
   const id=chunkKey(cx,cz)+'/'+radius;
   if(!force&&id===lastStreamCenter)return;
   lastStreamCenter=id;
@@ -1831,7 +1829,7 @@ function clearDistantLandscape(){
 }
 function rebuildDistantLandscape(cx,cz){
   clearDistantLandscape();
-  const radius=isMeadow()&&graphicMode==='schoen'?Math.max(STREAM_RADIUS,3):STREAM_RADIUS;
+  const radius=STREAM_RADIUS;
   const ring=farView?(MOBILE?6:7):4;
   const positions=[],colors=[];
   const step=2,trees=[];
@@ -2497,8 +2495,8 @@ function traceVoxel(origin,direction,maxDistance=5.6){
 // Generate a seamless sky once per lighting preset, outside the frame loop.
 function skyGradient(zenith,horizon,ground,cloudColor,cloudStrength){
   const canvas=document.createElement('canvas');
-  canvas.width=1024;
-  canvas.height=512;
+  canvas.width=MOBILE?512:1024;
+  canvas.height=MOBILE?256:512;
   const ctx=canvas.getContext('2d');
   const gradient=ctx.createLinearGradient(0,0,0,canvas.height);
   gradient.addColorStop(0,zenith);
@@ -2518,13 +2516,13 @@ function skyGradient(zenith,horizon,ground,cloudColor,cloudStrength){
     const hi=at(0,1)*(1-sx)+at(1,1)*sx;
     return lo*(1-sy)+hi*sy;
   }
-  for(let y=28;y<249;y++)for(let x=0;x<canvas.width;x++){
+  for(let y=Math.ceil(canvas.height*.055);y<canvas.height*.486;y++)for(let x=0;x<canvas.width;x++){
     const u=x/canvas.width,v=y/canvas.height;
     const density=(a,b)=>.59*noise(a,b,12)+.26*noise(a,b,28)
       +.10*noise(a,b,56)+.05*noise(a,b,112);
     const cloud=density(u,v);
     const alpha=Math.min(1,Math.max(0,(cloud-.49)*6))
-      *Math.sin((y-28)*Math.PI/221)**.65*cloudStrength;
+      *Math.sin((v-.055)*Math.PI/.433)**.65*cloudStrength;
     const shade=(cloud-density(u,v-.007))*230;
     const k=(y*canvas.width+x)*4;
     for(let channel=0;channel<3;channel++)
@@ -4285,6 +4283,29 @@ bunkerProp(doorIron,13.48,-2.81,-44.25,.14,.40,.14);
 for(const [x,z] of [[26.02,-45.93],[26.17,-46.04],[26.04,-46.15]])
   bunkerProp(bookCover,x,-3.933,z,.23,.006,.018);
 
+// Batch the static box props by material. The hatch, signs and lights stay independent.
+const cellarBoxes=new Map();
+for(const mesh of bunkerFurnishings.children){
+  if(!mesh.isMesh||mesh.geometry.type!=='BoxGeometry'||Array.isArray(mesh.material))continue;
+  const boxes=cellarBoxes.get(mesh.material)||[];
+  boxes.push(mesh);
+  cellarBoxes.set(mesh.material,boxes);
+}
+const cellarBoxGeometry=new THREE.BoxGeometry(1,1,1);
+const cellarTransform=new THREE.Object3D();
+for(const [material,boxes] of cellarBoxes){
+  const batch=new THREE.InstancedMesh(cellarBoxGeometry,material,boxes.length);
+  boxes.forEach((mesh,index)=>{
+    const {width,height,depth}=mesh.geometry.parameters;
+    cellarTransform.position.copy(mesh.position);
+    cellarTransform.quaternion.copy(mesh.quaternion);
+    cellarTransform.scale.set(width,height,depth);
+    cellarTransform.updateMatrix();
+    batch.setMatrixAt(index,cellarTransform.matrix);
+  });
+  bunkerFurnishings.remove(...boxes);
+  bunkerFurnishings.add(batch);
+}
 scene.add(bunkerFurnishings);
 
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
@@ -4413,6 +4434,7 @@ function updateMeadowTufts(){
   meadowTufts.computeBoundingSphere();
 }
 let castleLightCell='';
+const playerLightPosition=new THREE.Vector3();
 function updateCastleLighting(){
   updateMeadowTufts();
   castleRidges.visible=isMeadow();
@@ -4445,14 +4467,18 @@ function updateCastleLighting(){
   for(const stone of towerDressings.children)
     stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
   const meadow=isMeadow();
+  playerLightPosition.set(player.x,player.y+1,player.z);
   for(const {site:[x,y,z,type],light,power,torch} of [...fixedLanterns,...bunkerStairLights]){
-    light.intensity=meadow&&netherBlockAt(x,y,z)===type?power:0;
-    if(torch)torch.visible=light.intensity>0;
+    const mounted=meadow&&netherBlockAt(x,y,z)===type;
+    const distance=light.position.distanceTo(playerLightPosition);
+    light.visible=mounted&&distance<light.distance+5;
+    light.intensity=light.visible?power:0;
+    if(torch)torch.visible=mounted&&distance<22;
   }
   for(const {light,power,cellar} of bunkerRoomLights){
     const nearby=!cellar||(player.y<.5&&Math.hypot(player.x-light.position.x,player.z-light.position.z)<13);
     light.intensity=meadow&&nearby?power:0;
-    light.visible=!cellar||light.intensity>0;
+    light.visible=light.intensity>0&&light.position.distanceTo(playerLightPosition)<light.distance+5;
   }
 
   const nearbyEdits=meadow?[...edits.values()]
@@ -4461,6 +4487,7 @@ function updateCastleLighting(){
     .filter(({distance})=>distance<28).sort((a,b)=>a.distance-b.distance):[];
   editLanterns.forEach((light,i)=>{
     const source=nearbyEdits[i];
+    light.visible=Boolean(source);
     light.intensity=source?30:0;
     if(source){
       light.position.set(source.x+.5,source.y+.52,source.z+.5);
@@ -4734,7 +4761,7 @@ function applyLighting(){
   const options=[
     {sky:'#d4e8ee',sun:'#fff5e1',power:2.25,hemi:1.55,exposure:1.07,label:'☀ Tag · Hell'},
     {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
-    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
+    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Mondnacht'}
   ];
   const moonlit=castleMoonlight();
   const p=options[lightMode];
@@ -4755,7 +4782,6 @@ function applyLighting(){
   skyDome.material.map=skyTextures[lightMode];
   skyDome.material.needsUpdate=true;
   sunSprite.visible=!moonlit&&lightMode!==2;moonSprite.visible=moonlit||lightMode===2;
-  $('nightStars').classList.toggle('visible',lightMode===2);
   $('dayBtn').textContent='Himmel: '+p.label;
   applyView();
 }
@@ -4768,7 +4794,7 @@ function applyView(){
 }
 function applyGraphicMode(notify=false){
   const ratio=Math.min(window.devicePixelRatio||1, MOBILE?
-    (graphicMode==='schoen'?1.35:1.0):(graphicMode==='schoen'?1.65:1.25));
+    (graphicMode==='schoen'?1.05:.8):(graphicMode==='schoen'?1.65:1.25));
   renderer.setPixelRatio(ratio);
   resize();
   $('graphicsBtn').textContent=graphicMode==='schoen'?'✨ Grafik: Schön':'⚡ Grafik: Flüssig';
@@ -4796,7 +4822,7 @@ $('dayBtn').addEventListener('click',()=>{
   lightMode=(lightMode+1)%3;
   try{localStorage.setItem(LIGHT_MODE_KEY,String(lightMode));}catch{}
   applyLighting();
-  toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
+  toast(lightMode===2?'Der Mond ist aufgegangen!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
 });
 $('lookoutBtn')?.addEventListener('click',()=>{
   teleportTo(LOOKOUT.x+10,LOOKOUT.z+9,'Die Himmelswarte wartet auf dich!',LOOKOUT.x,LOOKOUT.z);
@@ -5027,7 +5053,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V104';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V105';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5143,7 +5169,7 @@ function animate(now){
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
-    if(!torch.visible)continue;
+    if(!torch.visible||!light.visible)continue;
     const flicker=Math.sin(now*.009+site[2]+site[0])*.07+Math.sin(now*.021+site[2])*.04;
     flame.scale.y=1+flicker;
     flame.rotation.z=flicker*1.4;

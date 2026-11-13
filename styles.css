@@ -48,8 +48,6 @@
 .topbar .identity small{color:#558072}
 .npc-button{position:fixed;z-index:5;top:calc(56% + 12px);left:50%;transform:translateX(-50%);border:1px solid #ffe9b2;background:rgba(255,245,211,.96);color:#375341;border-radius:14px;font-size:12px;font-weight:850;padding:9px 13px;box-shadow:0 4px 14px #1b3b2c55;opacity:0;pointer-events:none;transition:opacity .15s}
 .npc-button.visible{opacity:1;pointer-events:auto}
-.night-stars{display:none;position:fixed;inset:0;z-index:1;pointer-events:none;background-image:radial-gradient(1px 1px at 8% 20%,#fff 100%,transparent),radial-gradient(1.5px 1.5px at 72% 12%,#fff 100%,transparent),radial-gradient(1px 1px at 47% 9%,#fff 100%,transparent);opacity:.65}
-.night-stars.visible{display:block}
 .cube-glass{background:linear-gradient(140deg,#d8fcff,#79c6dc);border:2px solid #a3ecfa}
 .cube-gold{background:repeating-linear-gradient(45deg,#ffd96d 0 8px,#e8b545 8px 11px)}
 .cube-water{background:linear-gradient(140deg,#a5e4ed,#408fcf)}
@@ -85,7 +83,6 @@ html,body{touch-action:auto}
 .region-label{background:rgba(255,253,237,.92);border:1px solid rgba(255,255,250,.9);box-shadow:0 4px 16px #1b513d32}
 .slot.active{box-shadow:0 2px 10px #245a2e44}
 .option-btn:active{transform:scale(.985)}
-.night-stars{background-image:radial-gradient(1px 1px at 8% 20%,#fff 100%,transparent),radial-gradient(1.5px 1.5px at 72% 12%,#fff 100%,transparent),radial-gradient(1px 1px at 47% 9%,#fff 100%,transparent),radial-gradient(1px 1px at 84% 34%,#fff 100%,transparent),radial-gradient(1px 1px at 21% 44%,#fff 100%,transparent);}
 @media(max-height:740px){.dialog-main{padding:9px 14px}.menu-options{gap:4px}.option-btn{min-height:29px}}
 
 /* V7: Etwas präzisere HUD-Lesbarkeit, die Steuerpositionen bleiben unverändert. */
