@@ -1,4 +1,4 @@
-# Blockwelt V81 – Schloss Nachtrabe
+# Blockwelt V82 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -37,3 +37,7 @@ Die mittigen Glutsteine reichen bis zur Luke. Drei Fackelpaare sitzen jeweils au
 ## V81 – Getarnte Falltür
 
 Die Falltür liegt bündig im Rasen. Aus der Nähe direkt antippen, um sie zu öffnen oder zu schließen. Die Fackeln sitzen paarweise an beiden Treppenwänden und flackern dezent.
+
+## V82 – Begehbarer Bunker
+
+Die Öffnung unter der Falltür hat freie Kopfhöhe. Eine halbe Stufe verbindet die Wiese mit der Treppe. Unten verbindet ein Steinpodest die Treppe mit dem Bunkerraum.

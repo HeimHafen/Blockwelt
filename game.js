@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=81';
-// BLOCKWELT V81 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=82';
+// BLOCKWELT V82 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -72,11 +72,11 @@ function makeNetherPlan(){
   box(13,25,-6,4,-24,-10,N);
   box(14,24,-5,-1,-23,-11,null);
   box(18,20,-5,-2,-10,-10,null);
+  deck(18,20,-6,-10,-10,T);
   for(let step=0;step<10;step++){
     const z=step,y=3-step;
     box(17,21,y,y+3,-z,-z,N);
-    box(18,20,y+1,y+3,-z,-z,null);
-    if(y<3)box(18,20,y+4,4,-z,-z,null);
+    box(18,20,y+1,Math.max(4,y+3),-z,-z,null);
     if(step>=4)box(17,21,4,4,-z,-z,'grass');
     solid(19,y,-z,'lavaGlow');
   }
@@ -87,7 +87,7 @@ function makeNetherPlan(){
 
   // A half-height tread bridges each pair of consecutive full-block steps.
   for(let x=18;x<=20;x++)
-    routes.push(Array.from({length:10},(_,i)=>[x,-6+i,-9+i]));
+    routes.push([...Array.from({length:10},(_,i)=>[x,-6+i,-9+i]),[x,4,1]]);
   for(const path of routes)for(let i=1;i<path.length;i++){
     const [x,y,z]=path[i-1], [nx,ny,nz]=path[i];
     if(ny!==y+1||Math.abs(nx-x)+Math.abs(nz-z)!==1)continue;
@@ -2570,7 +2570,7 @@ function treadIsSupported(tread){
 }
 function blocked(x,y,z){
   if(leverDoors.some(d=>isMeadow()&&(!d.open||d.door.position.y<y+PLAYER_H)&&insideDoor(d,x,y,z)))return true;
-  if(!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
+  if(isMeadow()&&!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
   const minX=Math.floor(x-PLAYER_R+.005),maxX=Math.floor(x+PLAYER_R-.005);
   const minZ=Math.floor(z-PLAYER_R+.005),maxZ=Math.floor(z+PLAYER_R-.005);
   const minY=Math.floor(y+.04),maxY=Math.floor(y+PLAYER_H-.04);
@@ -4576,7 +4576,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V81';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V82';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -4607,6 +4607,7 @@ function updateRegion(){
   if(isMeadow()){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
     let name=inside?'🏰 Schloss Nachtrabe':'🌿 Große Wiese';
+    if(player.y<4.45&&player.x>=13&&player.x<26&&player.z>=-24&&player.z<1)name="🕯️ Bunker";
     if(player.x>=-39&&player.x<-16&&player.z>=-77&&player.z<=-61&&player.y<13){
       name='📜 Rabenarchiv';
     }else if(player.z>=-84&&player.z<-59&&Math.abs(player.x)<25){
