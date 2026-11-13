@@ -1,4 +1,4 @@
-# Blockwelt V77 – Schloss Nachtrabe
+# Blockwelt V78 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -21,3 +21,7 @@ Nur die Spielfigur ist sichtbar. Die Schlosspforte erhält einen steinernen Port
 ## V77 – Glutsteinstufen
 
 Vom unteren Podest aus sitzt in jeder zweiten Trittstufe der dreispurigen Bunkertreppe mittig ein bündiger Glutstein. Die halben Zwischenstufen und die seitlichen Trittflächen bleiben aus Stein.
+
+## V78 – Bunkertreppe
+
+Die mittige Glutsteinfolge reicht bis zur untersten vollen Stufe. Beim ersten Laden werden gespeicherte Lücken in der mittleren Spur dieser Treppe geschlossen.

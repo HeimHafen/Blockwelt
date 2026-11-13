@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=77';
-// BLOCKWELT V77 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=78';
+// BLOCKWELT V78 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -79,9 +79,9 @@ function makeNetherPlan(){
     if(y<3)box(18,20,y+4,4,-z,-z,null);
     if(step>=4)box(17,21,4,4,-z,-z,'grass');
     if(step%3===1)solid(17,y+2,-z,'lantern');
-    // From the lower landing, the half tread comes first and the full tread second.
+    // The lowest full tread carries the same center stone as the rest of the flight.
     // The uppermost full block sits beneath the hatch, outside the stair run.
-    if(step>0&&step<9)solid(19,y,-z,'lavaGlow');
+    if(step>0)solid(19,y,-z,'lavaGlow');
   }
   for(const z of [-13,-18,-22]){
     box(14,24,-1,-1,z,z,'wood');
@@ -1988,7 +1988,14 @@ function loadEdits(){
       const [x,y,z,type]=item;
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
+      // Restore missing center treads in saves made before the stair repair.
+      if(isMeadow()&&type===null&&x===19&&z>=-9&&z<=-1&&y===3+z&&
+        localStorage.getItem('blockwelt-bunkertreppe-v78')!=='1')continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
+    }
+    if(isMeadow()&&localStorage.getItem('blockwelt-bunkertreppe-v78')!=='1'){
+      localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));
+      localStorage.setItem('blockwelt-bunkertreppe-v78','1');
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
@@ -4555,7 +4562,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V77';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V78';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
