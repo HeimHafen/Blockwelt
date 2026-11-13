@@ -1,4 +1,4 @@
-// BLOCKWELT V61 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V62 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3853,6 +3853,18 @@ for(let i=0;i<7;i++){
   bunkerProp(bunkerAmber,17.7+i*.43,-4.954,-18.25,.12,.015,.14).rotation.y=Math.PI/4;
   bunkerProp(bunkerAmber,17.7+i*.43,-4.954,-15.75,.12,.015,.14).rotation.y=Math.PI/4;
 }
+// Recessed iron hinges at ground level and timber framing around the lower doorway.
+for(const z of [-2.58,.58]){
+  bunkerProp(doorIron,17.92,4.94,z,.25,.12,.34);
+  part(hatchAssembly,.31,.075,.26,doorIron,.19,-.105,z+1);
+}
+for(const x of [18.1,20.9])
+  bunkerProp(oakDoor,x,-3.53,-10.53,.19,2.94,.24);
+bunkerProp(oakDoor,19.5,-1.97,-10.53,2.99,.22,.27);
+for(const z of [-19.22,-19.62,-20.02]){
+  bunkerProp(oakDoor,23.86,-3.88,z,.41,.11,.31);
+  bunkerProp(doorIron,23.67,-3.8,z,.075,.10,.21);
+}
 scene.add(bunkerFurnishings);
 
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
@@ -4579,7 +4591,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V61';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V62';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
@@ -4671,10 +4683,10 @@ resize();
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
 try {
-  if(localStorage.getItem('blockwelt-nachtrabe-bereinigung-v59')!=='1'){
+  if(localStorage.getItem('blockwelt-nachtrabe-bereinigung-v62')!=='1'){
     localStorage.removeItem(MEADOW_KEY);
     localStorage.removeItem(ADVENTURE_KEY);
-    localStorage.setItem('blockwelt-nachtrabe-bereinigung-v59','1');
+    localStorage.setItem('blockwelt-nachtrabe-bereinigung-v62','1');
   }
 } catch(error) {
   console.warn('Blockwelt-Weltbereinigung fehlgeschlagen.',error);

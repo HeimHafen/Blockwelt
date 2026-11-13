@@ -1,7 +1,7 @@
-# Blockwelt V61 – Bunkerluke
+# Blockwelt V62
 
-index.html, styles.css und game.js gemeinsam ersetzen. Die Luke startet geschlossen. Rechts neben dem Einstieg bei X 19, Z 0 steht der äußere Hebel. In seiner Nähe erscheint die Bedienfläche. Auf der Tastatur funktioniert E. Der zweite Hebel steht unten an der Treppe. Die einmalige Bereinigung aus V59 bleibt für Browser aktiv, in denen sie noch nicht gelaufen ist.
+index.html, styles.css und game.js gemeinsam ersetzen. Beim ersten Start löscht V62 einmalig die bisherigen Bauänderungen im aktuellen Browser. Dadurch werden auch weggebaute Originalblöcke wiederhergestellt. Burg und Bunker sind Teil der Grundwelt. Neue Änderungen werden danach wieder gespeichert.
 
-JavaScript-Syntax und Treppenfelder geprüft. Safari und gerenderte Ansicht sind offen.
+Der Bunker erhält versenkte Scharniere, eine Holzeinfassung am unteren Eingang und Werkbankdetails. Die Luke startet geschlossen und lässt sich über beide Hebel bedienen.
 
-V61 entfernt das Holzgeländer an der Bunkertreppe.
+JavaScript-Syntax und Archiv geprüft. Die Darstellung auf dem iPhone ist offen.
