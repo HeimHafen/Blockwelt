@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=76';
-// BLOCKWELT V76 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=77';
+// BLOCKWELT V77 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -79,6 +79,9 @@ function makeNetherPlan(){
     if(y<3)box(18,20,y+4,4,-z,-z,null);
     if(step>=4)box(17,21,4,4,-z,-z,'grass');
     if(step%3===1)solid(17,y+2,-z,'lantern');
+    // From the lower landing, the half tread comes first and the full tread second.
+    // The uppermost full block sits beneath the hatch, outside the stair run.
+    if(step>0&&step<9)solid(19,y,-z,'lavaGlow');
   }
   for(const z of [-13,-18,-22]){
     box(14,24,-1,-1,z,z,'wood');
@@ -4552,7 +4555,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V76';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V77';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

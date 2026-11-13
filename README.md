@@ -1,4 +1,4 @@
-# Blockwelt V76 – Schloss Nachtrabe
+# Blockwelt V77 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -17,3 +17,7 @@ Neun Innenlaternen sitzen mit eisernen Haltern am Mauerwerk, abseits von Fenster
 ## V76 – Schlossfassade
 
 Nur die Spielfigur ist sichtbar. Die Schlosspforte erhält einen steinernen Portalrahmen. Geneigte Dachflächen auf den Torkammern ergänzen die vorhandene Blockgeometrie.
+
+## V77 – Glutsteinstufen
+
+Vom unteren Podest aus sitzt in jeder zweiten Trittstufe der dreispurigen Bunkertreppe mittig ein bündiger Glutstein. Die halben Zwischenstufen und die seitlichen Trittflächen bleiben aus Stein.
