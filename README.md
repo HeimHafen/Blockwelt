@@ -1,7 +1,5 @@
-# Blockwelt V62
+# Blockwelt V63 – Treppen
 
-index.html, styles.css und game.js gemeinsam ersetzen. Beim ersten Start löscht V62 einmalig die bisherigen Bauänderungen im aktuellen Browser. Dadurch werden auch weggebaute Originalblöcke wiederhergestellt. Burg und Bunker sind Teil der Grundwelt. Neue Änderungen werden danach wieder gespeichert.
+index.html, styles.css und game.js gemeinsam ersetzen. Die vorhandenen Aufstiege in Türmen, an der Großen Halle und im Bunker haben halbe Zwischenstufen. Die Spielfigur steigt diese beim Gehen automatisch. Die Zwischenstufen erscheinen, solange die zugehörigen Steinblöcke vorhanden sind. Bestehende Wege und Podeste bleiben in ihrer bisherigen Lage. Die einmalige Bereinigung aus V62 wird auf Geräten, auf denen sie schon lief, nicht wiederholt.
 
-Der Bunker erhält versenkte Scharniere, eine Holzeinfassung am unteren Eingang und Werkbankdetails. Die Luke startet geschlossen und lässt sich über beide Hebel bedienen.
-
-JavaScript-Syntax und Archiv geprüft. Die Darstellung auf dem iPhone ist offen.
+JavaScript-Syntax und erzeugte Zwischenstufen geprüft. Ein Spieltest auf dem iPhone steht aus.

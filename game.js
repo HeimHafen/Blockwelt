@@ -1,4 +1,4 @@
-// BLOCKWELT V62 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V63 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -39,6 +39,7 @@ const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building fie
 // Der Bauplan besteht nur aus echten Minecraft-ähnlichen Voxeln. Keine
 // gerenderten Kulissen, keine Eingriffe in die unveränderte Abenteuerwelt.
 const NETHER_BOUNDS={minX:-56,maxX:56,minZ:-86,maxZ:-11};
+const stairTreads=new Map();
 let netherChunkPlan=null;
 let netherPlanVoxels=null;
 let netherPlanCount=0;
@@ -268,6 +269,16 @@ function makeNetherPlan(){
 
   }
 
+  // A half-height tread bridges each pair of consecutive full-block steps.
+  for(let x=18;x<=20;x++)
+    routes.push(Array.from({length:10},(_,i)=>[x,-6+i,-9+i]));
+  for(const path of routes)for(let i=1;i<path.length;i++){
+    const [x,y,z]=path[i-1], [nx,ny,nz]=path[i];
+    if(ny!==y+1||Math.abs(nx-x)+Math.abs(nz-z)!==1)continue;
+    if(!vox.get(key(x,y,z))||vox.get(key(x,y+1,z))||vox.get(key(x,y+2,z)))continue;
+    stairTreads.set(key(x,y+1,z),{x,y:y+1,z,dx:nx-x,dz:nz-z,
+      lower:vox.get(key(x,y,z)),upper:vox.get(key(nx,ny,nz))||'grass'});
+  }
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
   netherPlanVoxels=vox;
@@ -2729,12 +2740,23 @@ const shadowFogColor=new THREE.Color('#80799c');
 const player={x:.5,y:terrainHeight(0,6)+.02,z:6.5,vy:0,grounded:false};
 let yaw=.08,pitch=-.22;
 const PLAYER_R=.25,PLAYER_H=1.73,GRAVITY=19.5,JUMP=7.0;
+function treadIsSupported(tread){
+  const {x,y,z,dx,dz,lower,upper}=tread;
+  return Boolean(lower)&&get(x,y-1,z)===lower&&
+    get(x+dx,y,z+dz)===upper&&!get(x,y,z);
+}
 function blocked(x,y,z){
   if(!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
   const minX=Math.floor(x-PLAYER_R+.005),maxX=Math.floor(x+PLAYER_R-.005);
   const minZ=Math.floor(z-PLAYER_R+.005),maxZ=Math.floor(z+PLAYER_R-.005);
   const minY=Math.floor(y+.04),maxY=Math.floor(y+PLAYER_H-.04);
-  for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++)for(let iy=minY;iy<=maxY;iy++)if(get(ix,iy,iz)&&get(ix,iy,iz)!=='water')return true;
+  for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++)for(let iy=minY;iy<=maxY;iy++){
+    const type=get(ix,iy,iz);
+    if(type&&type!=='water')return true;
+    const tread=stairTreads.get(key(ix,iy,iz));
+    if(tread&&y+.04<iy+.5&&treadIsSupported(tread)&&
+      (x-ix-.5)*tread.dx+(z-iz-.5)*tread.dz> -PLAYER_R+.005)return true;
+  }
   return false;
 }
 function groundedAt(x,y,z){return blocked(x,y-.07,z);}
@@ -2744,9 +2766,11 @@ function horizontal(axis,amount){
   if(proposed< -HALF+.3||proposed>HALF-.3)return;
   const nx=axis==='x'?proposed:player.x,nz=axis==='z'?proposed:player.z;
   if(!blocked(nx,player.y,nz)){player[axis]=proposed;return;}
-  // Gentle auto-step over a one-block ledge for younger players.
-  if(player.grounded&&!blocked(nx,player.y+1.02,nz)&&blocked(nx,player.y+.94-.09,nz)){
-    player.y+=1.02;player[axis]=proposed;player.vy=0;
+  // Prefer the smaller rise on stair treads and keep legacy full-block stepping.
+  if(player.grounded)for(const rise of [.51,1.02]){
+    if(!blocked(nx,player.y+rise,nz)&&blocked(nx,player.y+rise-.09,nz)){
+      player.y+=rise;player[axis]=proposed;player.vy=0;return;
+    }
   }
 }
 function updateMovement(dt){
@@ -3726,6 +3750,26 @@ for(const x of [-6,6])for(let z=-80;z<=-60;z++){
 }
 scene.add(hallDetails);
 
+makeNetherPlan();
+const stairMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),
+  materialByType.netherTrim[0],stairTreads.size);
+stairMesh.count=0;
+stairMesh.frustumCulled=false;
+scene.add(stairMesh);
+const stairTransform=new THREE.Object3D();
+function refreshStairTreads(){
+  let count=0;
+  for(const tread of stairTreads.values()){
+    if(!treadIsSupported(tread))continue;
+    const {x,y,z,dx,dz}=tread;
+    stairTransform.position.set(x+.5+dx*.25,y+.25,z+.5+dz*.25);
+    stairTransform.scale.set(dx?.5:1,.5,dz?.5:1);
+    stairTransform.updateMatrix();
+    stairMesh.setMatrixAt(count++,stairTransform.matrix);
+  }
+  stairMesh.count=count;
+  stairMesh.instanceMatrix.needsUpdate=true;
+}
 const bunkerFurnishings=new THREE.Group();
 const bunkerCloth=new THREE.MeshStandardMaterial({color:'#713324',roughness:1});
 const bunkerLinen=new THREE.MeshStandardMaterial({color:'#d5c6a7',roughness:1});
@@ -4005,6 +4049,7 @@ function updateCastleLighting(){
   const cell=isMeadow()?Math.floor(player.x/2)+','+Math.floor(player.y/2)+','+Math.floor(player.z/2):'';
   if(cell===castleLightCell)return;
   castleLightCell=cell;
+  refreshStairTreads();
   refreshCornices();
   for(const {mesh,x,y,z,type} of hallAnchors)
     mesh.visible=Boolean(type)&&netherBlockAt(x,y,z)===type;
@@ -4591,7 +4636,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V62';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V63';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
