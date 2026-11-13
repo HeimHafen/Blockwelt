@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=119';
-// BLOCKWELT V119 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=120';
+// BLOCKWELT V120 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -4401,6 +4401,18 @@ for(const y of [7.15,7.38,7.61,7.84]){
 const hearthLight=new THREE.PointLight('#ffad72',0,8,2);
 hearthLight.position.set(32,5.79,-56.96);
 hearthRoom.add(hearthLight);
+// A single iron pendant hangs from the underside of the room ceiling at y=13.
+const pendantX=32,pendantZ=-60.5;
+hearthPart(.31,.11,.31,doorIron,pendantX,12.95,pendantZ);
+hearthPart(.053,3.28,.053,doorIron,pendantX,11.27,pendantZ);
+hearthPart(.53,.10,.53,doorIron,pendantX,9.60,pendantZ);
+hearthPart(.42,.53,.42,materialByType.lantern[0],pendantX,9.29,pendantZ);
+hearthPart(.49,.09,.49,doorIron,pendantX,8.99,pendantZ);
+for(const dx of [-.22,.22])for(const dz of [-.22,.22])
+  hearthPart(.048,.58,.048,doorIron,pendantX+dx,9.29,pendantZ+dz);
+const pendantLight=new THREE.PointLight('#ffd0a0',13,8,2);
+pendantLight.position.set(pendantX,8.91,pendantZ);
+hearthRoom.add(pendantLight);
 scene.add(hearthRoom);
 function updateHearth(now){
   hearthRoom.visible=player.x>24&&player.x<38&&player.z>-68&&player.z<-51&&player.y>=4&&player.y<13;
@@ -5449,7 +5461,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V119';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V120';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5610,7 +5622,7 @@ function animate(now){
   if(player.x>=30&&player.x<34&&player.y>=4.8&&player.y<13&&player.z>=-65&&player.z<-55){
     const otherLights=[];
     scene.traverseVisible(object=>{
-      if(object.isLight&&object!==hearthLight)otherLights.push(object);
+      if(object.isLight&&object!==hearthLight&&object!==pendantLight)otherLights.push(object);
     });
     for(const light of otherLights)light.visible=false;
     try{renderer.render(scene,camera);}

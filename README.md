@@ -177,3 +177,7 @@ Der Kamin erhält einen ausgekleideten Feuerraum, einen abgestuften Sims und ein
 ## V119 – Freier Durchgang im Arbeitszimmer
 
 Das Bücherregal steht weiter rechts an der Nordwand, außerhalb der Türöffnung.
+
+## V120 – Hängelampe im Kaminzimmer
+
+Eine eiserne Deckenlaterne ergänzt das Kaminfeuer mit warmem Licht.
