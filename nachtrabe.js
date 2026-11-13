@@ -137,6 +137,11 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
   for(const x of [-7,0,7]){
     box(x,x,17,20,-79,-71,stone);
     door(x,x,17,19,-72,-71);
+    if(x!==0){
+      const landing=x+Math.sign(x);
+      opening(landing,landing,17,19,-72,-67);
+      deck(landing,landing,16,-72,-67,trim);
+    }
   }
   for(let y=19;y<=31;y++){
     const span=17-(y-19);
@@ -161,7 +166,7 @@ const stairwellLamps=stairwellBounds.flatMap(([left,right])=>[
   [left-1,8,-70,'lantern',-1,0],
   [left-1,12,-77,'lantern',-1,0],
   [right+1,14,-73,'lantern',1,0],
-  [right+1,18,-69,'lantern',1,0],
+  [right+1,18,-73,'lantern',1,0],
 ]);
 
 export const interiorLampSites=[

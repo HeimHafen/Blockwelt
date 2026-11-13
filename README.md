@@ -161,3 +161,11 @@ Eine durchgehende Kranzleiste, ein niedriger Sockel und sichtbare Scharniere ver
 ## V113 – Arbeitszimmer vor dem Geheimschrank
 
 Schreibtisch mit aufgeschlagenem Buch, Feder und Kerze, Bücherregal, Wandbehang und eisenbeschlagene Truhe. Der Arbeitsbereich liegt seitlich des Wegs zum Geheimschrank.
+
+## V116 – Freie Türzugänge
+
+Zwei Türen im Obergeschoss erhalten auf der Treppenhausseite einen durchgehenden Zugang mit Steinboden. Alle 17 regulären Türöffnungen wurden samt den unmittelbar angrenzenden Blockreihen geprüft.
+
+## V117 – Arbeitszimmer am Geheimschrank
+
+Eichenvertäfelung, ein gemusterter Wollteppich und profilierte Regalleisten rahmen die Schreibnische. Gerollte Briefe, ein Wachssiegel und ein Leinenbuch liegen auf dem Schreibtisch.

@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=113';
-// BLOCKWELT V113 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=117';
+// BLOCKWELT V117 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3414,10 +3414,10 @@ for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16])
 const fixedLanterns=castleLampSites.map((site,index)=>{
   const [x,y,z,,dx=0,dz=0]=site;
   const inside=index<interiorLampSites.length;
-  const light=new THREE.PointLight(inside?'#ffd1a0':'#ffc284',0,inside?10:13,2);
+  const light=new THREE.PointLight(inside?'#ffce9d':'#ffbd82',0,inside?9:11,2);
   light.position.set(x+.5-dx*.22,y+.52,z+.5-dz*.22);
   scene.add(light);
-  return {site,light,power:inside?36:52};
+  return {site,light,power:inside?23:34};
 });
 const fixedLanternKeys=new Set(castleLampSites.map(([x,y,z])=>key(x,y,z)));
 const editLanterns=Array.from({length:3},()=>new THREE.PointLight('#ffc284',0,10,2));
@@ -4029,10 +4029,48 @@ study.add(studyLight);
 studyBox(.14,.037,.14,studyBrass,.10,.985,3.47);
 studyBox(.055,.21,.055,bunkerLinen,.10,1.10,3.47);
 studyBox(.032,.085,.032,materialByType.lantern[0],.10,1.24,3.47);
+// The fitted study furniture stays at the room's perimeter.
+for(const [x,width] of [[-2.75,4.3],[2.40,4.15]]){
+  studyBox(width,1.13,.095,oakDoor,x,.565,4.95);
+  studyBox(width,.10,.17,oakDoor,x,1.15,4.89);
+  studyBox(width,.14,.15,studyLeather,x,.07,4.88);
+  for(let panel=-2;panel<=2;panel++){
+    const cx=x+panel*.78;
+    studyBox(.65,.74,.038,studyLeather,cx,.57,4.89);
+    studyBox(.52,.61,.035,oakDoor,cx,.57,4.86);
+  }
+}
+studyBox(2.64,.13,.58,oakDoor,-1.22,2.41,-3.74);
+studyBox(2.54,.07,.51,studyLeather,-1.22,2.32,-3.74);
+for(const x of [-2.38,-.07]){
+  studyBox(.073,2.22,.042,studyBrass,x,1.20,-3.499);
+}
+// Low-pile wool rug confined to the desk alcove.
+studyBox(2.78,.022,1.78,studyGreen,-.25,.011,2.68);
+for(const z of [1.85,3.51])
+  studyBox(2.65,.008,.027,studyBrass,-.25,.024,z);
+for(const x of [-1.55,1.05])
+  studyBox(.027,.008,1.67,studyBrass,x,.024,2.68);
+for(const x of [-.92,-.25,.42]){
+  studyBox(.29,.008,.29,bunkerLinen,x,.026,2.68).rotation.y=Math.PI/4;
+  studyBox(.17,.008,.17,studyGreen,x,.031,2.68).rotation.y=Math.PI/4;
+}
+// Rolled correspondence, a wax seal and a linen-bound ledger.
+const scrollGeometry=new THREE.CylinderGeometry(.046,.046,.41,10);
+for(const [x,z,angle] of [[-.91,3.55,.13],[-.83,3.73,-.22]]){
+  const scroll=new THREE.Mesh(scrollGeometry,bunkerLinen);
+  scroll.position.set(x,1.01,z);
+  scroll.rotation.set(0,angle,Math.PI/2);
+  study.add(scroll);
+}
+studyBox(.072,.018,.068,bunkerCloth,.24,1.019,3.66);
+studyBox(.40,.05,.26,studyLeather,.88,.987,3.40);
+studyBox(.37,.026,.237,bunkerLinen,.88,1.015,3.40);
+studyBox(.41,.014,.261,studyGreen,.88,1.035,3.40);
 scene.add(study);
 function updateWardrobe(dt){
   study.visible=player.x>15&&player.x<32&&player.z>-69&&player.z<-51&&player.y<13;
-  studyLight.intensity=study.visible?8:0;
+  
   const aligned=player.y>=4.7&&player.y<8&&Math.abs(player.z+62)<1.28;
   const near=aligned&&player.x>25.25&&player.x<32;
   for(const {hinge,side} of wardrobeLeaves)
@@ -4164,7 +4202,7 @@ bunkerProp(gateStone,24,-4.55,-14,.94,.83,1.02);
 bunkerProp(materialByType.lavaGlow[0],23.52,-4.5,-14,.035,.32,.45);
 bunkerProp(oakDoor,20.86,-3.56,-10.48,.13,2.88,1.26);
 const bunkerRoomLights=[
-  [23,-2.59,-12.5,20,7], [23,-2.59,-17.5,20,7], [23.1,-4.1,-14,13,5]
+  [23,-2.59,-12.5,15,7], [23,-2.59,-17.5,16,7], [23.1,-4.1,-14,9,5]
 ].map(([x,y,z,power,range])=>{
   const light=new THREE.PointLight('#ffc18c',0,range,2);
   light.position.set(x,y,z);
@@ -4185,7 +4223,7 @@ for(const [x,z] of cellarLamps){
   const light=new THREE.PointLight('#ffbd80',0,8,2);
   light.position.set(x,-2.74,z);
   bunkerFurnishings.add(light);
-  bunkerRoomLights.push({light,power:25,cellar:true});
+  bunkerRoomLights.push({light,power:19,cellar:true});
 }
 const torchFlame=new THREE.MeshBasicMaterial({color:'#ff832f'});
 const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
@@ -4339,7 +4377,8 @@ function updateHearth(now){
   hearthRoom.visible=player.x>24&&player.x<38&&player.z>-68&&player.z<-51&&player.y>=4&&player.y<13;
   if(!hearthRoom.visible)return;
   hearthFlameMaterial.uniforms.time.value=now*.001;
-  hearthLight.intensity=11+Math.sin(now*.008)*1.1+Math.sin(now*.019)*.6;
+  hearthLight.intensity=13+Math.sin(now*.0047)*.85+Math.sin(now*.0129)*.47;
+  hearthLight.position.x=32+Math.sin(now*.0051)*.05;
   for(let index=0;index<12;index++){
     const t=(now*(.00039+index*.000011)+index*.173)%1;
     emberPositions[index*3]=32+Math.sin(index*2.4+t*3)*(.41+t*.18);
@@ -4758,6 +4797,7 @@ function updateMeadowTufts(){
   meadowTufts.computeBoundingSphere();
 }
 let castleLightCell='';
+let outdoorLanternGain=1;
 const playerLightPosition=new THREE.Vector3();
 function updateCastleLighting(){
   updateMeadowTufts();
@@ -4796,7 +4836,8 @@ function updateCastleLighting(){
     const mounted=meadow&&netherBlockAt(x,y,z)===type;
     const distance=light.position.distanceTo(playerLightPosition);
     light.visible=mounted&&distance<light.distance+5;
-    light.intensity=light.visible?power:0;
+    const outdoor=site[4]===undefined&&site[5]===undefined&&!torch;
+    light.intensity=light.visible?power*(outdoor?outdoorLanternGain:1):0;
     if(torch)torch.visible=mounted&&distance<22;
   }
   for(const {light,power,cellar} of bunkerRoomLights){
@@ -5083,12 +5124,14 @@ $('villageBtn')?.addEventListener('click',visitVillage);
 function castleMoonlight(){return isMeadow()&&lightMode===2;}
 function applyLighting(){
   const options=[
-    {sky:'#d4e8ee',sun:'#fff5e1',power:2.25,hemi:1.55,exposure:1.07,label:'☀ Tag · Hell'},
+    {sky:'#d4e8ee',sun:'#fff5e1',power:2.05,hemi:1.48,exposure:1.04,label:'☀ Tag · Hell'},
     {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
-    {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Mondnacht'}
+    {sky:'#1d3551',sun:'#9bb7df',power:.55,hemi:.76,exposure:1.02,label:'☾ Mondnacht'}
   ];
   const moonlit=castleMoonlight();
   const p=options[lightMode];
+  outdoorLanternGain=[.38,.72,1][lightMode];
+  castleLightCell=null;
   const direction=[[-44,68,-28],[-73,21,-18],[38,53,-48]][lightMode];
   sunlight.position.set(...direction);
   scene.background.set(p.sky);
@@ -5377,7 +5420,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V113';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V117';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5491,12 +5534,13 @@ function animate(now){
   const oldX=player.x,oldZ=player.z;
   updateBunkerHatch(dt);
   updateWardrobe(dt);
+  if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
-    const flicker=Math.sin(now*.009+site[2]+site[0])*.07+Math.sin(now*.021+site[2])*.04;
+    const flicker=Math.sin(now*.007+site[2]+site[0])*.048+Math.sin(now*.016+site[2])*.027;
     flame.scale.y=1+flicker;
     flame.rotation.z=flicker*1.4;
     light.intensity=power*(1+flicker);
