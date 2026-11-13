@@ -1,4 +1,4 @@
-# Blockwelt V82 – Schloss Nachtrabe
+# Blockwelt V83 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -41,3 +41,7 @@ Die Falltür liegt bündig im Rasen. Aus der Nähe direkt antippen, um sie zu ö
 ## V82 – Begehbarer Bunker
 
 Die Öffnung unter der Falltür hat freie Kopfhöhe. Eine halbe Stufe verbindet die Wiese mit der Treppe. Unten verbindet ein Steinpodest die Treppe mit dem Bunkerraum.
+
+## V83 – Treppenreparatur
+
+Beim ersten Laden wird der Treppenschacht lokal wiederhergestellt. Beim Betreten der offenen Falltür endet der Flugmodus. Die Fackeln sitzen paarweise an gemauerten Wänden.

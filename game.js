@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=82';
-// BLOCKWELT V82 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=83';
+// BLOCKWELT V83 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -75,9 +75,9 @@ function makeNetherPlan(){
   deck(18,20,-6,-10,-10,T);
   for(let step=0;step<10;step++){
     const z=step,y=3-step;
-    box(17,21,y,y+3,-z,-z,N);
+    box(17,21,-6,y+3,-z,-z,N);
     box(18,20,y+1,Math.max(4,y+3),-z,-z,null);
-    if(step>=4)box(17,21,4,4,-z,-z,'grass');
+    if(step>=4)deck(17,21,4,-z,-z,'grass');
     solid(19,y,-z,'lavaGlow');
   }
   for(const z of [-13,-18,-22]){
@@ -1985,14 +1985,17 @@ function loadEdits(){
       const [x,y,z,type]=item;
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
+      // Restore the stair corridor once without resetting the rest of the save.
+      if(isMeadow()&&localStorage.getItem('blockwelt-bunkerzugang-v83')!=='1'&&
+        x>=17&&x<=21&&z>=-10&&z<=0&&y>=Math.max(-6,3+z)&&y<=4)continue;
       // Restore missing center treads in saves made before the stair repair.
       if(isMeadow()&&type===null&&x===19&&z>=-9&&z<=0&&y===3+z&&
         localStorage.getItem('blockwelt-bunkertreppe-v80')!=='1')continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
     }
-    if(isMeadow()&&localStorage.getItem('blockwelt-bunkertreppe-v80')!=='1'){
+    if(isMeadow()&&localStorage.getItem('blockwelt-bunkerzugang-v83')!=='1'){
       localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));
-      localStorage.setItem('blockwelt-bunkertreppe-v80','1');
+      localStorage.setItem('blockwelt-bunkerzugang-v83','1');
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
@@ -2604,6 +2607,8 @@ function updateMovement(dt){
   const keyboardF=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
   let x=keyboardX+stick.x,f=keyboardF-stick.y;
   const magnitude=Math.hypot(x,f);if(magnitude>1){x/=magnitude;f/=magnitude;}
+  if(flying&&isMeadow()&&bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5.2)
+    setFlying(false);
   const speed=(flying?6.6:4.75)*dt;
   const dx=(Math.cos(yaw)*x-Math.sin(yaw)*f)*speed;
   const dz=(-Math.sin(yaw)*x-Math.cos(yaw)*f)*speed;
@@ -3769,13 +3774,16 @@ const bunkerRoomLights=[
 });
 const torchFlame=new THREE.MeshBasicMaterial({color:'#ff832f'});
 const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
-const flameGeometry=new THREE.ConeGeometry(.09,.27,9);
+const flameGeometry=new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.069,.04),new THREE.Vector2(.087,.105),new THREE.Vector2(.049,.18),new THREE.Vector2(0,.28)],12);
 const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
   const side=x===17?1:-1;
   const site=[x,5-step,-step,'netherBrick'];
   const torch=new THREE.Group();
   torch.position.set(x+.5+side*.5,site[1]+.22,site[2]+.5);
-  part(torch,.11,.34,.26,doorIron,side*.02,0,0);
+  part(torch,.10,.39,.23,doorIron,side*.015,0,0);
+  for(const y of [-.135,.135])part(torch,.045,.045,.045,doorIron,side*.078,y,0);
+  const brace=part(torch,.28,.045,.065,doorIron,side*.13,-.05,0);
+  brace.rotation.z=side*.46;
   const handle=part(torch,.075,.34,.075,oakDoor,side*.14,.12,0);
   handle.rotation.z=-side*.45;
   const flame=new THREE.Mesh(flameGeometry,torchFlame);
@@ -3784,7 +3792,7 @@ const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
   core.position.y=-.045;
   flame.add(core);
   part(torch,.15,.10,.15,doorIron,side*.21,.23,0);
-  flame.position.set(side*.21,.35,0);
+  flame.position.set(side*.21,.27,0);
   torch.add(flame);
   scene.add(torch);
   const light=new THREE.PointLight('#ffc085',0,6,2);
@@ -4576,7 +4584,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V82';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V83';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
