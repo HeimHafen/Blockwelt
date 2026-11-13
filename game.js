@@ -1,4 +1,4 @@
-// BLOCKWELT V66 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V67 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -295,6 +295,27 @@ function makeNetherPlan(){
       solid(side*6,6,z,'lantern');
     }
   }
+  // Buttresses frame the gate and taper into its facade.
+  for(const x of [-12,12]){
+    box(x,x,5,9,-34,-32,D);
+    box(x,x,10,15,-34,-33,N);
+    solid(x,10,-32,T);
+    solid(x,16,-33,T);
+  }
+  // Side aisles receive a contrasting stone border and paired pilaster bases.
+  for(const side of [-1,1]){
+    for(let z=-79;z<=-61;z++){
+      solid(side*9,4,z,T);
+      if(z%4===1)solid(side*10,4,z,'cobble');
+    }
+    for(let z=-79;z<=-63;z+=4){
+      const x=side*12;
+      box(Math.min(x,x+side),Math.max(x,x+side),5,5,z,z,T);
+    }
+  }
+  // Court paving is staggered in broad panels with a darker drainage edge.
+  for(let z=-57;z<=-47;z++)for(let x=-4;x<=4;x++)
+    solid(x,4,z,Math.abs(x)===4?D:(x+2*z)%5===0?T:'cobble');
   // Bunker tucked beneath the meadow east of the approach.
   box(13,25,-6,4,-24,-10,N);
   box(14,24,-5,-1,-23,-11,null);
@@ -4679,7 +4700,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V66';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V67';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }

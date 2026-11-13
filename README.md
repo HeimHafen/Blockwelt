@@ -1,8 +1,9 @@
-# Blockwelt V66 – Treppen
+# Blockwelt V67 – Treppen
 
 index.html, styles.css und game.js gemeinsam ersetzen. Die vorhandenen Aufstiege in Türmen, an der Großen Halle und im Bunker haben halbe Zwischenstufen. Die Spielfigur steigt diese beim Gehen automatisch. Die Zwischenstufen erscheinen, solange die zugehörigen Steinblöcke vorhanden sind. Bestehende Wege und Podeste bleiben in ihrer bisherigen Lage. Die einmalige Bereinigung aus V62 wird auf Geräten, auf denen sie schon lief, nicht wiederholt.
 
 JavaScript-Syntax und erzeugte Zwischenstufen geprüft. Ein Spieltest auf dem iPhone steht aus.
 Die beiden Hallenaufgänge erhalten gemauerte Seitenwände, tiefe Fensteröffnungen, eine Decke und Podeste am Anfang und Ende.
 Die Turmtreppen erhalten ebene Eckpodeste und Geschossdecken im zentralen Schacht. Die Läufe bleiben an den Außenwänden.
-V66 ergänzt den gepflasterten Hauptweg durch den Burghof, seitliche Wegabschnitte, Laternen und breitere Podeste an den Hallenaufgängen.
+V67 ergänzt den gepflasterten Hauptweg durch den Burghof, seitliche Wegabschnitte, Laternen und breitere Podeste an den Hallenaufgängen.
+Neu in V67: gestufte Strebepfeiler am Torhaus, gegliedertes Hofpflaster und steinerne Sockel in der Großen Halle.
