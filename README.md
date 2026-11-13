@@ -1,4 +1,4 @@
-# Blockwelt V80 – Schloss Nachtrabe
+# Blockwelt V81 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -33,3 +33,7 @@ Die Außenkamera hält festen Abstand. Bei blockierter Sicht wechselt sie direkt
 ## V80 – Bunkertreppe
 
 Die mittigen Glutsteine reichen bis zur Luke. Drei Fackelpaare sitzen jeweils auf gleicher Höhe an den beiden Wänden.
+
+## V81 – Getarnte Falltür
+
+Die Falltür liegt bündig im Rasen. Aus der Nähe direkt antippen, um sie zu öffnen oder zu schließen. Die Fackeln sitzen paarweise an beiden Treppenwänden und flackern dezent.

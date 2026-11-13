@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=80';
-// BLOCKWELT V80 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=81';
+// BLOCKWELT V81 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3634,20 +3634,11 @@ bunkerFurnishings.add(hatchAssembly);
 for(let i=0;i<9;i++){
   const x=(i+.5)*3/9;
   part(hatchAssembly,.325,.19,3.98,oakDoor,x,0,0);
-  part(hatchAssembly,.333,.145,3.98,materialByType.grass[2],x,.1675,0);
 }
+// Unit grass tiles match the UV scale and top surface of the surrounding turf.
+for(let x=0;x<3;x++)for(let z=-2;z<2;z++)
+  part(hatchAssembly,1,.145,1,materialByType.grass,x+.5,.1675,z+.5);
 for(const z of [-1.38,1.38])part(hatchAssembly,2.88,.065,.09,doorIron,1.5,-.10,z);
-const bunkerLevers=[];
-for(const [x,y,z] of [[21.28,5.37,.53],[20.75,-2.6,-8.5]]){
-  part(bunkerFurnishings,.25,.25,.29,doorIron,x,y-.13,z);
-  const handle=new THREE.Group();
-  handle.position.set(x,y,z);
-  handle.rotation.z=-.50;
-  part(handle,.085,.31,.085,doorIron,0,.13,0);
-  part(handle,.13,.13,.13,oakDoor,0,.28,0);
-  bunkerFurnishings.add(handle);
-  bunkerLevers.push(handle);
-}
 makeNetherPlan();
 const leverDoors=doorSites.map(([xa,xb,ya,yb,za,zb])=>{
   const alongX=xb-xa>=zb-za;
@@ -3713,29 +3704,28 @@ function updateLeverDoors(dt){
   castleLeverBtn.hidden=!gameRunning||!nearestLeverDoor;
   if(nearestLeverDoor)castleLeverBtn.textContent=nearestLeverDoor.open?'Hebel · Tür schließen':'Hebel · Tür öffnen';
 }
-const bunkerLeverButton=$('bunkerLeverBtn');
-function bunkerLeverNearby(){
-  return gameRunning&&bunkerLevers.some(({position:p})=>
-    Math.hypot(player.x-p.x,player.y+1-p.y,player.z-p.z)<2.65);
-}
-function toggleBunkerHatch(){
-  if(!bunkerLeverNearby())return;
+const hatchRay=new THREE.Raycaster();
+const hatchPointer=new THREE.Vector2();
+function interactWithHatch(clientX,clientY){
+  if(!gameRunning||!isMeadow())return false;
+  if(Math.hypot(player.x-19.5,player.y+1-5,player.z+1)>4)return false;
+  const rect=renderer.domElement.getBoundingClientRect();
+  hatchPointer.set(2*(clientX-rect.left)/rect.width-1,1-2*(clientY-rect.top)/rect.height);
+  hatchAssembly.updateWorldMatrix(true,true);
+  hatchRay.setFromCamera(hatchPointer,camera);
+  const hit=hatchRay.intersectObject(hatchAssembly,true)[0];
+  if(!hit||traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,Math.max(0,hit.distance-.025)))return false;
   if(bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45){
-    toast('Tritt zum Schließen aus der Luke.');return;
+    toast('Tritt zum Schließen aus der Luke.');
+    return true;
   }
   bunkerHatchOpen=!bunkerHatchOpen;
-  bunkerLeverButton.textContent=bunkerHatchOpen?'Hebel · Luke schließen':'Hebel · Luke öffnen';
+  return true;
 }
-bunkerLeverButton.addEventListener('click',toggleBunkerHatch);
-window.addEventListener('keydown',event=>{
-  if(event.code==='KeyE'&&!event.repeat)toggleBunkerHatch();
-});
 function updateBunkerHatch(dt){
-  bunkerLeverButton.hidden=!bunkerLeverNearby();
-  const target=bunkerHatchOpen?1.76:0;
-  const opening=bunkerHatchOpen||!(overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45);
-  if(opening)hatchAssembly.rotation.z=THREE.MathUtils.damp(hatchAssembly.rotation.z,target,13,dt);
-  for(const lever of bunkerLevers)lever.rotation.z=bunkerHatchOpen?.50:-.50;
+  const playerInOpening=overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45;
+  const target=bunkerHatchOpen||playerInOpening?1.76:0;
+  hatchAssembly.rotation.z=THREE.MathUtils.damp(hatchAssembly.rotation.z,target,13,dt);
 }
 
 for(const y of [-4.42,-2.83]){
@@ -3777,7 +3767,9 @@ const bunkerRoomLights=[
   bunkerFurnishings.add(light);
   return {light,power};
 });
-const torchFlame=new THREE.MeshBasicMaterial({color:'#ffc376'});
+const torchFlame=new THREE.MeshBasicMaterial({color:'#ff832f'});
+const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
+const flameGeometry=new THREE.ConeGeometry(.09,.27,9);
 const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
   const side=x===17?1:-1;
   const site=[x,5-step,-step,'netherBrick'];
@@ -3786,15 +3778,19 @@ const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
   part(torch,.11,.34,.26,doorIron,side*.02,0,0);
   const handle=part(torch,.075,.34,.075,oakDoor,side*.14,.12,0);
   handle.rotation.z=-side*.45;
-  const flame=new THREE.Mesh(new THREE.SphereGeometry(.085,8,8),torchFlame);
-  flame.scale.y=1.65;
+  const flame=new THREE.Mesh(flameGeometry,torchFlame);
+  const core=new THREE.Mesh(flameGeometry,torchCore);
+  core.scale.set(.56,.67,.56);
+  core.position.y=-.045;
+  flame.add(core);
+  part(torch,.15,.10,.15,doorIron,side*.21,.23,0);
   flame.position.set(side*.21,.35,0);
   torch.add(flame);
   scene.add(torch);
   const light=new THREE.PointLight('#ffc085',0,6,2);
   light.position.copy(torch.position).add(new THREE.Vector3(side*.26,.36,0));
   scene.add(light);
-  return {site,light,power:11,torch};
+  return {site,light,power:11,torch,flame};
 }));
 // Ribbed stone ceiling below the turf, above player height.
 for(const z of [-12.5,-15.5,-18.5,-21.5]){
@@ -4528,15 +4524,19 @@ function resetControls(){
 }
 window.addEventListener('blur',resetControls);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)resetControls();});
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')mouseDown={x:e.clientX,y:e.clientY,button:e.button};});
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.isPrimary)mouseDown={id:e.pointerId,x:e.clientX,y:e.clientY,button:e.button};});
 renderer.domElement.addEventListener('pointerup',e=>{
-  if(e.pointerType==='mouse'&&mouseDown&&Math.hypot(e.clientX-mouseDown.x,e.clientY-mouseDown.y)<6){modifyWorld(mouseDown.button===2);}
+  if(!mouseDown||mouseDown.id!==e.pointerId)return;
+  if(Math.hypot(e.clientX-mouseDown.x,e.clientY-mouseDown.y)<6){
+    const handled=mouseDown.button===0&&interactWithHatch(e.clientX,e.clientY);
+    if(!handled&&e.pointerType==='mouse')modifyWorld(mouseDown.button===2);
+  }
   mouseDown=null;
 });
 for(const event of ['pointercancel','lostpointercapture']){
   renderer.domElement.addEventListener(event,e=>{
     if(e.pointerId===lookId)lookId=null;
-    if(e.pointerType==='mouse')mouseDown=null;
+    if(mouseDown?.id===e.pointerId)mouseDown=null;
   });
 }
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
@@ -4576,7 +4576,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V80';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V81';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -4690,6 +4690,13 @@ function animate(now){
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   updateBunkerHatch(dt);
+  for(const {flame,light,torch,power,site} of bunkerStairLights){
+    if(!torch.visible)continue;
+    const flicker=Math.sin(now*.009+site[2]+site[0])*.07+Math.sin(now*.021+site[2])*.04;
+    flame.scale.y=1+flicker;
+    flame.rotation.z=flicker*1.4;
+    light.intensity=power*(1+flicker);
+  }
   updateLeverDoors(dt);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
