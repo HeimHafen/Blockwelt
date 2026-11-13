@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=86';
-// BLOCKWELT V86 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=87';
+// BLOCKWELT V87 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1980,22 +1980,20 @@ function loadEdits(){
   try{
     const arr=JSON.parse(localStorage.getItem(currentSaveKey())||'[]');
     if(!Array.isArray(arr))return;
+    const repairBunker=isMeadow()&&localStorage.getItem('blockwelt-bunker-passage-v87')!=='1';
     for(const item of arr){
       if(!Array.isArray(item)||item.length!==4)continue;
       const [x,y,z,type]=item;
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
-      // Restore the stair corridor once without resetting the rest of the save.
-      if(isMeadow()&&localStorage.getItem('blockwelt-bunkerzugang-v83')!=='1'&&
-        x>=17&&x<=21&&z>=-10&&z<=0&&y>=Math.max(-6,3+z)&&y<=4)continue;
-      // Restore missing center treads in saves made before the stair repair.
-      if(isMeadow()&&type===null&&x===19&&z>=-9&&z<=0&&y===3+z&&
-        localStorage.getItem('blockwelt-bunkertreppe-v80')!=='1')continue;
+      // Restore the walking lane and the bottom landing from the generated plan.
+      if(repairBunker&&x>=18&&x<=20&&z>=-12&&z<=1&&
+        y>=Math.max(-6,3+z)&&y<=Math.max(4,5+z))continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
     }
-    if(isMeadow()&&localStorage.getItem('blockwelt-bunkerzugang-v83')!=='1'){
+    if(repairBunker){
       localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));
-      localStorage.setItem('blockwelt-bunkerzugang-v83','1');
+      localStorage.setItem('blockwelt-bunker-passage-v87','1');
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
@@ -3732,8 +3730,12 @@ function interactWithHatch(clientX,clientY){
   hatchRay.setFromCamera(hatchPointer,camera);
   const hit=hatchRay.intersectObject(hatchAssembly,true)[0];
   const obstacle=traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,
-    hit?Math.max(0,hit.distance-.025):20);
-  if(!hit||obstacle)return false;
+    hit?Math.max(0,hit.distance-.025):5);
+  if(!hit||obstacle){
+    // The flush lid can be obscured by the grass edge at shallow camera angles.
+    if(bunkerHatchOpen||!obstacle||obstacle.y!==4||
+      obstacle.x<18||obstacle.x>20||obstacle.z< -3||obstacle.z>0)return false;
+  }
   if(bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45){
     toast('Tritt zum Schließen aus der Luke.');
     return true;
@@ -3744,7 +3746,7 @@ function interactWithHatch(clientX,clientY){
 }
 const bunkerEntryBtn=$('bunkerEntryBtn');
 function canEnterBunker(){
-  return gameRunning&&isMeadow()&&bunkerHatchOpen&&player.y>=3.5&&player.y<=6&&
+  return gameRunning&&isMeadow()&&bunkerHatchOpen&&player.y>=1&&player.y<=6&&
     Math.hypot(player.x-19.5,player.z+1)<4;
 }
 bunkerEntryBtn.addEventListener('click',()=>{
@@ -4620,7 +4622,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V86';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V87';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
