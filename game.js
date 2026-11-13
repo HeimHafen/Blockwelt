@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=84';
-// BLOCKWELT V84 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=85';
+// BLOCKWELT V85 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3731,12 +3731,27 @@ function interactWithHatch(clientX,clientY){
   hatchAssembly.updateWorldMatrix(true,true);
   hatchRay.setFromCamera(hatchPointer,camera);
   const hit=hatchRay.intersectObject(hatchAssembly,true)[0];
-  if(!hit||traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,Math.max(0,hit.distance-.025)))return false;
+  const obstacle=traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,
+    hit?Math.max(0,hit.distance-.025):20);
+  if(bunkerHatchOpen&&player.y>=3.5&&(!hit||obstacle)&&obstacle&&
+    obstacle.x>=18&&obstacle.x<=20&&obstacle.z>=-9&&obstacle.z<=0&&
+    obstacle.y===3+obstacle.z){
+    // An explicit tap on a visible step offers entry from either lip of the hatch.
+    const landing={x:19.5,y:-4.98,z:-10.5};
+    if(!blocked(landing.x,landing.y,landing.z)&&groundedAt(landing.x,landing.y,landing.z)){
+      if(flying)setFlying(false);
+      Object.assign(player,landing,{vy:0,grounded:true});
+      updateWorldStream();
+      return true;
+    }
+  }
+  if(!hit||obstacle)return false;
   if(bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45){
     toast('Tritt zum Schließen aus der Luke.');
     return true;
   }
   bunkerHatchOpen=!bunkerHatchOpen;
+  if(bunkerHatchOpen)toast('Von der oberen Stufe hinuntergehen oder auf eine sichtbare Stufe tippen.');
   return true;
 }
 function updateBunkerHatch(dt){
@@ -4596,7 +4611,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V84';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V85';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

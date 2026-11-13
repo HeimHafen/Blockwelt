@@ -1,4 +1,4 @@
-# Blockwelt V84 – Schloss Nachtrabe
+# Blockwelt V85 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -49,3 +49,7 @@ Beim ersten Laden wird der Treppenschacht lokal wiederhergestellt. Beim Betreten
 ## V84 – Treppenabstieg
 
 Beim Hinuntergehen folgt die Spielfigur den Trittstufen direkt.
+
+## V85 – Bunkerzugang
+
+Falltür antippen und bei geöffneter Tür auf eine sichtbare volle Stufe tippen, um direkt auf dem unteren Podest anzukommen.
