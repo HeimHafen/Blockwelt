@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=109';
-// BLOCKWELT V109 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=110';
+// BLOCKWELT V110 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -2630,6 +2630,8 @@ function treadIsSupported(tread){
     get(x+dx,y,z+dz)===upper&&!get(x,y,z);
 }
 function blocked(x,y,z){
+  if(Math.abs(x-26.89)<PLAYER_R+.065&&Math.abs(z+62)<.99+PLAYER_R
+    &&y<8.36&&y+PLAYER_H>5&&Math.abs(wardrobeLeaves[0].hinge.rotation.y)<1.25)return true;
   if(Math.abs(x-29.12)<PLAYER_R+.055&&Math.abs(z+62)<1+PLAYER_R&&
      y+PLAYER_H>5+wardrobeBack.position.y&&y<8+wardrobeBack.position.y)return true;
   if(leverDoors.some(d=>isMeadow()&&(!d.open||d.door.position.y<y+PLAYER_H)&&insideDoor(d,x,y,z)))return true;
@@ -3935,6 +3937,22 @@ for(const z of [-63.5,-60.5]){
   pull.position.set(26.83,6.48,z);
   wardrobe.add(pull);
 }
+const wardrobeLeaves=[-1,1].map(side=>{
+  const hinge=new THREE.Group();
+  hinge.position.set(26.89,5,-62+side*.99);
+  const center=-side*.485;
+  part(hinge,.13,3.32,.97,oakDoor,0,1.70,center);
+  for(const y of [.24,1.42,1.61,3.15])
+    part(hinge,.052,.09,.84,oakDoor,-.081,y,center);
+  for(const edge of [-.39,.39])
+    part(hinge,.052,2.93,.09,oakDoor,-.081,1.70,center+edge);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.075,.014,6,12),doorIron);
+  ring.rotation.y=Math.PI/2;
+  ring.position.set(-.105,1.46,-side*.82);
+  hinge.add(ring);
+  wardrobe.add(hinge);
+  return {hinge,side};
+});
 const wardrobeBack=new THREE.Group();
 wardrobe.add(wardrobeBack);
 for(let plank=0;plank<7;plank++)
@@ -3943,8 +3961,10 @@ for(const y of [5.48,7.53])
   part(wardrobeBack,.075,.13,1.96,doorIron,29.05,y,-62);
 scene.add(wardrobe);
 function updateWardrobe(dt){
-  const near=player.y>=4.7&&player.y<8&&player.x>27&&player.x<31.4
-    &&Math.abs(player.z+62)<1.01;
+  const aligned=player.y>=4.7&&player.y<8&&Math.abs(player.z+62)<1.28;
+  const near=aligned&&player.x>25.25&&player.x<32;
+  for(const {hinge,side} of wardrobeLeaves)
+    hinge.rotation.y=THREE.MathUtils.damp(hinge.rotation.y,near?side*1.59:0,15,dt);
   wardrobeBack.position.y=THREE.MathUtils.damp(wardrobeBack.position.y,near?3.05:0,18,dt);
 }
 
@@ -4162,6 +4182,20 @@ for(const x of [33.17,33.67])for(const z of [-59.97,-59.27])
 hearthPart(.29,.055,.38,bunkerLinen,33.35,5.74,-59.68);
 hearthPart(.34,.03,.42,oakDoor,33.35,5.71,-59.68);
 hearthPart(.11,.15,.11,bunkerAmber,33.62,5.79,-59.36);
+// Small textile details and a dark mantel frame catch the firelight.
+for(const z of [-59.82,-58.45]){
+  hearthPart(.12,.51,.53,bunkerCloth,30.32,5.94,z);
+  for(const side of [-1,1])
+    hearthPart(.61,.09,.09,oakDoor,30.54,5.88,z+side*.32);
+}
+for(let stitch=0;stitch<24;stitch++){
+  const x=30.51+stitch*.129;
+  for(const z of [-60.21,-58.04])
+    hearthPart(.057,.012,.12,bunkerLinen,x,5.022,z);
+}
+hearthPart(.95,.72,.10,oakDoor,32,7.48,-56.52);
+hearthPart(.79,.55,.025,bunkerCloth,32,7.48,-56.585);
+hearthPart(.24,.24,.035,bunkerAmber,32,7.48,-56.61).rotation.z=Math.PI/4;
 const hearthLight=new THREE.PointLight('#ff9d56',0,7,2);
 hearthLight.position.set(32,5.96,-57.06);
 hearthRoom.add(hearthLight);
@@ -5207,7 +5241,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V109';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V110';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5364,7 +5398,15 @@ function animate(now){
   fireflyViolet.opacity=.66+breath*.20;
   fireflyGold.opacity=.73+Math.sin(now*.0011)*.13;
   ruinGlowMaterial.opacity=.76+breath*.13;
-  renderer.render(scene,camera);
+  if(player.x>=30&&player.x<34&&player.y>=4.8&&player.y<13&&player.z>=-65&&player.z<-55){
+    const otherLights=[];
+    scene.traverseVisible(object=>{
+      if(object.isLight&&object!==hearthLight)otherLights.push(object);
+    });
+    for(const light of otherLights)light.visible=false;
+    try{renderer.render(scene,camera);}
+    finally{for(const light of otherLights)light.visible=true;}
+  }else renderer.render(scene,camera);
   if(perfEl){
     perfFrames++;
     if(now-perfTime>1000){

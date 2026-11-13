@@ -149,3 +149,7 @@ Hinter dem Schrank warten ein gemauerter Kamin mit Glutbett und flackerndem Feue
 ## V109 – Schrank und Kaminzimmer
 
 Der Schrank erhält gerahmte Holzfronten und Eisenringe. Das Kaminfeuer beleuchtet die Kammer mit warmer, zurückhaltender Intensität. Ein gemauerter Bogen, eine dunkle Feuerkammer, aufsteigende Glut und ein kleiner Holzvorrat ergänzen den Kamin.
+
+## V110 – Geheimschrank und Feuerlicht
+
+Die gerahmten Schrankflügel schließen den Eingang und öffnen sich bei Annäherung. Im Kaminzimmer ist das Feuer die einzige Lichtquelle. Dielen, gepolsterte Lehnen, Teppichfransen und ein Wandschild ergänzen den Raum.

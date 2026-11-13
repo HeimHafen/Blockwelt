@@ -96,6 +96,7 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
   box(27,28,5,7,-61,-61,'planks');
   deck(27,28,8,-63,-62,'planks');
   deck(27,33,4,-63,-62,trim);
+  deck(30,33,4,-64,-56,'planks');
 
   // Great hall and four rooms above it, with two mirrored return stairs.
   for(const x of [-17,17])box(x,x,5,18,-80,-64,stone);
