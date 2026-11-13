@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=97';
-// BLOCKWELT V97 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=98';
+// BLOCKWELT V98 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3713,6 +3713,32 @@ for(const [x,minZ,maxZ,y] of [[-27,-75,-44,22],[26,-75,-44,22],[0,-81,-63,33]]){
     ridge.rotation.z=Math.PI/4;
   }
 }
+// Three masonry ribs articulate the passage behind the lifting gate.
+for(const z of [-42,-40,-37]){
+  const anchor=[0,12,z];
+  for(let segment=0;segment<15;segment++){
+    const start=segment*Math.PI/15+.004;
+    const end=(segment+1)*Math.PI/15-.004;
+    const shape=new THREE.Shape();
+    const point=(angle,radius,rise)=>[.5+radius*Math.cos(angle),9.62+rise*Math.sin(angle)];
+    shape.moveTo(...point(start,3.50,2.03));
+    shape.lineTo(...point(end,3.50,2.03));
+    shape.lineTo(...point(end,3.83,2.47));
+    shape.lineTo(...point(start,3.83,2.47));
+    shape.closePath();
+    const stone=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{
+      depth:.34,bevelEnabled:true,bevelSize:.018,bevelThickness:.018,bevelSegments:1
+    }),gateStone);
+    stone.position.z=z+.29;
+    stone.userData={site:anchor,type:'netherBrick'};
+    gateMolding.add(stone);
+  }
+  for(const x of [-4,4]){
+    const inward=-Math.sign(x);
+    facadePart([x,9,z],'netherBrick',.44,.29,.75,gateStone,
+      x+.5+inward*.49,9.52,z+.46);
+  }
+}
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4807,7 +4833,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V97';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V98';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

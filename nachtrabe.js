@@ -51,6 +51,10 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     }
   }
 
+  deck(-3,3,4,-42,-35,'cobble');
+  for(const x of [-3,3])deck(x,x,4,-42,-35,trim);
+  deck(-3,3,12,-42,-37,stone);
+
   for(const x of towerWindows){
     box(x,x,10,12,-34,-34,null);
     box(x,x,10,12,-35,-35,'glass');
@@ -133,6 +137,7 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
 export const wingWindows=[-35,34].flatMap(x=>[-70,-60,-50].map(z=>[x,z]));
 
 export const interiorLampSites=[
+  ...[-3,3].flatMap(x=>[-41,-38].map(z=>[x,8,z,'lantern',Math.sign(x),0])),
   ...[-34,33].flatMap(x=>[-67,-57,-47].map(z=>[x,7,z,'lantern',x<0?-1:1,0])),
   ...[-10,0,10].map(x=>[x,8,-79,'lantern',0,-1])
 ];
