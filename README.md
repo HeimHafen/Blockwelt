@@ -1,7 +1,5 @@
-# Blockwelt V56 – Nachtrabe
+# Blockwelt V57 – Geheimer Bunker
 
-index.html, styles.css und game.js gemeinsam ersetzen. V55 und der eigenständige Rundgang werden dafür nicht benötigt.
+index.html, styles.css und game.js gemeinsam ersetzen. Der Eingang liegt östlich vom Schlossweg bei X 19, Z 0. Die getarnte Luke steht offen. Die Steintreppe führt hinunter und über denselben Weg zurück. Der Raum umfasst Etagenbett, Vorräte, Tisch, Karte, Herd und Werkbank. Möbel sind Dekoration. Der bestehende Spielstand hat Vorrang vor der Bunkergeometrie.
 
-Schloss Nachtrabe nutzt den bestehenden Spielstand und das Bauraster. Der Torbogen mit modellierten Keilsteinen und die offenen Holztore sind integriert. Die Große Halle erhält separate Fensterlaibungen, Steinbänke und Eichenbalken. Diese Details folgen ihren jeweiligen Baublöcken. Kopfsteinpflaster hat einen lichtabhängigen Glanz.
-
-V56 erweitert das bestehende Schlossmodell. JavaScript-Syntax, Archiv und 648 simulierte Treppenübergänge wurden geprüft. Ein gerenderter Browser- und iPhone-Test steht aus.
+JavaScript-Syntax, Archiv und freie Treppenfelder geprüft. Ein gerenderter Vergleich mit der Vorlage und ein iPhone-Test stehen aus.

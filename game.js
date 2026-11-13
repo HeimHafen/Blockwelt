@@ -1,4 +1,4 @@
-// BLOCKWELT V56 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V57 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -33,6 +33,7 @@ const MEADOW_KEY = 'blockwelt-grosse-wiese-v26';
 const activeWorld = 'wiese';
 const isMeadow = () => true;
 const currentSaveKey = () => isMeadow() ? MEADOW_KEY : ADVENTURE_KEY;
+const BUNKER_FLOOR=-6;
 const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building field.
 // V27 — EIGENSTÄNDIGE NETHERFESTUNG AUF DER GROSSEN WIESE.
 // Der Bauplan besteht nur aus echten Minecraft-ähnlichen Voxeln. Keine
@@ -47,7 +48,7 @@ function makeNetherPlan(){
   const N='netherBrick',D='netherDeep',T='netherTrim',G='netherGold',L='lavaGlow';
   const solid=(x,y,z,type=N)=>{
     if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||
-       x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y)return;
+       x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)return;
     vox.set(key(x,y,z),type);
   };
   const empty=(x,y,z)=>vox.delete(key(x,y,z));
@@ -270,6 +271,22 @@ function makeNetherPlan(){
     box(cx-3,cx-1,5,5,cz-7,cz-6,'cobble');
     solid(cx-2,6,cz-6,'stone');
   }
+  // Bunker tucked beneath the meadow east of the approach.
+  box(13,25,-6,4,-24,-10,N);
+  box(14,24,-5,-1,-23,-11,null);
+  box(18,20,-5,-2,-10,-10,null);
+  for(let step=0;step<10;step++){
+    const z=step,y=3-step;
+    box(17,21,y,y+3,-z,-z,N);
+    box(18,20,y+1,y+3,-z,-z,null);
+    if(y<3)box(18,20,y+4,4,-z,-z,null);
+    if(step%3===1)solid(17,y+2,-z,'lantern');
+  }
+  for(const z of [-13,-18,-22]){
+    box(14,24,-1,-1,z,z,'wood');
+    solid(22,-2,z,'lantern');
+  }
+  for(const z of [-13,-20])for(const x of [14,24])solid(x,-3,z,'lantern');
   // Finale Geometriedaten werden pro 16x16-Chunk gespeichert. Der Chunkgenerator
   // schreibt sie VOR den Spieleränderungen und überschreibt niemals den Save.
   netherPlanVoxels=vox;
@@ -1871,7 +1888,7 @@ function unloadChunkData(cx,cz){
   const id=chunkKey(cx,cz);
   if(!generatedChunks.delete(id))return;
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
-    for(let y=0;y<=MAX_Y+7;y++)blocks.delete(key(x,y,z));
+    for(let y=BUNKER_FLOOR;y<=MAX_Y+7;y++)blocks.delete(key(x,y,z));
   }
 }
 // Fernansicht als ein einziges, billiges Farbgitter. Nur nicht-geladene Chunks:
@@ -2158,7 +2175,7 @@ function loadEdits(){
     for(const item of arr){
       if(!Array.isArray(item)||item.length!==4)continue;
       const [x,y,z,type]=item;
-      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y)continue;
+      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
     }
@@ -2183,7 +2200,7 @@ function rebuildChunk(cx,cz){
   const byType=Object.fromEntries(BLOCK_TYPES.map(t=>[t,[]]));
   const waterFaces={top:[],left:[],right:[],front:[],back:[]};
   for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
-    for(let y=0;y<=MAX_Y+8;y++){
+    for(let y=BUNKER_FLOOR;y<=MAX_Y+8;y++){
       const type=get(x,y,z);
       if(!type)continue;
       if(type==='water'){
@@ -2651,7 +2668,7 @@ function traceVoxel(origin,direction,maxDistance=5.6){
       travel=nextZ;nextZ+=stepZ;z+=sz;normal={x:0,y:0,z:-sz};
     }
     if(travel>maxDistance+1e-6||!Number.isFinite(travel))break;
-    if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y+8)continue;
+    if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y+8)continue;
     const type=get(x,y,z);
     if(type)return {x,y,z,type,normal,distance:travel};
   }
@@ -2791,7 +2808,7 @@ function updateMovement(dt){
   }
   player.grounded=groundedAt(player.x,player.y,player.z);
   if(player.grounded&&player.vy<0)player.vy=0;
-  if(player.y< -5){respawn();toast('Wieder sicher auf der Wiese!');}
+  if(player.y<BUNKER_FLOOR-4){respawn();toast('Wieder sicher auf der Wiese!');}
 }
 function respawn(){player.x=.5;player.z=isMeadow()?-.5:6.5;player.y=isMeadow()?MEADOW_HEIGHT+.08:terrainHeight(0,6)+.08;player.vy=0;player.grounded=false;}
 function jump(){if(!gameRunning||flying)return;const inWater=get(Math.floor(player.x),Math.floor(player.y+.25),Math.floor(player.z))==='water';if(player.grounded||inWater){player.vy=inWater?4.5:JUMP;player.grounded=false;}}
@@ -2866,9 +2883,9 @@ function modifyWorld(place,quiet=false){
   if(!pointed){toast('Schau zuerst einen Block an');return;}
   let {x,y,z}=pointed;
   if(place){x+=Math.round(pointed.face.x);y+=Math.round(pointed.face.y);z+=Math.round(pointed.face.z);}
-  if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y){toast('Hier endet deine kleine Welt');return;}
+  if(x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y){toast('Hier endet deine kleine Welt');return;}
   if(place&&(get(x,y,z)||intersectsPlayer(x,y,z))){toast('Hier ist schon etwas');return;}
-  if(!place&&y===0){toast('Der Boden bleibt sicher stehen');return;}
+  if(!place&&(y===0||y===BUNKER_FLOOR)){toast('Der Boden bleibt sicher stehen');return;}
   const type=place?selectedType:null;
   const k=key(x,y,z);
   const oldType=get(x,y,z)||null;
@@ -2933,7 +2950,7 @@ async function importWorld(file){
     for(const edit of data.edits){
       if(!Array.isArray(edit)||edit.length!==4)throw new Error('entry');
       const [x,y,z,type]=edit;
-      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<0||y>MAX_Y||(type!==null&&!BLOCK_TYPES.includes(type)))throw new Error('entry');
+      if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y||(type!==null&&!BLOCK_TYPES.includes(type)))throw new Error('entry');
       incoming.set(key(x,y,z),[x,y,z,type]);
     }
     if(!confirm('Die bisherige Welt durch diese Sicherung ersetzen?'))return;
@@ -3715,6 +3732,64 @@ for(let z=-79;z<=-62;z+=4){
 }
 scene.add(hallDetails);
 
+const bunkerFurnishings=new THREE.Group();
+const bunkerCloth=new THREE.MeshStandardMaterial({color:'#713324',roughness:1});
+const bunkerLinen=new THREE.MeshStandardMaterial({color:'#d5c6a7',roughness:1});
+const bunkerAmber=new THREE.MeshStandardMaterial({color:'#aa7137',roughness:.36});
+const bunkerProp=(material,x,y,z,w,h,d)=>part(bunkerFurnishings,w,h,d,material,x,y,z);
+const hatch=bunkerProp(oakDoor,19.5,6.2,-.8,3.2,.18,2.9);
+hatch.rotation.x=1.13;
+const turf=bunkerProp(materialByType.grass[2],19.5,6.29,-.84,3.2,.16,2.9);
+turf.rotation.x=1.13;
+for(let step=0;step<9;step++){
+  const rail=bunkerProp(oakDoor,18.12,5.02-step,-step,.12,.13,1.42);
+  rail.rotation.x=-Math.PI/4;
+}
+for(const y of [-4.42,-2.83]){
+  bunkerProp(oakDoor,15.1,y,-20.6,1.45,.2,2.55);
+  bunkerProp(bunkerLinen,15.1,y+.15,-20.6,1.3,.20,2.38);
+  bunkerProp(bunkerCloth,15.1,y+.27,-20.23,1.32,.08,1.50);
+  bunkerProp(bunkerLinen,15.1,y+.28,-21.57,1,.15,.37);
+}
+for(const x of [14.45,15.77])for(const z of [-21.79,-19.41])
+  bunkerProp(oakDoor,x,-3.65,z,.14,2.65,.14);
+for(const y of [-4.6,-3.85,-3.1]){
+  bunkerProp(oakDoor,14.62,y,-15.8,1.05,.13,2.8);
+  for(let j=0;j<6;j++){
+    const jar=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.25,10),bunkerAmber);
+    jar.position.set(14.7,y+.19,-16.9+j*.41);
+    bunkerFurnishings.add(jar);
+  }
+}
+for(const [x,z,w,d] of [[19,-17,2,1.25],[24,-14,1.35,2.8],[24,-20,1.35,3.1]]){
+  bunkerProp(oakDoor,x,-4.03,z,w,.19,d);
+  for(const dx of [-1,1])for(const dz of [-1,1])
+    bunkerProp(oakDoor,x+dx*(w/2-.12),-4.55,z+dz*(d/2-.12),.14,.92,.14);
+}
+bunkerProp(bunkerCloth,19,-4.98,-17,3.5,.035,3);
+bunkerProp(bunkerLinen,19,-3.927,-17,.94,.018,.67);
+for(const z of [-18.18,-15.82]){
+  bunkerProp(oakDoor,19,-4.52,z,.55,.13,.55);
+  bunkerProp(bunkerCloth,19,-4.44,z,.51,.05,.51);
+  bunkerProp(oakDoor,19,-4.30,z+Math.sign(z+17)*.23,.55,.56,.09);
+}
+bunkerProp(gateStone,24,-4.55,-14,.94,.83,1.02);
+bunkerProp(materialByType.lavaGlow[0],23.52,-4.5,-14,.035,.32,.45);
+bunkerProp(oakDoor,20.86,-3.56,-10.48,.13,2.88,1.26);
+for(const [x,y,z] of [[19,-2.4,-17],[15,-2.7,-13],[23,-2.7,-21],[18,2,-3]]){
+  const light=new THREE.PointLight('#ffad62',32,11,2);
+  light.position.set(x,y,z);bunkerFurnishings.add(light);
+}
+// Ribbed stone ceiling below the turf, above player height.
+for(const z of [-12.5,-15.5,-18.5,-21.5]){
+  for(let i=0;i<13;i++){
+    const a=Math.PI*(i+.5)/13;
+    const rib=bunkerProp(gateStone,19.5+5.1*Math.cos(a),-3.03+1.98*Math.sin(a),z,1.19,.27,.33);
+    rib.rotation.z=Math.atan2(1.98*Math.cos(a),-5.1*Math.sin(a));
+  }
+}
+scene.add(bunkerFurnishings);
+
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
   [42,-68,6,36],[-24,-80,6,43],[24,-80,6,43],[0,-70,9,56]];
 // A shared profile adds chamfered stringcourses to all four faces of each tower.
@@ -4439,7 +4514,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V56';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V57';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
