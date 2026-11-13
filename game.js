@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=126';
-// BLOCKWELT V126 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=127';
+// BLOCKWELT V127 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5299,40 +5299,112 @@ const attacks=[
   return group;
 });
 const shotStart=new THREE.Vector3(),shotEnd=new THREE.Vector3();
+const impactColors=['#ff9c42','#bd78ff'];
+const sparks=new THREE.BufferGeometry();
+const sparkPositions=new Float32Array(108);
+sparks.setAttribute('position',new THREE.BufferAttribute(sparkPositions,3));
+const sparkMaterial=new THREE.PointsMaterial({size:.23,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+const battleSparks=new THREE.Points(sparks,sparkMaterial);
+battleSparks.frustumCulled=false;
+const ringMaterial=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+const impactRing=new THREE.Mesh(new THREE.RingGeometry(.87,1,48),ringMaterial);
+impactRing.rotation.x=-Math.PI/2;
+scene.add(battleSparks,impactRing);
+const battleFlash=new THREE.PointLight('#ffffff',0,9,2);
+scene.add(battleFlash);
+let battleAudio;
 let battleTime=0;
-let previousTurn=-1;
+let previousTurn=-1,previousImpact=-1;
+$('startBtn').addEventListener('click',()=>{
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(Audio&&!battleAudio){
+    try{battleAudio=new Audio();}catch{return;}
+  }
+  battleAudio?.resume().catch(()=>{});
+});
+function playBattleImpact(shadow){
+  if(battleAudio?.state!=='running')return;
+  const distance=Math.hypot(player.x-shotEnd.x,player.z-shotEnd.z);
+  if(distance>=55)return;
+  const time=battleAudio.currentTime;
+  const oscillator=battleAudio.createOscillator(),gain=battleAudio.createGain();
+  oscillator.type=shadow?'triangle':'sawtooth';
+  oscillator.frequency.setValueAtTime(shadow?105:150,time);
+  oscillator.frequency.exponentialRampToValueAtTime(34,time+.23);
+  gain.gain.setValueAtTime(.001,time);
+  gain.gain.linearRampToValueAtTime(.17*(1-distance/55),time+.017);
+  gain.gain.exponentialRampToValueAtTime(.001,time+.26);
+  oscillator.connect(gain);gain.connect(battleAudio.destination);
+  oscillator.start(time);oscillator.stop(time+.27);
+}
 function updateBattle(dt){
   const nearby=inFuture(player.x)&&Math.hypot(player.x-arena.x,player.z-arena.z)<83;
   gengar.visible=charizard.visible=nearby;
+  battleSparks.visible=impactRing.visible=battleFlash.visible=false;
   for(const attack of attacks)attack.visible=false;
   if(!nearby)return;
   if(gameRunning)battleTime+=dt;
-  const turn=Math.floor(battleTime/4);
-  const phase=battleTime%4;
-  const zag=Math.sin(battleTime*.8)*1.7;
-  const angle=battleTime*.36;
-  const attacker=turn%2===0?charizard:gengar;
-  const defender=attacker===charizard?gengar:charizard;
-  const dodge=.95*Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,1.55,2.8));
-  charizard.position.set(arena.x+Math.cos(angle)*19,5.02+Math.max(0,Math.sin(battleTime*1.6))*.70,arena.z+Math.sin(angle)*22+zag);
-  gengar.position.set(arena.x-Math.cos(angle)*18,5.03+Math.max(0,Math.sin(battleTime*2.1))*.34,arena.z-Math.sin(angle)*23-zag);
-  defender.position.x+=Math.sin(angle)*dodge*3;
-  defender.position.z-=Math.cos(angle)*dodge*3;
-  for(const [fighter,opponent] of [[charizard,gengar],[gengar,charizard]]){
-    fighter.rotation.y=Math.atan2(opponent.position.x-fighter.position.x,opponent.position.z-fighter.position.z);
-  }
-  if(phase>=1.3&&previousTurn!==turn){
+  const turn=Math.floor(battleTime/3.55);
+  const phase=battleTime%3.55;
+  const kind=turn%2;
+  const angle=battleTime*.41;
+  const approach=Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,0,1.65))*5;
+  const attacker=kind===0?charizard:gengar;
+  const defender=kind===0?gengar:charizard;
+  const dodge=Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,.16,.91))*4.2;
+  const recoil=phase>=1.78?Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,1.78,2.48))*2.9:0;
+  charizard.position.set(arena.x+Math.cos(angle)*(19-approach),5.04+Math.max(0,Math.sin(battleTime*2.1))*.95,arena.z+Math.sin(angle)*(22-approach));
+  gengar.position.set(arena.x-Math.cos(angle)*(18-approach),5.04+Math.max(0,Math.sin(battleTime*3.0))*.46,arena.z-Math.sin(angle)*(23-approach));
+  defender.position.x+=Math.sin(angle)*dodge;
+  defender.position.z-=Math.cos(angle)*dodge;
+  const dx=defender.position.x-attacker.position.x,dz=defender.position.z-attacker.position.z;
+  const distance=Math.hypot(dx,dz);
+  defender.position.x+=dx/distance*recoil;
+  defender.position.z+=dz/distance*recoil;
+  attacker.rotation.y=Math.atan2(dx,dz);
+  defender.rotation.y=attacker.rotation.y+Math.PI;
+  defender.rotation.z=recoil*.095;
+  attacker.rotation.z=0;
+  if(phase>=1.04&&previousTurn!==turn){
     previousTurn=turn;
-    shotStart.copy(attacker.position);shotStart.y+=attacker===charizard?2.48:1.16;
-    shotEnd.copy(defender.position);shotEnd.y+=1.15;
+    shotStart.copy(attacker.position);shotStart.y+=kind===0?2.48:1.16;
   }
-  if(phase>=1.3&&phase<2.2){
-    const orb=attacks[turn%2];
-    const progress=(phase-1.3)/.9;
+  if(phase>=1.04&&phase<1.78){
+    const orb=attacks[kind];
+    const progress=(phase-1.04)/.74;
+    shotEnd.copy(defender.position);shotEnd.y+=1.15;
     orb.visible=true;orb.position.copy(shotStart).lerp(shotEnd,progress);
-    orb.position.y+=Math.sin(progress*Math.PI)*.9;
-    orb.rotation.y=battleTime*11;
-    orb.scale.setScalar(.72+Math.sin(progress*Math.PI)*.55);
+    orb.position.y+=Math.sin(progress*Math.PI)*1.1;
+    orb.rotation.y=battleTime*14;
+    orb.scale.set(.76,.76,1.1+Math.sin(progress*Math.PI)*1.2);
+    orb.rotation.y=Math.atan2(dx,dz);
+  }
+  if(phase>=1.78&&phase<2.60){
+    if(previousImpact!==turn){
+      previousImpact=turn;
+      shotEnd.copy(defender.position);shotEnd.y+=1.15;
+      playBattleImpact(kind===1);
+    }
+    const age=phase-1.78,opacity=1-age/.82;
+    sparkMaterial.color.set(impactColors[kind]);
+    sparkMaterial.opacity=opacity;
+    for(let index=0;index<36;index++){
+      const azimuth=index*2.39996;
+      const speed=2+index%7;
+      sparkPositions[index*3]=shotEnd.x+Math.cos(azimuth)*speed*age;
+      sparkPositions[index*3+1]=Math.max(5.12,shotEnd.y+(index%6-1)*age-4*age*age);
+      sparkPositions[index*3+2]=shotEnd.z+Math.sin(azimuth)*speed*age;
+    }
+    sparks.attributes.position.needsUpdate=true;
+    battleSparks.visible=impactRing.visible=true;
+    impactRing.position.set(shotEnd.x,5.055,shotEnd.z);
+    impactRing.scale.setScalar(.6+age*9);
+    ringMaterial.color.set(impactColors[kind]);
+    ringMaterial.opacity=opacity*.75;
+    battleFlash.visible=age<.24;
+    battleFlash.color.set(impactColors[kind]);
+    battleFlash.position.copy(shotEnd);
+    battleFlash.intensity=22*Math.max(0,1-age/.24);
   }
 }
 function updateCharizard(now){
@@ -5663,7 +5735,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V126';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V127';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

@@ -205,3 +205,7 @@ Ein animiertes 3D-Glurak steht in der Hightech-Welt auf der Mittelachse, 19 Blö
 ## V126 – Glurak und Gengar
 
 Hinter dem Rückportal liegt eine etwa 50 × 60 Blöcke große Arena. Glurak und Gengar umrunden einander, greifen abwechselnd an und weichen aus.
+
+## V127 – Arenakampf
+
+Glurak und Gengar gehen aufeinander zu, weichen aus und reagieren auf Treffer. Feuer und Schatten erzeugen Funken, Bodenwellen und kurze, distanzabhängige Impactsounds.
