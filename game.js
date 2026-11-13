@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V133 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V136 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1676,8 +1676,8 @@ function buildPawColumn(x,z){
     put(x,4,z,'cobble');
     if(radius>=5.3&&!(Math.abs(dx)<=1&&dz<0))
       for(let y=5;y<=9;y++)put(x,y,z,y===8?'glass':'snow');
-    put(x,10,z,'stone');
-    if(radius<=3.2&&radius>=2.2)
+    if(dx!==-3||dz!==0)put(x,10,z,'stone');
+    if(radius<=3.2&&radius>=2.2&&!(dx===-3&&dz===0))
       for(let y=11;y<=22;y++)put(x,y,z,y%4===0?'glass':'snow');
     if(dz===2&&Math.abs(dx)<=2){
       put(x,5,z,'netherDeep');
@@ -1686,8 +1686,10 @@ function buildPawColumn(x,z){
     if(dz===0&&Math.abs(dx)===4)put(x,9,z,'lantern');
   }
   // Overhanging observation deck with a wraparound glazed band.
-  put(x,22,z,'stone');
-  put(x,23,z,'bricks');
+  if(dx!==-3||dz!==0){
+    put(x,22,z,'stone');
+    put(x,23,z,'bricks');
+  }else put(x,23,z,'bricks');
   if(radius>=7.0)
     for(let y=24;y<=27;y++)put(x,y,z,y===27?'snow':'glass');
   put(x,28,z,'bricks');
@@ -3864,6 +3866,63 @@ for(const z of [-42,-40,-37]){
       x+.5+inward*.49,9.52,z+.46);
   }
 }
+// Carved limestone surrounds and planted forecourt for Schloss Nachtrabe.
+const forecourt=new THREE.Group();
+scene.add(forecourt);
+const limestone=new THREE.MeshStandardMaterial({color:0xbab09a,roughness:.88});
+const darkIron=new THREE.MeshStandardMaterial({color:0x34363b,roughness:.48,metalness:.48});
+const bronze=new THREE.MeshStandardMaterial({color:0x9d723f,roughness:.44,metalness:.46});
+for(const x of [-33,-26,-19,19,26,33]){
+  const site=[x,7,-33];
+  for(const [y,w,h,d] of [[5.28,3.18,.55,3.16],[7.85,3.08,.27,3.07]])
+    facadePart(site,'netherBrick',w,h,d,limestone,x+.5,y,-32.5);
+}
+for(const x of towerWindows){
+  const site=[x,11,-35];
+  for(let i=0;i<9;i++){
+    const angle=(i+.5)*Math.PI/9;
+    const stone=facadePart(site,'glass',.26,.29,.22,limestone,
+      x+.5+Math.cos(angle)*.68,13.03+Math.sin(angle)*.53,-33.78);
+    stone.rotation.z=angle-Math.PI/2;
+  }
+  for(const y of [10.86,11.74,12.56]){
+    const bar=facadePart(site,'glass',.81,.05,.055,darkIron,x+.5,y,-34.02);
+    bar.rotation.z=.07;
+  }
+}
+for(const side of [-1,1]){
+  const x=.5+side*4.15;
+  for(const [y,w,h] of [[5.25,1.22,.42],[5.59,1.02,.22],[10.49,1.08,.28],[10.81,1.25,.31]])
+    facadePart([side<0?-4:4,8,-34],'netherBrick',w,h,.48,limestone,x,y,-33.68);
+  const z=-32.96;
+  facadePart([side<0?-4:4,8,-34],'netherBrick',.18,.75,.16,darkIron,x,8.53,z);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.25,.043,8,16),bronze);
+  ring.position.set(x,8.26,z+.17);
+  ring.userData.site=[side<0?-4:4,8,-34];
+  ring.userData.type='netherBrick';
+  gateMolding.add(ring);
+}
+const foliage=new THREE.IcosahedronGeometry(1,1);
+const leavesMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1});
+const shrubs=new THREE.InstancedMesh(foliage,leavesMaterial,48);
+const shrubPose=new THREE.Object3D();
+const shrubColor=new THREE.Color();
+let shrubIndex=0;
+for(const side of [-1,1])for(const z of [-25,-16,-7,2]){
+  const x=.5+side*7.4;
+  part(forecourt,2.34,.48,1.60,gateStone,x,5.24,z);
+  part(forecourt,2.46,.13,1.69,limestone,x,5.50,z);
+  for(let i=0;i<6;i++){
+    shrubPose.position.set(x+(i%3-1)*.58,5.66+.16*(i%2),z+(i<3?-.23:.23));
+    shrubPose.rotation.set(i*.55,i*1.42,0);
+    shrubPose.scale.set(.52,.53,.47);
+    shrubPose.updateMatrix();
+    shrubs.setMatrixAt(shrubIndex,shrubPose.matrix);
+    shrubs.setColorAt(shrubIndex++,shrubColor.set(i%2?0x3e6334:0x597743));
+  }
+}
+forecourt.add(shrubs);
+
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4906,6 +4965,7 @@ function updateCastleLighting(){
   castleRidges.visible=isMeadow();
   wingWindowDetails.visible=isMeadow();
   gateMolding.visible=isMeadow();
+  forecourt.visible=isMeadow()&&Math.hypot(player.x,player.z+14)<110;
   valleyTrees.visible=isMeadow();
   lanternFrames.visible=isMeadow();
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
@@ -5330,6 +5390,25 @@ for(const side of [-1,1]){
   hqBox(hqGlow,side*1.49,2.35,-6.86,.10,3.88,.07);
 }
 hqBox(hqBlue,0,4.65,-6.85,4.4,.49,1.5);
+const hqYellow=new THREE.MeshStandardMaterial({color:0xffcb25,roughness:.39});
+const hqGlass=new THREE.MeshStandardMaterial({color:0x278cc5,metalness:.24,roughness:.25,transparent:true,opacity:.69});
+for(const side of [-1,1]){
+  const support=hqBox(hqWhite,side*2.43,11.7,-2.5,.72,11.2,1.95);
+  support.rotation.z=side*.11;
+}
+hqBox(hqGlass,0,11.65,-3.28,2.48,10.6,.16);
+for(const y of [7.2,9.5,11.8,14.1,16.4])hqBox(hqBlue,0,y,-3.42,2.6,.14,.2);
+const towerBadge=hqMesh(new THREE.PlaneGeometry(3.2,2),badgeMaterial,0,13,-3.57);
+towerBadge.rotation.y=Math.PI;
+hqMesh(new THREE.TorusGeometry(8.89,.11,8,64),hqYellow,0,19.7,0).rotation.x=Math.PI/2;
+hqMesh(new THREE.CylinderGeometry(.62,.78,2.5,24),hqYellow,0,31.25,0);
+hqMesh(new THREE.CylinderGeometry(.74,.58,2,24),hqYellow,0,32.5,-.78).rotation.x=Math.PI/2;
+hqMesh(new THREE.CircleGeometry(.54,24),hqGlow,0,32.5,-1.79).rotation.y=Math.PI;
+for(const [x,color] of [[11,0xd62d40],[17,0x287bc4]]){
+  const frame=new THREE.MeshStandardMaterial({color,roughness:.42});
+  for(const side of [-1,1])hqBox(frame,x+side*2.15,2.2,-8.58,.32,4.4,.38);
+  hqBox(frame,x,4.3,-8.58,4.55,.32,.38);
+}
 const frontBadge=hqMesh(new THREE.PlaneGeometry(2.7,1.69),badgeMaterial,0,5.05,-7.64);
 frontBadge.rotation.y=Math.PI;
 hqBox(hqBlue,14,5.85,-8.6,13.4,.61,.66);
@@ -5363,19 +5442,89 @@ for(const y of [0,19]){
   hqBox(hqGlow,-3,y+.06,0,1.62,.035,.12);
   hqMesh(new THREE.PlaneGeometry(1.65,.42),liftSign,-3,y+1.55,.99);
 }
-let onPawLift=false;
-function updatePawLift(){
+const liftButton=document.createElement('button');
+liftButton.className='castle-lever';
+Object.assign(liftButton.style,{
+  position:'fixed',bottom:'32%',left:'50%',transform:'translateX(-50%)',zIndex:30,
+  padding:'12px 18px',background:'#163e77',color:'white',border:'1px solid #84e0ff',borderRadius:'12px'
+});
+liftButton.hidden=true;
+gameEl.append(liftButton);
+const liftCar=new THREE.Group();
+const liftFloor=new THREE.Mesh(new THREE.BoxGeometry(1.75,.18,1.75),hqBlue);
+liftFloor.position.y=-.09;
+liftCar.add(liftFloor);
+for(const x of [-.82,.82]){
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(.10,1.05,1.7),hqWhite);
+  rail.position.set(x,.52,0);
+  liftCar.add(rail);
+}
+pawHQ.add(liftCar);
+const slidePoints=[];
+for(let i=0;i<=64;i++){
+  const t=i/64, angle=1.8+t*Math.PI*1.75;
+  slidePoints.push(new THREE.Vector3(Math.cos(angle)*9.35,18.4*(1-t)+.45,Math.sin(angle)*9.35));
+}
+const slideCurve=new THREE.CatmullRomCurve3(slidePoints);
+hqMesh(new THREE.TubeGeometry(slideCurve,80,.49,10,false),hqRed,0,0,0);
+const slideRail=slidePoints.map(p=>new THREE.Vector3(p.x*1.043,p.y+.29,p.z*1.043));
+hqMesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(slideRail),80,.13,8,false),hqGlow,0,0,0);
+const slideButton=liftButton.cloneNode();
+slideButton.textContent='Rutsche · hinunter';
+gameEl.append(slideButton);
+let pawSlide=null;
+slideButton.addEventListener('click',()=>{
+  if(!slideButton.hidden&&!pawRide&&pawSlide===null)pawSlide=0;
+});
+function updatePawSlide(dt){
+  slideButton.hidden=!gameRunning||!isMeadow()||pawRide!==null||pawSlide!==null||
+    Math.abs(player.y-24)>.25||Math.hypot(player.x+253,player.z-196)>1.6;
+  if(pawSlide===null||!gameRunning)return;
+  pawSlide=Math.min(1,pawSlide+dt/4.5);
+  const point=slideCurve.getPointAt(pawSlide);
+  player.x=pawHQ.position.x+point.x;
+  player.y=pawHQ.position.y+point.y+.55;
+  player.z=pawHQ.position.z+point.z;
+  player.vy=0;
+  player.grounded=false;
+  if(pawSlide===1)pawSlide=null;
+}
+hqBox(hqYellow,-1.5,19.03,5.5,2.25,.06,1.6);
+let pawRide=null;
+function pawLanding(){
+  if(!gameRunning||!isMeadow()||Math.abs(player.x+254.5)>.83||Math.abs(player.z-190.5)>.83)return null;
+  if(Math.abs(player.y-5)<.22)return 5;
+  if(Math.abs(player.y-24)<.22)return 24;
+  return null;
+}
+liftButton.addEventListener('click',()=>{
+  const floor=pawLanding();
+  if(floor===null||pawRide)return;
+  pawRide={from:floor,to:floor===5?24:5,elapsed:0};
+});
+function updatePawLift(dt){
   pawHQ.visible=isMeadow()&&Math.hypot(player.x+251.5,player.z-190.5)<105;
-  const near=pawHQ.visible&&Math.abs(player.x+254.5)<.72&&Math.abs(player.z-190.5)<.72;
-  if(!near){onPawLift=false;return;}
-  if(onPawLift||!gameRunning||!player.grounded)return;
-  if(Math.abs(player.y-5)<.25||Math.abs(player.y-24)<.25){
-    onPawLift=true;
-    const upstairs=player.y>10;
-    player.y=upstairs?5.05:24.05;
-    player.vy=0;
-    player.grounded=false;
-    toast(upstairs?'Erdgeschoss':'Paw Patrol · Leitstelle');
+  const floor=pawLanding();
+  liftButton.hidden=!pawRide&&floor===null;
+  liftButton.disabled=Boolean(pawRide);
+  liftButton.textContent=pawRide?'Fahrstuhl fährt …':floor===24?'Fahrstuhl · Erdgeschoss':'Fahrstuhl · Leitstelle';
+  liftCar.visible=Boolean(pawRide)||floor!==null;
+  if(!pawRide){
+    liftCar.position.set(-3,(floor??5)-5,0);
+    return;
+  }
+  if(!gameRunning)return;
+  pawRide.elapsed+=dt;
+  const progress=Math.min(1,pawRide.elapsed/4);
+  const eased=progress*progress*(3-2*progress);
+  player.x=-254.5;
+  player.z=190.5;
+  player.y=THREE.MathUtils.lerp(pawRide.from,pawRide.to,eased)+.025;
+  player.vy=0;
+  liftCar.position.set(-3,player.y-5-.025,0);
+  if(progress===1){
+    toast(pawRide.to===24?'Paw Patrol · Leitstelle':'Erdgeschoss');
+    pawRide=null;
   }
 }
 function crossPawPortal(oldX,oldZ){
@@ -5804,15 +5953,15 @@ $('villageBtn')?.addEventListener('click',visitVillage);
 function castleMoonlight(){return isMeadow()&&lightMode===2;}
 function applyLighting(){
   const options=[
-    {sky:'#d4e8ee',sun:'#fff5e1',power:2.05,hemi:1.48,exposure:1.04,label:'☀ Tag · Hell'},
-    {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
+    {sky:'#d4e8ee',sun:'#fff5e1',power:2.12,hemi:1.31,exposure:1.08,label:'☀ Tag · Hell'},
+    {sky:'#dfae8c',sun:'#ffd09a',power:1.95,hemi:1.14,exposure:1.04,label:'🌅 Goldene Stunde'},
     {sky:'#1d3551',sun:'#9bb7df',power:.55,hemi:.76,exposure:1.02,label:'☾ Mondnacht'}
   ];
   const moonlit=castleMoonlight();
   const p=options[lightMode];
   outdoorLanternGain=[.38,.72,1][lightMode];
   castleLightCell=null;
-  const direction=[[-44,68,-28],[-73,21,-18],[38,53,-48]][lightMode];
+  const direction=[[-44,68,37],[-73,25,36],[38,53,-48]][lightMode];
   sunlight.position.set(...direction);
   scene.background.set(p.sky);
   netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
@@ -6100,7 +6249,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V133';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V136';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -6203,7 +6352,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);crossPawPortal(oldX,oldZ);updatePawPortal(now);updatePawLift();updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  if(!pawRide&&pawSlide===null)updateMovement(dt);crossRainbowPortal(oldZ);crossPawPortal(oldX,oldZ);updatePawPortal(now);updatePawLift(dt);updatePawSlide(dt);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
