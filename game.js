@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V131 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V132 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1655,6 +1655,49 @@ function buildFutureColumn(x,z){
     put(x,8+height,z,'lantern');
   }
 }
+function buildPawColumn(x,z){
+  const dx=x+252,dz=z-190;
+  const radius=Math.hypot(dx,dz);
+  // Walkway linking the return portal to the forecourt.
+  if((Math.abs(dx)<=2&&dz>=-16&&dz<=0)||(Math.abs(dx)<=20&&dz>=-12&&dz<=-8))
+    put(x,4,z,'path');
+  // Open garage bays beside the tower.
+  if(dx>=8&&dx<=20&&dz>=-8&&dz<=7){
+    put(x,4,z,'cobble');
+    const wall=dx===8||dx===20||dz===7||
+      (dz===-8&&(dx===14||dx===15));
+    if(wall)for(let y=5;y<=9;y++)put(x,y,z,y===8&&dz===7?'glass':'stone');
+    put(x,10,z,'bricks');
+    put(x,11,z,'snow');
+    if(dz===0&&[11,17].includes(dx))put(x,9,z,'lantern');
+  }
+  if(radius>8.5)return;
+  if(radius<=6.5){
+    put(x,4,z,'cobble');
+    if(radius>=5.3&&!(Math.abs(dx)<=1&&dz<0))
+      for(let y=5;y<=9;y++)put(x,y,z,y===8?'glass':'snow');
+    put(x,10,z,'stone');
+    if(radius<=3.2&&radius>=2.2)
+      for(let y=11;y<=22;y++)put(x,y,z,y%4===0?'glass':'snow');
+    if(dz===2&&Math.abs(dx)<=2){
+      put(x,5,z,'netherDeep');
+      put(x,6,z,'glass');
+    }
+    if(dz===0&&Math.abs(dx)===4)put(x,9,z,'lantern');
+  }
+  // Overhanging observation deck with a wraparound glazed band.
+  put(x,22,z,'stone');
+  put(x,23,z,'bricks');
+  if(radius>=7.0)
+    for(let y=24;y<=27;y++)put(x,y,z,y===27?'snow':'glass');
+  put(x,28,z,'bricks');
+  if(radius<=6)put(x,29,z,'bricks');
+  if(radius<=3)put(x,30,z,'snow');
+  if(radius<1){
+    for(let y=31;y<=34;y++)put(x,y,z,'stone');
+    put(x,35,z,'lantern');
+  }
+}
 function generateChunkData(cx,cz){
   if(isLegacyChunk(cx,cz)||generatedChunks.has(chunkKey(cx,cz)))return;
   if(isMeadow()){
@@ -1664,6 +1707,7 @@ function generateChunkData(cx,cz){
       for(let y=0;y<MEADOW_HEIGHT;y++)
         put(x,y,z,y===MEADOW_HEIGHT-1?(inFuture(x)?'netherDeep':'grass'):y>=MEADOW_HEIGHT-3?'dirt':'stone');
       if(inFuture(x))buildFutureColumn(x,z);
+      if(x>=-272&&x<=-232&&z>=174&&z<=199)buildPawColumn(x,z);
     }
     // Erzeugte Festungsblöcke zuerst, persönliche Änderungen zuletzt.
     addNetherChunk(cx,cz);
@@ -5247,10 +5291,29 @@ veilShape.absarc(0,3,2.16,0,Math.PI,false);
 veilShape.closePath();
 const veil=new THREE.MeshBasicMaterial({color:0x57c8ff,opacity:.25,transparent:true,depthWrite:false,side:THREE.DoubleSide});
 pawPart(new THREE.ShapeGeometry(veilShape,24),veil,0,0,0);
-scene.add(pawPortal);
+const pawReturn=pawPortal.clone();
+pawReturn.position.set(-252,MEADOW_HEIGHT,174);
+pawReturn.rotation.y=0;
+scene.add(pawPortal,pawReturn);
+function crossPawPortal(oldX,oldZ){
+  if(!gameRunning||!isMeadow()||player.y<4.9||player.y>9)return;
+  if((oldX<-138)!==(player.x<-138)){
+    const crossing=(-138-oldX)/(player.x-oldX);
+    if(Math.abs(oldZ+(player.z-oldZ)*crossing+58.5)<1.95){
+      teleportTo(-252,177,'Paw Patrol · Zentrale',-252,190);
+      return;
+    }
+  }
+  if((oldZ<174)!==(player.z<174)){
+    const crossing=(174-oldZ)/(player.z-oldZ);
+    if(Math.abs(oldX+(player.x-oldX)*crossing+252)<1.95)
+      teleportTo(-135,-59,'Zurück bei Schloss Nachtrabe',-38,-58.5);
+  }
+}
 function updatePawPortal(now){
   pawPortal.visible=isMeadow()&&Math.hypot(player.x+138,player.z+58.5)<120;
-  if(pawPortal.visible)veil.opacity=.23+.07*Math.sin(now*.003);
+  pawReturn.visible=isMeadow()&&Math.hypot(player.x+252,player.z-174)<120;
+  if(pawPortal.visible||pawReturn.visible)veil.opacity=.23+.07*Math.sin(now*.003);
 }
 const charizard=new THREE.Group();
 charizard.position.set(240.5,5.04,84);
@@ -5954,7 +6017,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V131';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V132';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5985,6 +6048,7 @@ function updateRegion(){
   if(isMeadow()){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
     let name=inFuture(player.x)?'◇ Hightech-Welt':inside?'🏰 Schloss Nachtrabe':'🌿 Große Wiese';
+    if(Math.hypot(player.x+252,player.z-190)<42)name='🐾 Paw Patrol · Zentrale';
     if(player.y<4.45&&player.x>=13&&player.x<26&&player.z>=-24&&player.z<1)name="🕯️ Bunker";
     if(player.x>=-39&&player.x<-16&&player.z>=-77&&player.z<=-61&&player.y<13){
       name='📜 Rabenarchiv';
@@ -6056,7 +6120,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);updatePawPortal(now);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);crossPawPortal(oldX,oldZ);updatePawPortal(now);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
