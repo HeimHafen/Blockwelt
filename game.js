@@ -1,4 +1,4 @@
-// BLOCKWELT V60 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V61 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3780,10 +3780,7 @@ function updateBunkerHatch(dt){
   if(opening)hatchAssembly.rotation.z=THREE.MathUtils.damp(hatchAssembly.rotation.z,target,13,dt);
   for(const lever of bunkerLevers)lever.rotation.z=bunkerHatchOpen?.50:-.50;
 }
-for(let step=0;step<9;step++){
-  const rail=bunkerProp(oakDoor,18.12,5.02-step,-step,.12,.13,1.42);
-  rail.rotation.x=-Math.PI/4;
-}
+
 for(const y of [-4.42,-2.83]){
   bunkerProp(oakDoor,15.1,y,-20.6,1.45,.2,2.55);
   bunkerProp(bunkerLinen,15.1,y+.15,-20.6,1.3,.20,2.38);
@@ -4582,7 +4579,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V60';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V61';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
