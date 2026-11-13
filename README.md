@@ -173,3 +173,7 @@ Eichenvertäfelung, ein gemusterter Wollteppich und profilierte Regalleisten rah
 ## V118 – Kaminoberflächen
 
 Der Kamin erhält einen ausgekleideten Feuerraum, einen abgestuften Sims und eine Stein-Normalmap. Das Feuer bleibt die einzige Lichtquelle.
+
+## V119 – Freier Durchgang im Arbeitszimmer
+
+Das Bücherregal steht weiter rechts an der Nordwand, außerhalb der Türöffnung.

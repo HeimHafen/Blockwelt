@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=118';
-// BLOCKWELT V118 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=119';
+// BLOCKWELT V119 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -4000,15 +4000,15 @@ for(const x of [-.25,.25]){
 studyBox(.59,.18,.09,oakDoor,0,1.05,2.30);
 
 // Bookcase against the north wall, with inset back, framed shelves and book spines.
-studyBox(2.41,2.28,.09,oakDoor,-1.22,1.14,-3.94);
-for(const x of [-2.43,-.01])
+studyBox(2.41,2.28,.09,oakDoor,2.35,1.14,-3.94);
+for(const x of [1.14,3.56])
   studyBox(.14,2.35,.44,oakDoor,x,1.175,-3.75);
 for(const y of [.12,.68,1.22,1.76,2.32])
-  studyBox(2.56,.10,.48,oakDoor,-1.22,y,-3.74);
+  studyBox(2.56,.10,.48,oakDoor,2.35,y,-3.74);
 const spineMaterials=[studyGreen,studyLeather,bunkerCloth,oakDoor];
 for(let row=0;row<3;row++)for(let book=0;book<10;book++){
   const height=.24+pixelHash(book,row,161)*.20;
-  const x=-2.28+book*.21;
+  const x=1.29+book*.21;
   const y=.73+row*.54+height/2;
   studyBox(.15,height,.24,spineMaterials[(book+row)%4],x,y,-3.68);
   studyBox(.107,.027,.006,studyBrass,x,y+height*.25,-3.558);
@@ -4040,9 +4040,9 @@ for(const [x,width] of [[-2.75,4.3],[2.40,4.15]]){
     studyBox(.52,.61,.035,oakDoor,cx,.57,4.86);
   }
 }
-studyBox(2.64,.13,.58,oakDoor,-1.22,2.41,-3.74);
-studyBox(2.54,.07,.51,studyLeather,-1.22,2.32,-3.74);
-for(const x of [-2.38,-.07]){
+studyBox(2.64,.13,.58,oakDoor,2.35,2.41,-3.74);
+studyBox(2.54,.07,.51,studyLeather,2.35,2.32,-3.74);
+for(const x of [1.19,3.50]){
   studyBox(.073,2.22,.042,studyBrass,x,1.20,-3.499);
 }
 // Low-pile wool rug confined to the desk alcove.
@@ -5449,7 +5449,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V118';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V119';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
