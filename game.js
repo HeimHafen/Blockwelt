@@ -1,4 +1,4 @@
-// BLOCKWELT V54 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V56 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -114,11 +114,14 @@ function makeNetherPlan(){
     box(x-1,x+1,5,24,-35,-34,T);
     solid(x,19,-33,L);
   }
-  for(let y=26;y<=32;y++){
-    const span=12-(y-25);
-    deck(-span,span,y,-43,-35,y%2?D:T);
+  // Wall walk on the gatehouse, with crenellated parapets.
+  deck(-12,12,26,-43,-35,T);
+  crenel(-12,12,27,-43,-35);
+  for(const x of [-9,9]){
+    box(x-2,x+2,27,31,-42,-36,N);
+    deck(x-2,x+2,32,-42,-36,T);
+    crenel(x-2,x+2,33,-42,-36);
   }
-  solid(0,33,-39,G);
   for(let z=-48;z<=14;z++)for(let x=-4;x<=4;x++){
     solid(x,4,z,Math.abs(x)===4?T:'cobble');
   }
@@ -542,9 +545,11 @@ function reliefMaterial(type,face){
   const map=new THREE.CanvasTexture(color),bumpMap=new THREE.CanvasTexture(height);
   map.colorSpace=THREE.SRGBColorSpace;
   map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
-  const material=new THREE.MeshStandardMaterial({
+  const wet=type==='cobble';
+  const material=new THREE.MeshPhysicalMaterial({
     map,bumpMap,bumpScale:face==='bottom'?.021:.035,
-    roughness:wood?.83:.91,metalness:0,
+    roughness:wet?.36:wood?.83:.91,metalness:0,
+    clearcoat:wet?.38:0,clearcoatRoughness:.26,
     emissive:wood?'#352519':'#383340',emissiveIntensity:.31
   });
   return grass||type.startsWith('nether')||type==='cobble'?addSurfacePatina(material,!grass):material;
@@ -3650,6 +3655,66 @@ for(let x=-7;x<=7;x++){
 }
 scene.add(gateMolding);
 
+// Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
+const castleDoors=new THREE.Group();
+const oakDoor=materialByType.planks[0];
+const doorIron=new THREE.MeshStandardMaterial({color:'#393733',roughness:.58,metalness:.53});
+const ringGeometry=new THREE.TorusGeometry(.13,.034,8,16);
+for(const [half,z,height] of [[7,-35,7.6],[5,-59,6.1]]){
+  for(const side of [-1,1]){
+    const hinge=side*(half+.5)+.5;
+    const door=new THREE.Group();
+    door.position.set(hinge,5,z+.66);
+    door.rotation.y=side*Math.PI*.49;
+    const width=half+.4;
+    door.userData.site=[side*(half+1),5,z];
+    door.userData.type=netherBlockAt(...door.userData.site);
+    for(let plank=0;plank<10;plank++){
+      const x=-side*width*(plank+.5)/10;
+      part(door,width/10-.015,height,.17,oakDoor,x,height/2,0);
+    }
+    for(const y of [.55,height*.49,height-.54]){
+      part(door,width,.19,.08,doorIron,-side*width/2,y,.106);
+      for(let stud=0;stud<6;stud++){
+        const rivet=new THREE.Mesh(ringGeometry,doorIron);
+        rivet.scale.setScalar(.27);
+        rivet.position.set(-side*width*(stud+.5)/6,y,.166);
+        door.add(rivet);
+      }
+    }
+    const handle=new THREE.Mesh(ringGeometry,doorIron);
+    handle.position.set(-side*(width-.42),2.0,.155);
+    door.add(handle);
+    castleDoors.add(door);
+  }
+}
+scene.add(castleDoors);
+
+// Interior details are attached to editable masonry, outside the walking clearance.
+const hallDetails=new THREE.Group();
+const hallAnchors=[];
+function anchorHallDetail(mesh,x,y,z){
+  hallAnchors.push({mesh,x,y,z,type:netherBlockAt(x,y,z)});
+}
+for(let z=-79;z<=-62;z+=4){
+  // Individual beam sections allow removal of the corresponding ceiling block.
+  for(let x=-10;x<=10;x++){
+    const beam=part(hallDetails,1,.42,.36,oakDoor,x+.5,19.8,z+.5);
+    anchorHallDetail(beam,x,20,z);
+  }
+  for(const side of [-1,1]){
+    const x=side*16;
+    const inside=x+.5-side*.54;
+    const sill=part(hallDetails,.67,.19,1.42,gateStone,inside,9,z+.5);
+    anchorHallDetail(sill,x,8,z);
+    for(const offset of [-1,1]){
+      const reveal=part(hallDetails,.55,6,.22,gateStone,inside,12,z+.5+offset*.54);
+      anchorHallDetail(reveal,x,11,z+offset);
+    }
+  }
+}
+scene.add(hallDetails);
+
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
   [42,-68,6,36],[-24,-80,6,43],[24,-80,6,43],[0,-70,9,56]];
 // A shared profile adds chamfered stringcourses to all four faces of each tower.
@@ -3789,6 +3854,10 @@ function updateCastleLighting(){
   if(cell===castleLightCell)return;
   castleLightCell=cell;
   refreshCornices();
+  for(const {mesh,x,y,z,type} of hallAnchors)
+    mesh.visible=Boolean(type)&&netherBlockAt(x,y,z)===type;
+  for(const door of castleDoors.children)
+    door.visible=Boolean(door.userData.type)&&netherBlockAt(...door.userData.site)===door.userData.type;
   if(isMeadow())for(const frame of lanternFrames.children){
     const [x,y,z,type]=frame.userData.site;
     frame.visible=netherBlockAt(x,y,z)===type;
@@ -4370,7 +4439,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V54';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V56';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
