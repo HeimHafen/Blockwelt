@@ -1,4 +1,4 @@
-# Blockwelt V74 – Schloss Nachtrabe
+# Blockwelt V75 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -9,3 +9,7 @@ Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.
 ## V74 – Beleuchtung
 
 Wege, Halle, Seitenflügel und Bunkertreppe haben feste Lichtquellen. Die Lichtwirkung dieser Laternen hängt vom Laternenblock ab und bleibt beim Annähern gleich. Im Bunker beleuchten die sichtbaren Laternen und die Feuerstelle jeweils ihren eigenen Bereich. Die blaue Stunde hat kühleres Umgebungslicht. Das feuchte Pflaster reflektiert Licht breiter und schwächer.
+
+## V75 – Laternenpositionen
+
+Neun Innenlaternen sitzen mit eisernen Haltern am Mauerwerk, abseits von Fenstern und Türen. Die zehn Weglaternen stehen auf Bodensockeln. Die Bunkerleuchten hängen direkt an Querbalken.

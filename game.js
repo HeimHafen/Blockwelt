@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=74';
-// BLOCKWELT V74 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=75';
+// BLOCKWELT V75 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3322,10 +3322,10 @@ for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16])
   castleLampSites.push([x,6,z,'lantern']);
 
 const fixedLanterns=castleLampSites.map((site,index)=>{
-  const [x,y,z]=site;
+  const [x,y,z,,dx=0,dz=0]=site;
   const inside=index<interiorLampSites.length;
   const light=new THREE.PointLight(inside?'#ffd1a0':'#ffc284',0,inside?10:13,2);
-  light.position.set(x+.5,y+.52,z+.5);
+  light.position.set(x+.5-dx*.22,y+.52,z+.5-dz*.22);
   scene.add(light);
   return {site,light,power:inside?36:52};
 });
@@ -3355,13 +3355,18 @@ scene.add(castleMist);
 // Ironwork is attached to the actual light block, never to a fixed overlay.
 const lanternIron=new THREE.MeshStandardMaterial({color:'#352b29',roughness:.68,metalness:.42});
 const lanternFrames=new THREE.Group();
-for(const [x,y,z,type] of castleLampSites){
+for(const [x,y,z,type,dx=0,dz=0] of castleLampSites){
   if(type!=='lantern')continue;
   const frame=new THREE.Group();
   frame.position.set(x+.5,y+.5,z+.5);
-  for(const dx of [-.51,.51])for(const dz of [-.51,.51])
-    part(frame,.075,1.08,.075,lanternIron,dx,0,dz);
+  for(const cornerX of [-.51,.51])for(const cornerZ of [-.51,.51])
+    part(frame,.075,1.08,.075,lanternIron,cornerX,0,cornerZ);
   for(const dy of [-.5,.5])part(frame,1.08,.08,1.08,lanternIron,0,dy,0);
+  if(dx||dz){
+    part(frame,dx?.12:.38,.72,dz?.12:.38,lanternIron,dx*.54,-.54,dz*.54);
+    part(frame,dx?.61:.17,.12,dz?.61:.17,lanternIron,dx*.29,-.55,dz*.29);
+    frame.userData.wall=[x+dx,y-1,z+dz];
+  }
   frame.userData.site=[x,y,z,type];
   lanternFrames.add(frame);
 }
@@ -3733,7 +3738,7 @@ bunkerProp(gateStone,24,-4.55,-14,.94,.83,1.02);
 bunkerProp(materialByType.lavaGlow[0],23.52,-4.5,-14,.035,.32,.45);
 bunkerProp(oakDoor,20.86,-3.56,-10.48,.13,2.88,1.26);
 const bunkerRoomLights=[
-  [22.7,-2.59,-13.5,20,7], [22.7,-2.59,-20.5,20,7], [23.1,-4.1,-14,13,5]
+  [23,-2.59,-12.5,20,7], [23,-2.59,-17.5,20,7], [23.1,-4.1,-14,13,5]
 ].map(([x,y,z,power,range])=>{
   const light=new THREE.PointLight('#ffc18c',0,range,2);
   light.position.set(x,y,z);
@@ -3762,8 +3767,8 @@ for(const [x,z] of [[15.45,-12.12],[23.95,-22.1]]){
   bunkerProp(oakDoor,x,-4.66,z,.94,.65,.63);
   for(const dx of [-.27,.27])bunkerProp(doorIron,x+dx,-4.65,z+.32,.08,.64,.035);
 }
-for(const z of [-13.5,-20.5]){
-  bunkerProp(doorIron,23,-2.04,z,.055,.68,.055);
+for(const z of [-12.5,-17.5]){
+  bunkerProp(doorIron,23,-1.71,z,.055,1.40,.055);
   bunkerProp(doorIron,23,-2.43,z,.36,.08,.36);
   bunkerProp(materialByType.lantern[0],23,-2.59,z,.24,.29,.24);
   bunkerProp(doorIron,23,-2.77,z,.33,.07,.33);
@@ -3930,7 +3935,7 @@ function updateCastleLighting(){
   wingWindowDetails.visible=isMeadow();
   gateMolding.visible=isMeadow();
   valleyTrees.visible=isMeadow();
-  lanternFrames.visible=isMeadow()&&graphicMode==='schoen';
+  lanternFrames.visible=isMeadow();
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
   if(castleMist.visible)for(const sheet of castleMist.children)
     sheet.rotation.y=Math.atan2(camera.position.x-sheet.position.x,camera.position.z-sheet.position.z);
@@ -3948,6 +3953,8 @@ function updateCastleLighting(){
   if(isMeadow())for(const frame of lanternFrames.children){
     const [x,y,z,type]=frame.userData.site;
     frame.visible=netherBlockAt(x,y,z)===type;
+    const wall=frame.userData.wall;
+    if(wall)for(const bracket of frame.children.slice(-2))bracket.visible=!!netherBlockAt(...wall);
   }
   if(isMeadow())for(const stone of gateMolding.children)
     stone.visible=netherBlockAt(...stone.userData.site)==='netherTrim';
@@ -4529,7 +4536,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V74';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V75';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }

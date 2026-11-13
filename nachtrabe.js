@@ -101,7 +101,6 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
   }
   deck(-4,4,32,-81,-63,slate);
   for(const [x,y,z,type] of interiorLampSites){
-    solid(x,y-1,z,trim);
     solid(x,y,z,type);
   }
   for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16]){
@@ -113,8 +112,8 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
 export const wingWindows=[-35,34].flatMap(x=>[-70,-60,-50].map(z=>[x,z]));
 
 export const interiorLampSites=[
-  ...[-32,31].flatMap(x=>[-70,-60,-50].map(z=>[x,7,z,'lantern'])),
-  [-9,9,-66,'lantern'], [9,9,-66,'lantern'], [0,9,-78,'lantern']
+  ...[-34,33].flatMap(x=>[-67,-57,-47].map(z=>[x,7,z,'lantern',x<0?-1:1,0])),
+  ...[-10,0,10].map(x=>[x,8,-79,'lantern',0,-1])
 ];
 
 // Stone surrounds and iron guides sit outside the clear opening.
