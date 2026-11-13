@@ -1,4 +1,4 @@
-// BLOCKWELT V64 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V65 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -93,10 +93,22 @@ function makeNetherPlan(){
     for(let z=-k+1;z<=k;z++)ring.push([-k,z]);
     for(let x=-k+1;x<0;x++)ring.push([x,k]);
     const path=[];
-    for(let z=cz+r+2;z>cz+k;z--)path.push([cx,4,z]);
-    for(let y=5;y<=h;y++){
-      const [x,z]=ring[(y-5)%ring.length];
+    for(let z=cz+r+2;z>cz+k;z--)path.push([cx,base,z]);
+    // Each straight flight ends at a level corner landing.
+    let y=base, index=0;
+    while(y<h){
+      const [x,z]=ring[index%ring.length];
+      const corner=Math.abs(x)===k&&Math.abs(z)===k;
+      if(!corner)y++;
       path.push([cx+x,y,cz+z]);
+      if(corner){
+        deck(cx+x-1,cx+x+1,y,cz+z-1,cz+z+1,T);
+      }
+      index++;
+    }
+    // Floors across the central shaft leave a continuous stairwell at the walls.
+    for(let level=base+7;level<h-2;level+=7){
+      deck(cx-k+1,cx+k-1,level,cz-k+1,cz+k-1,D);
     }
     routes.push(path);
     return {cx,cz,r,h};
@@ -4653,7 +4665,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V64';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V65';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
