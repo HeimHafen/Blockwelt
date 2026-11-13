@@ -153,3 +153,7 @@ Der Schrank erhält gerahmte Holzfronten und Eisenringe. Das Kaminfeuer beleucht
 ## V110 – Geheimschrank und Feuerlicht
 
 Die gerahmten Schrankflügel schließen den Eingang und öffnen sich bei Annäherung. Im Kaminzimmer ist das Feuer die einzige Lichtquelle. Dielen, gepolsterte Lehnen, Teppichfransen und ein Wandschild ergänzen den Raum.
+
+## V111 – Geheimschrank und Kaminzimmer
+
+Eine durchgehende Kranzleiste, ein niedriger Sockel und sichtbare Scharniere vervollständigen den Schrank. Eichenvertäfelung, ein Wollbehang und Kaminbesteck ergänzen das Zimmer. Die verbliebene Wandlaterne im Ostflügelzimmer wurde aus dem Bauplan entfernt.

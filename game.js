@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=110';
-// BLOCKWELT V110 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=111';
+// BLOCKWELT V111 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3937,6 +3937,10 @@ for(const z of [-63.5,-60.5]){
   pull.position.set(26.83,6.48,z);
   wardrobe.add(pull);
 }
+// A continuous cornice and plinth tie the four front panels together.
+part(wardrobe,.46,.16,4.08,oakDoor,26.86,8.71,-62);
+part(wardrobe,.38,.11,3.98,oakDoor,26.89,8.56,-62);
+part(wardrobe,.15,.11,3.82,oakDoor,26.88,5.055,-62);
 const wardrobeLeaves=[-1,1].map(side=>{
   const hinge=new THREE.Group();
   hinge.position.set(26.89,5,-62+side*.99);
@@ -3946,6 +3950,11 @@ const wardrobeLeaves=[-1,1].map(side=>{
     part(hinge,.052,.09,.84,oakDoor,-.081,y,center);
   for(const edge of [-.39,.39])
     part(hinge,.052,2.93,.09,oakDoor,-.081,1.70,center+edge);
+  for(const y of [.42,2.98]){
+    part(hinge,.046,.11,.21,doorIron,-.087,y,-side*.12);
+    part(hinge,.079,.15,.079,doorIron,-.067,y,-side*.037);
+  }
+  part(hinge,.035,.24,.11,doorIron,-.092,1.49,-side*.82);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.075,.014,6,12),doorIron);
   ring.rotation.y=Math.PI/2;
   ring.position.set(-.105,1.46,-side*.82);
@@ -4196,7 +4205,26 @@ for(let stitch=0;stitch<24;stitch++){
 hearthPart(.95,.72,.10,oakDoor,32,7.48,-56.52);
 hearthPart(.79,.55,.025,bunkerCloth,32,7.48,-56.585);
 hearthPart(.24,.24,.035,bunkerAmber,32,7.48,-56.61).rotation.z=Math.PI/4;
-const hearthLight=new THREE.PointLight('#ff9d56',0,7,2);
+// Low oak panelling and a wool hanging soften the stone chamber.
+const hearthWool=new THREE.MeshLambertMaterial({color:'#59453b'});
+const hearthThread=new THREE.MeshLambertMaterial({color:'#a18460'});
+hearthPart(.09,1.10,4.12,oakDoor,33.94,5.55,-58.92);
+hearthPart(.15,.10,4.18,oakDoor,33.90,6.11,-58.92);
+for(const z of [-60.85,-59.87,-58.89,-57.91,-56.96])
+  hearthPart(.047,.89,.07,oakDoor,33.88,5.56,z);
+hearthPart(.045,1.58,1.55,hearthWool,33.94,7.45,-60.10);
+hearthPart(.087,.071,1.78,oakDoor,33.90,8.27,-60.10);
+for(const z of [-60.80,-59.40])
+  hearthPart(.013,1.51,.045,hearthThread,33.912,7.45,z);
+for(const y of [6.74,8.15])
+  hearthPart(.013,.037,1.42,hearthThread,33.912,y,-60.10);
+// Poker and shovel rest beside the firebox.
+for(const x of [32.98,33.13]){
+  const tool=hearthPart(.037,.81,.038,doorIron,x,5.56,-57.34);
+  tool.rotation.z=-.17;
+}
+hearthPart(.13,.045,.16,doorIron,33.06,5.16,-57.32);
+const hearthLight=new THREE.PointLight('#ffad72',0,8,2);
 hearthLight.position.set(32,5.96,-57.06);
 hearthRoom.add(hearthLight);
 scene.add(hearthRoom);
@@ -5241,7 +5269,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V110';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V111';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
