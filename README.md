@@ -1,7 +1,5 @@
-# Blockwelt V45 – Nachtrabe im Nebel
+# Blockwelt V47 – Nachtrabe im Laternenlicht
 
-Dieses Paket enthält V44 und die neuen Grafikdetails. Die blaue Stunde zeigt drei gestaffelte Hügelkulissen. Im Modus „Schön“ sind der Bodennebel kräftiger und die Schlosslaternen mit dunklen Metallrahmen eingefasst. Wird eine dieser Laternen abgebaut, verschwindet auch ihr Rahmen. Steintexturen erhalten zusätzliche Farbnuancen.
+V47 enthält die Grafikänderungen aus V46. Feste warme Lichtzonen am Torweg, am Tor, in der Großen Halle und im Rabenarchiv hängen vom Vorhandensein der Lichtblöcke ab, unabhängig von der Spielerposition. Lokale Lichtquellen ergänzen diese Grundbeleuchtung. Stein, Pflaster und Laternen wurden optisch überarbeitet.
 
-ZIP entpacken, index.html, styles.css, game.js und README.md im Blockwelt-Repository ersetzen, veröffentlichen und die Seite neu laden. Oben auf der Großen Wiese erscheint V45 – Nachtrabe im Nebel.
-
-JavaScript-Syntax und 648 Treppenübergänge wurden geprüft. Darstellung und Bildrate auf dem iPhone wurden nicht gemessen. Die Landschaft ist eine vereinfachte Kulisse. Das fotorealistische Referenzbild bleibt das Grafikziel.
+Das ZIP entpacken und die vier Dateien im Blockwelt-Repository ersetzen. Ein direkter Wechsel von V45 auf V47 ist möglich. JavaScript-Syntax und 648 Treppenübergänge wurden geprüft. WebGL-Darstellung und Bildrate auf dem iPhone sind offen.

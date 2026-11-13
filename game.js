@@ -1,4 +1,4 @@
-// BLOCKWELT V45 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V47 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -122,7 +122,7 @@ function makeNetherPlan(){
   }
   solid(0,33,-39,G);
   for(let z=-48;z<=14;z++)for(let x=-4;x<=4;x++){
-    solid(x,4,z,Math.abs(x)===4?T:Math.abs(x)===2?D:'cobble');
+    solid(x,4,z,Math.abs(x)===4?T:'cobble');
   }
   for(let z=-33;z<=-9;z+=8)for(const x of [-6,6]){
     solid(x,5,z,D);
@@ -479,7 +479,7 @@ function texture(type,face){
 // the block grid still owns collision, selection and saved edits.
 const reliefColors={
   netherBrick:[100,83,81],netherDeep:[68,70,82],netherTrim:[128,106,98],
-  cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
+  grass:[65,81,49],cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
 };
 function reliefMaterial(type,face){
   const size=128,wood=type==='wood'||type==='planks';
@@ -487,16 +487,19 @@ function reliefMaterial(type,face){
   color.width=color.height=height.width=height.height=size;
   const colorContext=color.getContext('2d'),heightContext=height.getContext('2d');
   const pixels=colorContext.createImageData(size,size),heights=heightContext.createImageData(size,size);
-  const base=reliefColors[type];
+  const base=reliefColors[type],grass=type==='grass';
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const row=Math.floor(y/32),u=(x+(row%2)*32)%64,v=y%32;
     const grain=pixelHash(x,y,63),coarse=pixelHash(x>>2,y>>2,42);
     const edge=wood?Math.min(x%32,31-x%32):Math.min(u,63-u,v,31-v);
-    const surface=Math.min(1,edge/3);
+    const chip=(pixelHash(x>>2,y>>2,82)-.5)*2.8;
+    const surface=grass?1:Math.max(0,Math.min(1,(edge+chip)/3));
     const pattern=wood?Math.sin(x*1.6+Math.sin(y*.055)*2)*10:
       (pixelHash(Math.floor((x+row%2*32)/64)%2,row,21)-.5)*26;
     const weather=wood?0:Math.sin(x*.075+y*.09)*5+Math.cos(x*.14-y*.12)*4;
-    const shade=pattern+(grain-.5)*20+(coarse-.5)*24+weather;
+    const stain=Math.sin(x*.052+y*.064)*Math.cos(y*.083-x*.039);
+    const mineral=wood||grass?0:Math.max(0,Math.sin(x*.27+y*.19+coarse*2)-.65)*20;
+    const shade=pattern+(grain-.5)*20+(coarse-.5)*24+weather+stain*12+mineral;
     const i=(y*size+x)*4;
     for(let channel=0;channel<3;channel++){
       pixels.data[i+channel]=base[channel]*(.51+.49*surface)+shade;
@@ -517,7 +520,7 @@ function reliefMaterial(type,face){
 const materialByType={};
 for(const type of BLOCK_TYPES){
   const makeFace=face=>{
-    if(reliefColors[type])return reliefMaterial(type,face);
+    if(reliefColors[type]&&(type!=='grass'||face==='top'))return reliefMaterial(type,face);
     const map=texture(type,face);
     const material=new THREE.MeshLambertMaterial({map});
     if(type.startsWith('nether')){
@@ -529,7 +532,18 @@ for(const type of BLOCK_TYPES){
   };
   const side=makeFace('side'),top=makeFace('top'),bottom=makeFace('bottom');
   if(type==='lantern'||type==='lavaGlow'){
-    const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),emissive:type==='lavaGlow'?'#ff6a17':'#ffae3c',emissiveIntensity:type==='lavaGlow'?.72:.42});
+    const lampMap=texture(type,'side');
+    if(type==='lantern'){
+      const ctx=lampMap.image.getContext('2d');
+      ctx.fillStyle='#42332a';
+      for(const x of [0,30,60])ctx.fillRect(x,0,4,64);
+      for(const y of [0,59])ctx.fillRect(0,y,64,5);
+      ctx.fillStyle='#947050';
+      ctx.fillRect(4,5,56,1);
+      lampMap.needsUpdate=true;
+    }
+    const mat=new THREE.MeshLambertMaterial({map:lampMap,emissiveMap:lampMap,
+      emissive:'#ffb46d',emissiveIntensity:type==='lavaGlow'?1.2:1.45});
     materialByType[type]=[mat,mat,mat,mat,mat,mat];
   }else if(type==='water'){
     const mat=new THREE.MeshLambertMaterial({map:texture(type,'side'),transparent:true,opacity:.72,depthWrite:false});
@@ -1832,7 +1846,7 @@ const farAtlas=document.createElement('canvas');
 farAtlas.width=farAtlas.height=512;
 const farContext=farAtlas.getContext('2d');
 const farTiles=new Map();
-for(const [i,type] of Object.keys(reliefColors).entries()){
+for(const [i,type] of Object.keys(reliefColors).filter(type=>type!=='grass').entries()){
   const x=(i%4)*128,y=Math.floor(i/4)*128;
   farContext.drawImage(materialByType[type][0].map.image,x,y,128,128);
   farTiles.set(type,[x,y]);
@@ -2555,6 +2569,7 @@ function rebuildDecoration(cx,cz){
   decorativeMeshes.set(id,meshes);
 }
 function rebuild(){
+  castleLightCell=null;
   for(const id of [...chunkMeshes.keys()])disposeChunkMesh(id);
   for(const id of [...generatedChunks]){const [cx,cz]=id.split(',').map(Number);unloadChunkData(cx,cz);}
   lastStreamCenter='';updateWorldStream(true);
@@ -3427,6 +3442,17 @@ for(const x of [-32,-24])for(const z of [-73,-66])
 castleLampSites.push([-28,7,-71,'lavaGlow'],[-11,19,-33,'lavaGlow'],[11,19,-33,'lavaGlow']);
 for(let z=-79;z<=-62;z+=4)for(const x of [-12,12])
   castleLampSites.push([x,8,z+1,'lantern']);
+// Fixed lighting zones keep the architecture lit regardless of player distance.
+const castleLightZones=[
+  [-10,7,-20,19], [10,7,-28,19], [0,15,-33,19],
+  [-10,8,-65,17], [10,8,-75,17],
+  [-28,8,-69,16]
+].map(([x,y,z,range])=>{
+  const light=new THREE.PointLight('#ffab65',0,range,2);
+  light.position.set(x,y,z);
+  scene.add(light);
+  return light;
+});
 const castleLamps=Array.from({length:4},()=>new THREE.PointLight('#ffb36b',0,13,2));
 scene.add(...castleLamps);
 const mistMaterial=new THREE.ShaderMaterial({
@@ -3504,6 +3530,12 @@ function updateCastleLighting(){
   if(isMeadow())for(const [x,y,z,type] of edits.values()){
     if(type==='lantern'||type==='lavaGlow')sites.push([x,y,z,type]);
   }
+  const activeSites=isMeadow()?sites.filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type):[];
+  for(const light of castleLightZones){
+    const {x,y,z}=light.position;
+    const sources=activeSites.filter(([sx,sy,sz])=>Math.hypot(sx+.5-x,sy+.5-y,sz+.5-z)<light.distance*.72);
+    light.intensity=Math.min(125,sources.length*37);
+  }
   const uniqueSites=new Map(sites.map(site=>[key(site[0],site[1],site[2]),site]));
   const nearest=isMeadow()?[...uniqueSites.values()]
     .filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type)
@@ -3511,7 +3543,7 @@ function updateCastleLighting(){
     .filter(site=>site.distance<27).sort((a,b)=>a.distance-b.distance):[];
   castleLamps.forEach((lamp,i)=>{
     const site=nearest[i];
-    lamp.intensity=site?76:0;
+    lamp.intensity=site?42:0;
     if(site)lamp.position.set(site.x+.5,site.y+.48,site.z+.5);
   });
 }
@@ -3521,7 +3553,7 @@ function updateNetherCreatures(dt,now){
   const closeToFort=Math.hypot(player.x,player.z+55)<165;
   fortressAccentGroup.visible=isMeadow()&&closeToFort;
   updateCastleLighting();
-  hallGlow.intensity=isMeadow()&&Math.hypot(player.x,player.z+75)<22?24:0;
+  hallGlow.intensity=isMeadow()?15:0;
   netherDragon.visible=active&&closeToFort;
   if(netherDragon.visible){
     const t=now*.001, a=t*.115;
@@ -4072,10 +4104,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V45 – Nachtrabe im Nebel':'Legendenwelt · V45';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V47 – Nachtrabe im Laternenlicht':'Legendenwelt · V47';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V45 · Schloss Nachtrabe':'Blockwelt V45 · Legendenwelt';
+  document.title=meadow?'Blockwelt V47 · Schloss Nachtrabe':'Blockwelt V47 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
