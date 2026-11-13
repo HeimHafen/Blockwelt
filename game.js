@@ -1,4 +1,4 @@
-// BLOCKWELT V57 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V58 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3730,6 +3730,18 @@ for(let z=-79;z<=-62;z+=4){
     }
   }
 }
+// Corbels under the hall beams and individual purlins along the nave.
+for(let z=-79;z<=-62;z+=4){
+  for(const side of [-1,1]){
+    const x=side*12;
+    const corbel=part(hallDetails,1.24,.44,.79,gateStone,x+.5,14.8,z+.5);
+    anchorHallDetail(corbel,x,14,z);
+  }
+}
+for(const x of [-6,6])for(let z=-80;z<=-60;z++){
+  const purlin=part(hallDetails,.24,.34,1,oakDoor,x+.5,19.63,z+.5);
+  anchorHallDetail(purlin,x,20,z);
+}
 scene.add(hallDetails);
 
 const bunkerFurnishings=new THREE.Group();
@@ -3787,6 +3799,19 @@ for(const z of [-12.5,-15.5,-18.5,-21.5]){
     const rib=bunkerProp(gateStone,19.5+5.1*Math.cos(a),-3.03+1.98*Math.sin(a),z,1.19,.27,.33);
     rib.rotation.z=Math.atan2(1.98*Math.cos(a),-5.1*Math.sin(a));
   }
+}
+// Ironwork, ladder and storage sit against the walls, clear of the stairs.
+for(const z of [-21.62,-20.83])bunkerProp(oakDoor,15.91,-3.79,z,.11,2.3,.11);
+for(let y=-4.67;y<=-2.84;y+=.28)bunkerProp(oakDoor,15.91,y,-21.225,.12,.09,.81);
+for(const [x,z] of [[15.45,-12.12],[23.95,-22.1]]){
+  bunkerProp(oakDoor,x,-4.66,z,.94,.65,.63);
+  for(const dx of [-.27,.27])bunkerProp(doorIron,x+dx,-4.65,z+.32,.08,.64,.035);
+}
+for(const z of [-13.5,-20.5]){
+  bunkerProp(doorIron,23,-2.04,z,.055,.68,.055);
+  bunkerProp(doorIron,23,-2.43,z,.36,.08,.36);
+  bunkerProp(materialByType.lantern[0],23,-2.59,z,.24,.29,.24);
+  bunkerProp(doorIron,23,-2.77,z,.33,.07,.33);
 }
 scene.add(bunkerFurnishings);
 
@@ -4514,7 +4539,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V57';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V58';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
@@ -4606,6 +4631,11 @@ resize();
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,180));
 baseWorld();loadEdits();rebuild();syncUndo();applyLighting();updateCamera();applyGraphicMode();refreshNachtrabeMenu();
+try {
+  localStorage.removeItem(ADVENTURE_KEY);
+} catch(error) {
+  console.warn('Der alte Abenteuerwelt-Spielstand konnte nicht gelöscht werden.',error);
+}
 $('loading').remove();
 let lastTime=performance.now(),lastTarget=0,lastCompass=0;
 function animate(now){
