@@ -51,6 +51,11 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     }
   }
 
+  for(const x of towerWindows){
+    box(x,x,10,12,-34,-34,null);
+    box(x,x,10,12,-35,-35,'glass');
+  }
+
   // Three wings enclose the courtyard. Each wing has three separate rooms.
   for(const [a,b,front,back,rooms] of [
     [-35,-19,-75,-44,[-70,-60,-50]],
@@ -150,3 +155,5 @@ export function dressDoorway({frame,door,part,stone,iron,width,height,depth}){
     }
   }
 }
+
+export const towerWindows=[-10,-7,7,10];

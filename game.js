@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=90';
-// BLOCKWELT V90 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=91';
+// BLOCKWELT V91 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3540,6 +3540,24 @@ for(const [left,right,zMin,zMax,base,count] of [
     }
   }
 }
+// Recessed tower glazing sits behind the face of the masonry.
+for(const x of towerWindows){
+  const site=[x,11,-35];
+  for(const side of [-1,1])
+    facadePart(site,'glass',.19,3,.32,gateStone,x+.5+side*.58,11.5,-33.98);
+  facadePart(site,'glass',1.43,.22,.59,gateStone,x+.5,9.98,-33.91);
+  facadePart(site,'glass',1.36,.29,.38,gateStone,x+.5,13.05,-33.96);
+  facadePart(site,'glass',.065,2.94,.065,roofStone,x+.5,11.5,-34.84);
+}
+for(const [left,right] of [[-12,-4],[4,12]]){
+  for(let x=left;x<=right;x++){
+    facadePart([x,15,-34],'netherBrick',1,.24,.47,gateStone,x+.5,15.79,-33.94);
+    facadePart([x,5,-34],'netherBrick',1,.46,.36,roofStone,x+.5,5.24,-33.95);
+  }
+  for(const x of [left,right])for(let y=6;y<15;y++){
+    facadePart([x,y,-34],'netherBrick',y%2?.69:.87,.91,.21,gateStone,x+.5,y+.5,-33.96);
+  }
+}
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4597,7 +4615,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V90';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V91';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
