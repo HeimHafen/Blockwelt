@@ -1,7 +1,5 @@
-# Blockwelt V59
+# Blockwelt V60 – Bunkerluke
 
-index.html, styles.css und game.js gemeinsam ersetzen. Beim ersten Laden entfernt V59 die alten Bauänderungen der Abenteuerwelt und der Nachtrabe-Welt im aktuellen Browser. Danach sind Burg und Bunker wieder im vorgegebenen Zustand. Neue Änderungen werden ab dann normal gespeichert. Exportdateien werden nicht gelöscht.
+index.html, styles.css und game.js gemeinsam ersetzen. Die Luke startet geschlossen. Rechts neben dem Einstieg bei X 19, Z 0 steht der äußere Hebel. In seiner Nähe erscheint die Bedienfläche. Auf der Tastatur funktioniert E. Der zweite Hebel steht unten an der Treppe. Die einmalige Bereinigung aus V59 bleibt für Browser aktiv, in denen sie noch nicht gelaufen ist.
 
-Der Bunker bei X 19, Z 0 hat eine seitlich angeschlagene Grasluke, kleinere Hängelaternen, Werkstattdetails und einen eingefassten Teppich. Die bisherige Steintreppe bleibt der Ein- und Ausgang.
-
-Geprüft: JavaScript-Syntax und ZIP. Darstellung auf iPhone-Safari offen.
+JavaScript-Syntax und Treppenfelder geprüft. Safari und gerenderte Ansicht sind offen.
