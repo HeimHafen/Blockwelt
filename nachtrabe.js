@@ -120,6 +120,7 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     for(const z of [-81,-63])deck(-span,span,y,z,z,stone);
   }
   deck(-4,4,32,-81,-63,slate);
+  solid(0,24,-63,'glass');
   for(const [x,y,z,type] of interiorLampSites){
     solid(x,y,z,type);
   }

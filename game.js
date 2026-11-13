@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=95';
-// BLOCKWELT V95 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=96';
+// BLOCKWELT V96 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3584,11 +3584,11 @@ const turretCourses=[
   [1.67,1.58,.28,16.2,gateStone],
   [0.12,1.76,3.65,18.15,roofStone]
 ];
-for(const x of [-37,36]){
+for(const x of [-37,36])for(const z of [-34.5,-81.5]){
   for(const [upper,lower,height,y,material] of turretCourses){
     const mesh=new THREE.Mesh(new THREE.CylinderGeometry(upper,lower,height,16),material);
-    mesh.position.set(x+.5,y,-34.5);
-    mesh.userData.site=[x,12,-35];
+    mesh.position.set(x+.5,y,z);
+    mesh.userData.site=[x,12,Math.floor(z)];
     mesh.userData.type='netherBrick';
     gateMolding.add(mesh);
   }
@@ -3646,6 +3646,36 @@ for(const [left,right] of [[-35,-19],[19,34]]){
 // Stone benches sit beside the courtyard paths and face the central walk.
 for(const x of [-12,12])for(const z of [-58,-47]){
   facadePart([x,6,z],'netherTrim',.72,.19,2.45,gateStone,x+.5,6.2,z+.5);
+}
+// Reuse the editable gable glazing as the anchor for the carved rose.
+const roseSite=[0,24,-63];
+const roseGlass=new THREE.MeshStandardMaterial({color:'#405a70',
+  emissive:'#df9251',emissiveIntensity:.36,roughness:.35});
+const roseDisk=new THREE.Mesh(new THREE.CircleGeometry(1.86,48),roseGlass);
+roseDisk.position.set(.5,24.5,-62.87);
+roseDisk.userData={site:roseSite,type:'glass'};
+gateMolding.add(roseDisk);
+const roseRing=new THREE.Mesh(new THREE.TorusGeometry(1.87,.18,10,48),gateStone);
+roseRing.position.copy(roseDisk.position);
+roseRing.position.z=-62.75;
+roseRing.userData={site:roseSite,type:'glass'};
+gateMolding.add(roseRing);
+const petalGeometry=new THREE.TorusGeometry(.45,.063,8,24);
+for(let i=0;i<8;i++){
+  const angle=i*Math.PI/4;
+  const petal=new THREE.Mesh(petalGeometry,gateStone);
+  petal.position.set(.5+1.16*Math.cos(angle),24.5+1.16*Math.sin(angle),-62.62);
+  petal.userData={site:roseSite,type:'glass'};
+  gateMolding.add(petal);
+}
+facadePart(roseSite,'glass',.45,.45,.24,gateStone,.5,24.5,-62.62).rotation.z=Math.PI/4;
+
+// Pilasters frame the hall entrance while leaving the public routes open.
+for(const x of [-14,14]){
+  for(let y=5;y<=16;y++)
+    facadePart([x,y,-64],'netherBrick',.72,.98,.42,gateStone,x+.5,y+.5,-62.96);
+  for(const y of [5.26,16.78])
+    facadePart([x,Math.floor(y),-64],'netherBrick',1.26,.40,.65,gateStone,x+.5,y,-62.84);
 }
 scene.add(gateMolding);
 
@@ -4741,7 +4771,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V95';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V96';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

@@ -1,4 +1,4 @@
-# Blockwelt V95 – Schloss Nachtrabe
+# Blockwelt V96 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -93,3 +93,7 @@ Ein segmentierter Torbogen mit einzelnen abgeschrägten Keilsteinen, geneigte Ab
 ## V95 – Bunkerraum
 
 Fässer mit Eisenreifen, eine eingefasste Feuerstelle und eine Tischlaterne mit Buch ergänzen die Einrichtung.
+
+## V96 – Große Halle
+
+Fensterrose mit acht steinernen Ringen am Hallengiebel, profilierte Wandpfeiler zur Hofseite und Schiefertürmchen an den rückwärtigen Ecken.
