@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=87';
-// BLOCKWELT V87 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=88';
+// BLOCKWELT V88 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3746,7 +3746,7 @@ function interactWithHatch(clientX,clientY){
 }
 const bunkerEntryBtn=$('bunkerEntryBtn');
 function canEnterBunker(){
-  return gameRunning&&isMeadow()&&bunkerHatchOpen&&player.y>=1&&player.y<=6&&
+  return gameRunning&&isMeadow()&&player.y>=1&&player.y<=7&&
     Math.hypot(player.x-19.5,player.z+1)<4;
 }
 bunkerEntryBtn.addEventListener('click',()=>{
@@ -3755,6 +3755,7 @@ bunkerEntryBtn.addEventListener('click',()=>{
     const y=-4.98;
     if(blocked(x,y,z)||!groundedAt(x,y,z))continue;
     if(flying)setFlying(false);
+    bunkerHatchOpen=true;
     Object.assign(player,{x,y,z,vy:0,grounded:true});
     yaw=0;
     pitch=-.12;
@@ -4622,7 +4623,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V87';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V88';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

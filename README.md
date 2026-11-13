@@ -1,4 +1,4 @@
-# Blockwelt V87 – Schloss Nachtrabe
+# Blockwelt V88 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -61,3 +61,7 @@ Falltür öffnen. In ihrer Nähe erscheint „Bunker betreten“. Die Schaltflä
 ## V87 – Bunkerzugang
 
 Beim ersten Laden wird der Laufweg einschließlich des unteren Podests aus dem Bauplan wiederhergestellt. Öffne die Falltür und tippe auf „Bunker betreten“.
+
+## V88
+
+Neben der Falltür erscheint „Bunker betreten“ auch bei geschlossener Luke. Die Schaltfläche öffnet die Luke und setzt die Spielfigur auf einen freien Platz am unteren Absatz.
