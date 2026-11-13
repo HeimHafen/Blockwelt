@@ -1,4 +1,4 @@
-# Blockwelt V92 – Schloss Nachtrabe
+# Blockwelt V93 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -81,3 +81,7 @@ Vier tiefe Fensteröffnungen mit innenliegendem Glas, Werksteinrahmen, Sockellei
 ## V92 – Ringmauer und Torfront
 
 Runde Ecktürmchen mit Schieferhauben, Steinabdeckungen und Konsolen an der Torfront. Die schmaleren Banner sitzen zwischen den Fensterachsen.
+
+## V93 – Burganlage
+
+Steinabdeckungen an den seitlichen und rückwärtigen Ringmauern, profilierte Fensterrahmen an der Großen Halle, sichtbare Eichenbalken in den Seitenflügeln und Steinbänke im Innenhof.

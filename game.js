@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=92';
-// BLOCKWELT V92 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=93';
+// BLOCKWELT V93 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3585,6 +3585,45 @@ for(const [left,right] of [[-12,-4],[4,12]]){
     facadePart([x,15,-34],'netherBrick',.34,.31,.58,roofStone,x+.5,15.33,-33.86);
   }
 }
+// Crown the side and rear curtain walls with projecting stone caps.
+for(const x of [-38,37])for(let z=-80;z<=-39;z+=3){
+  facadePart([x,13,z],'netherBrick',1.28,.24,3,gateStone,x+.5,14,z+1.5);
+}
+for(let x=-37;x<=34;x+=3){
+  facadePart([x,13,-82],'netherBrick',3,.24,1.27,gateStone,x+1.5,14,-81.5);
+}
+
+// Carved window surrounds on the courtyard face of the great hall.
+for(const x of [-10,-6,6,10]){
+  const site=[x,9,-64];
+  for(const side of [-1,1]){
+    facadePart(site,'glass',.25,4.04,.37,gateStone,x+.5+side*1.61,10,-62.95);
+    facadePart(site,'glass',.086,3.94,.14,roofStone,x+.5+side*.50,10,-62.94);
+  }
+  facadePart(site,'glass',3.64,.27,.56,gateStone,x+.5,7.98,-62.91);
+  facadePart(site,'glass',3.55,.32,.44,gateStone,x+.5,12.12,-62.93);
+  facadePart(site,'glass',3,.11,.14,roofStone,x+.5,10.15,-62.93);
+}
+
+// Oak ceiling members and angled braces sit overhead in the two side wings.
+const ceilingOak=materialByType.planks[0];
+for(const [left,right] of [[-35,-19],[19,34]]){
+  for(const z of [-71,-68,-61,-58,-51,-48]){
+    const center=(left+right+1)/2;
+    const site=[Math.floor(center),13,z];
+    facadePart(site,'netherTrim',right-left-.82,.39,.41,ceilingOak,center,12.78,z+.5);
+    for(const side of [-1,1]){
+      const x=side<0?left+1.48:right-.48;
+      const brace=facadePart(site,'netherTrim',1.18,.24,.29,ceilingOak,x,12.27,z+.5);
+      brace.rotation.z=-side*Math.PI/4;
+    }
+  }
+}
+
+// Stone benches sit beside the courtyard paths and face the central walk.
+for(const x of [-12,12])for(const z of [-58,-47]){
+  facadePart([x,6,z],'netherTrim',.72,.19,2.45,gateStone,x+.5,6.2,z+.5);
+}
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4642,7 +4681,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V92';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V93';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
