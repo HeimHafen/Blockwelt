@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V128 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V129 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5289,6 +5289,82 @@ dragonShape(gengar,gengarSmile,0,1.025,.738,.63,.18,.079);
 for(let tooth=-2;tooth<=2;tooth++){
   dragonShape(gengar,dragonEye,tooth*.215,1.04,.810-Math.abs(tooth)*.012,.012,.13,.019);
 }
+const cornerMaterial=color=>new THREE.MeshStandardMaterial({color,roughness:.78});
+const leafGreen=cornerMaterial('#548735'), leafLight=cornerMaterial('#80aa46');
+const bark=cornerMaterial('#94704b'), barkSpot=cornerMaterial('#dfbb59');
+const violet=cornerMaterial('#b295c9'), deepViolet=cornerMaterial('#755f9c');
+const ivory=cornerMaterial('#f4e8dc'), mouth=cornerMaterial('#512838');
+const yellow=cornerMaterial('#efcd53'), lip=cornerMaterial('#e89271');
+const bellsprout=new THREE.Group();
+dragonLimb(bellsprout,leafGreen,[0,.13,0],[.13,1.12,0],.10);
+dragonLimb(bellsprout,leafGreen,[.13,1.06,0],[0,1.98,.10],.10,.14);
+for(const side of [-1,1]){
+  dragonLimb(bellsprout,bark,[0,.19,0],[side*.42,.08,.22],.11,.045);
+  dragonShape(bellsprout,leafLight,side*.43,1.07,0,.55,.14,.24).rotation.z=side*.37;
+  dragonShape(bellsprout,dragonEye,side*.24,2.14,.43,.046,.064,.024);
+}
+dragonShape(bellsprout,yellow,0,2.05,.10,.45,.40,.46);
+dragonShape(bellsprout,lip,0,2.00,.51,.26,.20,.13);
+dragonShape(bellsprout,mouth,0,2.00,.615,.17,.11,.035);
+
+const sudowoodo=new THREE.Group();
+dragonShape(sudowoodo,bark,0,1.36,0,.36,.94,.32);
+dragonLimb(sudowoodo,bark,[0,1.87,0],[.12,2.30,0],.24,.19);
+for(const side of [-1,1]){
+  dragonShape(sudowoodo,bark,side*.24,.18,.12,.18,.18,.33);
+  dragonLimb(sudowoodo,bark,[side*.18,.74,0],[side*.24,.18,.05],.14);
+  dragonLimb(sudowoodo,bark,[side*.24,1.54,0],[side*.68,1.65,0],.14,.10);
+  dragonLimb(sudowoodo,bark,[side*.68,1.65,0],[side*.89,2.15,0],.10,.085);
+  for(let n=0;n<3;n++)
+    dragonShape(sudowoodo,leafGreen,side*(.71+n*.18),2.22+(n%2)*.15,0,.17,.17,.17);
+  dragonShape(sudowoodo,dragonEye,side*.13,1.96,.29,.045,.052,.026);
+  dragonShape(sudowoodo,barkSpot,side*.15,1.14+side*.12,.28,.083,.10,.035);
+}
+dragonShape(sudowoodo,mouth,0,1.74,.31,.15,.055,.029);
+
+const mewtwo=new THREE.Group();
+dragonShape(mewtwo,violet,0,1.60,0,.39,.62,.27);
+dragonShape(mewtwo,deepViolet,0,1.25,.12,.35,.36,.25);
+dragonShape(mewtwo,violet,0,2.28,.03,.36,.30,.29);
+for(const side of [-1,1]){
+  dragonLimb(mewtwo,violet,[side*.22,2.42,-.02],[side*.25,2.65,-.04],.11,.044);
+  dragonShape(mewtwo,ivory,side*.15,2.31,.27,.112,.051,.032).rotation.z=side*.28;
+  dragonShape(mewtwo,deepViolet,side*.15,2.31,.298,.034,.034,.014);
+  dragonLimb(mewtwo,violet,[side*.28,1.92,0],[side*.51,1.66,.08],.125,.095);
+  dragonLimb(mewtwo,violet,[side*.51,1.66,.08],[side*.59,1.38,.25],.095,.072);
+  for(let finger=-1;finger<=1;finger++)
+    dragonShape(mewtwo,violet,side*.59+finger*.08,1.33,.27,.048,.093,.051);
+  dragonShape(mewtwo,violet,side*.25,.92,0,.23,.37,.23);
+  dragonLimb(mewtwo,violet,[side*.25,.81,0],[side*.29,.19,-.04],.14,.09);
+  dragonShape(mewtwo,violet,side*.29,.12,.07,.13,.12,.25);
+}
+const mewtwoTail=new THREE.CatmullRomCurve3([[0,1.16,-.18],[.11,.72,-.61],[.52,.66,-1.08],[.95,.93,-1.16],[1.16,1.47,-.99]].map(p=>new THREE.Vector3(...p)));
+mewtwo.add(new THREE.Mesh(new THREE.TubeGeometry(mewtwoTail,18,.13,8,false),deepViolet));
+dragonShape(mewtwo,deepViolet,1.16,1.47,-.99,.16,.18,.15);
+
+// Separate display models keep the arena fighters tied to their own world.
+const castlePokemon=[
+  {model:bellsprout,x:-41.5,z:-31.5,yaw:-.55},
+  {model:gengar.clone(),x:41,z:-31.5,yaw:.55},
+  {model:sudowoodo,x:-41.5,z:-85.5,yaw:Math.PI+.55},
+  {model:mewtwo,x:41,z:-85.5,yaw:Math.PI-.55}
+];
+for(const {model,x,z,yaw} of castlePokemon){
+  model.position.set(x,MEADOW_HEIGHT,z);
+  model.rotation.y=yaw;
+  model.visible=false;
+  scene.add(model);
+}
+function updateCastlePokemon(now){
+  for(const [index,{model,x,z,yaw}] of castlePokemon.entries()){
+    model.visible=isMeadow()&&!inFuture(player.x)&&Math.hypot(player.x-x,player.z-z)<100;
+    if(!model.visible)continue;
+    const sway=Math.sin(now*.002+index);
+    model.rotation.y=yaw+sway*.10;
+    model.rotation.z=index===0?sway*.04:0;
+    model.position.y=MEADOW_HEIGHT+(index===1||index===3?.15+sway*.12:0);
+  }
+}
 const attacks=[
   ['#ff8027','#fff3a1'],['#a757ff','#e6c3ff'],
 ].map(([color,core])=>{
@@ -5804,7 +5880,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V128';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V129';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5906,7 +5982,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCastlePokemon(now);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
