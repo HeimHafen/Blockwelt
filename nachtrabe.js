@@ -47,7 +47,10 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     // Interior doorways allow a straight walk down each wing.
     const passage=a<0?b-3:a+2;
     for(const z of [-65,-55])door(passage,passage+1,5,8,z,z);
+    const outer=a<0?a:b;
     for(const z of rooms){
+      box(outer,outer,8,10,z-1,z,'glass');
+      box(outer,outer,7,7,z-2,z+1,trim);
       door(inner,inner,5,8,z,z+1);
       box(inner,inner,9,10,z-2,z-1,'glass');
       solid(inner,8,z-2,trim);
@@ -97,8 +100,39 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     for(const z of [-81,-63])deck(-span,span,y,z,z,stone);
   }
   deck(-4,4,32,-81,-63,slate);
-  for(const x of [-8,8])for(const z of [-60,-51,-42,-32,-24,-16]){
+  for(const [x,y,z,type] of interiorLampSites){
+    solid(x,y-1,z,trim);
+    solid(x,y,z,type);
+  }
+  for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16]){
     solid(x,5,z,slate);
     solid(x,6,z,'lantern');
+  }
+}
+
+export const wingWindows=[-35,34].flatMap(x=>[-70,-60,-50].map(z=>[x,z]));
+
+export const interiorLampSites=[
+  ...[-32,31].flatMap(x=>[-70,-60,-50].map(z=>[x,7,z,'lantern'])),
+  [-9,9,-66,'lantern'], [9,9,-66,'lantern'], [0,9,-78,'lantern']
+];
+
+// Stone surrounds and iron guides sit outside the clear opening.
+export function dressDoorway({frame,door,part,stone,iron,width,height,depth}){
+  for(const face of [-1,1]){
+    const z=face*(depth/2+.07);
+    for(const side of [-1,1]){
+      const x=side*(width/2+.15);
+      for(let y=0;y<height;y+=.5){
+        part(frame,.3,.482,.22,stone,x,y+.25,z);
+      }
+      part(frame,.075,height,.08,iron,side*(width/2+.04),height/2,face*.16);
+    }
+    part(frame,width+.6,.29,.3,stone,0,height+.145,z);
+    for(const y of [.22,.73]){
+      part(door,width-.04,.15,.065,iron,0,height*y,face*.134);
+      for(let x=.25;x<width;x+=.5)
+        part(door,.07,.07,.045,iron,x-width/2,height*y,face*.17);
+    }
   }
 }

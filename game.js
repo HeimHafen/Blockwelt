@@ -1,5 +1,5 @@
-import {buildCastleArchitecture} from './nachtrabe.js?v=72';
-// BLOCKWELT V72 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=73';
+// BLOCKWELT V73 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -304,7 +304,7 @@ function texture(type,face){
 // Each texture pair describes the same surface. Relief changes lighting only;
 // the block grid still owns collision, selection and saved edits.
 const reliefColors={
-  netherBrick:[100,83,81],netherDeep:[68,70,82],netherTrim:[128,106,98],
+  netherBrick:[114,108,96],netherDeep:[71,77,82],netherTrim:[139,127,108],
   grass:[65,81,49],cobble:[109,105,99],stone:[111,113,111],planks:[105,76,51],wood:[91,65,44]
 };
 // World-space patina stays continuous across adjacent editable blocks.
@@ -2562,7 +2562,7 @@ function treadIsSupported(tread){
     get(x+dx,y,z+dz)===upper&&!get(x,y,z);
 }
 function blocked(x,y,z){
-  if(leverDoors.some(d=>!d.open&&insideDoor(d,x,y,z)))return true;
+  if(leverDoors.some(d=>isMeadow()&&(!d.open||d.door.position.y<y+PLAYER_H)&&insideDoor(d,x,y,z)))return true;
   if(!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
   const minX=Math.floor(x-PLAYER_R+.005),maxX=Math.floor(x+PLAYER_R-.005);
   const minZ=Math.floor(z-PLAYER_R+.005),maxZ=Math.floor(z+PLAYER_R-.005);
@@ -3320,14 +3320,14 @@ fortressAccentGroup.visible=false;
 const hallGlow=new THREE.PointLight('#ba8dff',0,19,2);
 hallGlow.position.set(0,9,-75);scene.add(hallGlow);
 
-const castleLampSites=[];
-for(const x of [-8,8])for(const z of [-60,-51,-42,-32,-24,-16])
+const castleLampSites=[...interiorLampSites];
+for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16])
   castleLampSites.push([x,6,z,'lantern']);
 
 const castleLightZones=[
   [-5,7,-12,15], [5,7,-12,15], [-5,7,-27,17], [5,7,-27,17], [0,15,-33,19],
   [-10,8,-65,17], [10,8,-75,17], [0,10,-81,18],
-  [-28,8,-69,16]
+  [-28,8,-69,16], ...interiorLampSites.map(([x,y,z])=>[x+.5,y+.48,z+.5,8])
 ].map(([x,y,z,range])=>{
   const light=new THREE.PointLight('#ffab65',0,range,2);
   light.position.set(x,y,z);
@@ -3511,6 +3511,23 @@ for(const [half,z,height] of [[7,-35,7.6],[5,-59,6.1]]){
 }
 
 
+// Deep exterior window surrounds are attached to their glazing blocks.
+const wingWindowDetails=new THREE.Group();
+for(const [x,z] of wingWindows){
+  const window=new THREE.Group();
+  const face=x<0?-1:1;
+  window.userData.site=[x,8,z];
+  window.position.set(x+.5,8,z);
+  for(const edge of [-1,1])
+    part(window,.36,3,.23,gateStone,face*.52,1.5,edge*1.08);
+  part(window,.57,.19,2.55,gateStone,face*.56,0,0);
+  part(window,.39,.28,2.37,gateStone,face*.51,3.1,0);
+  part(window,.06,2.95,.084,doorIron,face*.51,1.5,0);
+  for(const y of [1,2])part(window,.06,.065,2,doorIron,face*.51,y,0);
+  wingWindowDetails.add(window);
+}
+scene.add(wingWindowDetails);
+
 // Interior details are attached to editable masonry, outside the walking clearance.
 const hallDetails=new THREE.Group();
 const hallAnchors=[];
@@ -3601,6 +3618,7 @@ for(const [x,y,z] of [[21.28,5.37,.53],[20.75,-2.6,-8.5]]){
 makeNetherPlan();
 const leverDoors=doorSites.map(([xa,xb,ya,yb,za,zb])=>{
   const alongX=xb-xa>=zb-za;
+  const depth=alongX?zb-za+1:xb-xa+1;
   const x=(xa+xb+1)/2,z=(za+zb+1)/2,h=yb-ya+1;
   const width=alongX?xb-xa+1:zb-za+1;
   const door=new THREE.Group();
@@ -3608,17 +3626,31 @@ const leverDoors=doorSites.map(([xa,xb,ya,yb,za,zb])=>{
   door.rotation.y=alongX?0:Math.PI/2;
   for(let i=0;i<width*3;i++)
     part(door,.326,h,.22,oakDoor,(i+.5)/3-width/2,h/2,0);
-  for(const level of [.22,.73])
-    part(door,width,.16,.28,doorIron,0,h*level,0);
-  scene.add(door);
+  const frame=new THREE.Group();
+  frame.position.copy(door.position);
+  frame.rotation.y=door.rotation.y;
+  dressDoorway({frame,door,part,stone:materialByType.netherTrim[0],
+    iron:doorIron,width,height:h,depth});
+  scene.add(door,frame);
   const levers=new THREE.Group();
+  const handles=[];
   for(const side of [-1,1]){
-    const handle=part(levers,.13,.48,.14,doorIron,
-      x+(alongX?width/2+.24:side*.67),ya+1.1,z+(alongX?side*.67:width/2+.24));
-    handle.rotation.z=.32;
+    const reach=depth/2+.19;
+    const mount=new THREE.Group();
+    mount.position.set(x+(alongX?width/2+.24:side*reach),ya+1.1,
+      z+(alongX?side*reach:width/2+.24));
+    mount.rotation.y=alongX?(side===1?0:Math.PI):side*Math.PI/2;
+    part(mount,.26,.38,.10,doorIron,0,0,0);
+    const handle=new THREE.Group();
+    handle.position.z=.1;
+    part(handle,.08,.28,.08,doorIron,0,.12,0);
+    part(handle,.13,.12,.13,oakDoor,0,.27,0);
+    mount.add(handle);
+    levers.add(mount);
+    handles.push(handle);
   }
   scene.add(levers);
-  return {door,x,z,ya,h,width,alongX,open:false};
+  return {door,frame,levers,handles,x,z,ya,h,width,alongX,open:false};
 });
 function insideDoor(d,x,y,z){
   return Math.abs(x-d.x)<(d.alongX?d.width/2:.18)+PLAYER_R&&
@@ -3636,6 +3668,10 @@ function updateLeverDoors(dt){
   nearestLeverDoor=null;
   let distance=2.6;
   for(const d of leverDoors){
+    d.door.visible=d.frame.visible=d.levers.visible=isMeadow();
+    if(!d.door.visible)continue;
+    for(const handle of d.handles)
+      handle.rotation.x=THREE.MathUtils.damp(handle.rotation.x,d.open?1.1:.32,12,dt);
     d.door.position.y=THREE.MathUtils.damp(d.door.position.y,d.ya+(d.open?d.h:0),10,dt);
     const near=Math.hypot(Math.max(0,Math.abs(player.x-d.x)-(d.alongX?d.width/2:0)),
       Math.max(0,Math.abs(player.z-d.z)-(d.alongX?0:d.width/2)),player.y-d.ya);
@@ -3884,6 +3920,7 @@ let castleLightCell='';
 function updateCastleLighting(){
   updateMeadowTufts();
   castleRidges.visible=isMeadow();
+  wingWindowDetails.visible=isMeadow();
   gateMolding.visible=isMeadow();
   valleyTrees.visible=isMeadow();
   lanternFrames.visible=isMeadow()&&graphicMode==='schoen';
@@ -3894,6 +3931,8 @@ function updateCastleLighting(){
   if(cell===castleLightCell)return;
   castleLightCell=cell;
   refreshStairTreads();
+  for(const window of wingWindowDetails.children)
+    window.visible=netherBlockAt(...window.userData.site)==='glass';
 
   for(const {mesh,x,y,z,type} of hallAnchors)
     mesh.visible=Boolean(type)&&netherBlockAt(x,y,z)===type;
@@ -4484,7 +4523,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V72';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V73';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
