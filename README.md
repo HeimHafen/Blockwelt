@@ -197,3 +197,7 @@ Die Treppenläufe erhalten einen gemauerten Unterbau. Gesims, durchgehende Brüs
 ## V124 – Regenbogenportal
 
 Das Portal steht 100 Felder vor dem Burgtor auf der Mittelachse. Es führt in eine getrennt liegende Landschaft mit dunklen Terrassen und leuchtenden Kristallen. Das zweite Portal führt zurück.
+
+## V125 – Glurak
+
+Ein animiertes 3D-Glurak steht in der Hightech-Welt auf der Mittelachse, 19 Blöcke hinter dem Rückportal.

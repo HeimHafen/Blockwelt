@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=124';
-// BLOCKWELT V124 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=125';
+// BLOCKWELT V125 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5184,6 +5184,94 @@ for(const portal of [castlePortal,futurePortal]){
   }
   scene.add(arch);
 }
+const charizard=new THREE.Group();
+charizard.position.set(240.5,5.04,84);
+charizard.rotation.y=Math.PI;
+scene.add(charizard);
+const dragonOrange=new THREE.MeshStandardMaterial({color:'#e78537',roughness:.78});
+const dragonCream=new THREE.MeshStandardMaterial({color:'#ffdd9e',roughness:.82});
+const dragonTeal=new THREE.MeshStandardMaterial({color:'#267c87',roughness:.77,side:THREE.DoubleSide});
+const dragonEye=new THREE.MeshStandardMaterial({color:'#142c38',roughness:.29});
+const dragonFlame=new THREE.MeshBasicMaterial({color:'#ff6d21'});
+const dragonCore=new THREE.MeshBasicMaterial({color:'#ffe292'});
+const dragonOval=new THREE.SphereGeometry(1,20,14);
+function dragonShape(group,material,x,y,z,sx,sy,sz){
+  const mesh=new THREE.Mesh(dragonOval,material);
+  mesh.position.set(x,y,z);
+  mesh.scale.set(sx,sy,sz);
+  group.add(mesh);
+  return mesh;
+}
+function dragonLimb(group,material,from,to,radius,tip=radius){
+  const start=new THREE.Vector3(...from),end=new THREE.Vector3(...to);
+  const direction=end.clone().sub(start);
+  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(tip,radius,direction.length(),10),material);
+  mesh.position.copy(start).lerp(end,.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());
+  group.add(mesh);
+}
+dragonShape(charizard,dragonOrange,0,1.32,0,.66,.91,.52);
+dragonShape(charizard,dragonCream,0,1.22,.34,.48,.70,.25);
+dragonLimb(charizard,dragonOrange,[0,1.70,0],[0,2.55,.27],.40,.29);
+dragonShape(charizard,dragonOrange,0,2.64,.31,.43,.40,.43);
+dragonShape(charizard,dragonOrange,0,2.49,.63,.365,.21,.40);
+dragonShape(charizard,dragonCream,0,2.39,.66,.30,.095,.31);
+const wings=[];
+for(const side of [-1,1]){
+  dragonLimb(charizard,dragonOrange,[side*.22,2.82,.18],[side*.30,3.23,-.12],.14,.025);
+  dragonShape(charizard,dragonCream,side*.235,2.72,.63,.12,.12,.056);
+  dragonShape(charizard,dragonEye,side*.235,2.72,.676,.056,.079,.024);
+  dragonShape(charizard,dragonCream,side*.25,2.752,.698,.019,.022,.010);
+  dragonShape(charizard,dragonEye,side*.142,2.57,.975,.036,.022,.014);
+  dragonShape(charizard,dragonOrange,side*.46,.69,0,.33,.55,.32);
+  dragonShape(charizard,dragonOrange,side*.50,.18,.24,.30,.17,.40);
+  dragonLimb(charizard,dragonOrange,[side*.49,1.72,.08],[side*.76,1.32,.47],.18,.112);
+  dragonShape(charizard,dragonOrange,side*.76,1.32,.50,.13,.145,.16);
+  for(let claw=-1;claw<=1;claw++){
+    dragonLimb(charizard,dragonCream,[side*.50+claw*.13,.15,.51],[side*.50+claw*.13,.09,.69],.052,.008);
+    dragonLimb(charizard,dragonCream,[side*.76+claw*.068,1.31,.60],[side*.76+claw*.068,1.24,.727],.034,.005);
+  }
+  const wing=new THREE.Group();
+  wing.position.set(side*.40,1.83,-.32);
+  const outline=[[0,0,0],[side*.90,1.30,-.12],[side*2.18,1.58,-.37],
+    [side*1.66,.79,-.54],[side*1.75,.38,-.64],[side*1.12,.47,-.41],[side*.78,.05,-.27]];
+  const membrane=new THREE.BufferGeometry();
+  membrane.setAttribute('position',new THREE.Float32BufferAttribute(outline.flat(),3));
+  membrane.setIndex([0,1,5,1,2,3,1,3,5,3,4,5,0,5,6]);
+  membrane.computeVertexNormals();
+  wing.add(new THREE.Mesh(membrane,dragonTeal));
+  for(const [a,b] of [[0,1],[1,2],[1,3],[1,5],[0,6]])
+    dragonLimb(wing,dragonOrange,outline[a],outline[b],a===0?.095:.058,.026);
+  charizard.add(wing);
+  wings.push({wing,side});
+}
+const dragonTail=new THREE.Group();
+dragonTail.position.set(0,.82,-.34);
+charizard.add(dragonTail);
+const tailPoints=[[0,0,0],[0,-.23,-.57],[.10,-.27,-1.12],[.30,-.06,-1.60],[.40,.39,-1.86]];
+for(let segment=0;segment<4;segment++){
+  dragonLimb(dragonTail,dragonOrange,tailPoints[segment],tailPoints[segment+1],.23-segment*.043,.187-segment*.043);
+  const [x,y,z]=tailPoints[segment+1];
+  const radius=.187-segment*.043;
+  dragonShape(dragonTail,dragonOrange,x,y,z,radius,radius,radius);
+}
+const tailFire=new THREE.Group();
+tailFire.position.set(...tailPoints[4]);
+dragonTail.add(tailFire);
+dragonShape(tailFire,dragonFlame,0,.16,0,.14,.27,.14);
+dragonShape(tailFire,dragonCore,0,.11,.045,.086,.17,.088);
+dragonLimb(tailFire,dragonFlame,[0,.25,0],[.08,.49,-.045],.098,.008);
+function updateCharizard(now){
+  charizard.visible=inFuture(player.x)&&Math.hypot(player.x-240.5,player.z-84)<75;
+  if(!charizard.visible)return;
+  const time=now*.001;
+  for(const {wing,side} of wings){
+    wing.rotation.z=side*Math.sin(time*1.8)*.13;
+    wing.rotation.y=side*(.13+Math.cos(time*1.8)*.09);
+  }
+  dragonTail.rotation.y=Math.sin(time*1.5)*.16;
+  tailFire.scale.y=1+Math.sin(time*10)*.11+Math.sin(time*17)*.06;
+}
 function crossRainbowPortal(oldZ){
   if(!gameRunning||player.y<4.8||player.y>8.2)return;
   const future=inFuture(player.x);
@@ -5502,7 +5590,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V124';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V125';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5604,7 +5692,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
