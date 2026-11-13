@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=125';
-// BLOCKWELT V125 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=126';
+// BLOCKWELT V126 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1634,7 +1634,13 @@ function decorateChunkTree(ax,az,xmin,xmax,zmin,zmax){
   }
 }
 function isLegacyChunk(cx,cz){return !isMeadow()&&cx>=-2&&cx<=1&&cz>=-2&&cz<=1;}
+const arena={x:240.5,z:105,rx:25,rz:30};
 function buildFutureColumn(x,z){
+  const ring=Math.hypot((x+.5-arena.x)/arena.rx,(z+.5-arena.z)/arena.rz);
+  if(ring<=1){
+    put(x,4,z,ring>.92?'netherTrim':ring>.88?'lantern':'netherDeep');
+    return;
+  }
   const dx=x-240,dz=z-65;
   if(Math.abs(dx)<=3||Math.abs(dz)<=3){
     put(x,4,z,Math.abs(dx)===3||Math.abs(dz)===3?'netherTrim':'cobble');
@@ -5261,8 +5267,75 @@ dragonTail.add(tailFire);
 dragonShape(tailFire,dragonFlame,0,.16,0,.14,.27,.14);
 dragonShape(tailFire,dragonCore,0,.11,.045,.086,.17,.088);
 dragonLimb(tailFire,dragonFlame,[0,.25,0],[.08,.49,-.045],.098,.008);
+const gengar=new THREE.Group();
+scene.add(gengar);
+const gengarPurple=new THREE.MeshStandardMaterial({color:'#7549a7',roughness:.8});
+const gengarEyes=new THREE.MeshBasicMaterial({color:'#f64d70'});
+const gengarSmile=new THREE.MeshStandardMaterial({color:'#fff0dd',roughness:.66});
+dragonShape(gengar,gengarPurple,0,1.10,0,1.00,1.07,.73);
+for(const side of [-1,1]){
+  dragonLimb(gengar,gengarPurple,[side*.59,1.72,-.06],[side*.93,2.46,-.23],.43,.025);
+  dragonLimb(gengar,gengarPurple,[side*.66,1.16,0],[side*1.36,.99,.38],.29,.14);
+  dragonShape(gengar,gengarPurple,side*.55,.23,.25,.34,.23,.38);
+  dragonShape(gengar,gengarEyes,side*.39,1.45,.675,.30,.10,.075).rotation.z=side*.25;
+  dragonShape(gengar,dragonEye,side*.33,1.45,.75,.033,.063,.014);
+}
+for(let spike=0;spike<5;spike++){
+  const x=(spike-2)*.32;
+  dragonLimb(gengar,gengarPurple,[x,1.86,-.38],[x*1.35,2.26-Math.abs(x)*.18,-.74],.21,.015);
+}
+dragonShape(gengar,dragonEye,0,1.02,.66,.73,.28,.136);
+dragonShape(gengar,gengarSmile,0,1.025,.738,.63,.18,.079);
+for(let tooth=-2;tooth<=2;tooth++){
+  dragonShape(gengar,dragonEye,tooth*.215,1.04,.810-Math.abs(tooth)*.012,.012,.13,.019);
+}
+const attacks=[
+  ['#ff8027','#fff3a1'],['#a757ff','#e6c3ff'],
+].map(([color,core])=>{
+  const group=new THREE.Group();
+  dragonShape(group,new THREE.MeshBasicMaterial({color}),0,0,0,.37,.37,.37);
+  dragonShape(group,new THREE.MeshBasicMaterial({color:core}),0,0,.20,.23,.23,.20);
+  scene.add(group);
+  return group;
+});
+const shotStart=new THREE.Vector3(),shotEnd=new THREE.Vector3();
+let battleTime=0;
+let previousTurn=-1;
+function updateBattle(dt){
+  const nearby=inFuture(player.x)&&Math.hypot(player.x-arena.x,player.z-arena.z)<83;
+  gengar.visible=charizard.visible=nearby;
+  for(const attack of attacks)attack.visible=false;
+  if(!nearby)return;
+  if(gameRunning)battleTime+=dt;
+  const turn=Math.floor(battleTime/4);
+  const phase=battleTime%4;
+  const zag=Math.sin(battleTime*.8)*1.7;
+  const angle=battleTime*.36;
+  const attacker=turn%2===0?charizard:gengar;
+  const defender=attacker===charizard?gengar:charizard;
+  const dodge=.95*Math.sin(Math.PI*THREE.MathUtils.smoothstep(phase,1.55,2.8));
+  charizard.position.set(arena.x+Math.cos(angle)*19,5.02+Math.max(0,Math.sin(battleTime*1.6))*.70,arena.z+Math.sin(angle)*22+zag);
+  gengar.position.set(arena.x-Math.cos(angle)*18,5.03+Math.max(0,Math.sin(battleTime*2.1))*.34,arena.z-Math.sin(angle)*23-zag);
+  defender.position.x+=Math.sin(angle)*dodge*3;
+  defender.position.z-=Math.cos(angle)*dodge*3;
+  for(const [fighter,opponent] of [[charizard,gengar],[gengar,charizard]]){
+    fighter.rotation.y=Math.atan2(opponent.position.x-fighter.position.x,opponent.position.z-fighter.position.z);
+  }
+  if(phase>=1.3&&previousTurn!==turn){
+    previousTurn=turn;
+    shotStart.copy(attacker.position);shotStart.y+=attacker===charizard?2.48:1.16;
+    shotEnd.copy(defender.position);shotEnd.y+=1.15;
+  }
+  if(phase>=1.3&&phase<2.2){
+    const orb=attacks[turn%2];
+    const progress=(phase-1.3)/.9;
+    orb.visible=true;orb.position.copy(shotStart).lerp(shotEnd,progress);
+    orb.position.y+=Math.sin(progress*Math.PI)*.9;
+    orb.rotation.y=battleTime*11;
+    orb.scale.setScalar(.72+Math.sin(progress*Math.PI)*.55);
+  }
+}
 function updateCharizard(now){
-  charizard.visible=inFuture(player.x)&&Math.hypot(player.x-240.5,player.z-84)<75;
   if(!charizard.visible)return;
   const time=now*.001;
   for(const {wing,side} of wings){
@@ -5590,7 +5663,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V125';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V126';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5692,7 +5765,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);updateBattle(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;

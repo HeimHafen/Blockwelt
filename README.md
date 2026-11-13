@@ -201,3 +201,7 @@ Das Portal steht 100 Felder vor dem Burgtor auf der Mittelachse. Es führt in ei
 ## V125 – Glurak
 
 Ein animiertes 3D-Glurak steht in der Hightech-Welt auf der Mittelachse, 19 Blöcke hinter dem Rückportal.
+
+## V126 – Glurak und Gengar
+
+Hinter dem Rückportal liegt eine etwa 50 × 60 Blöcke große Arena. Glurak und Gengar umrunden einander, greifen abwechselnd an und weichen aus.
