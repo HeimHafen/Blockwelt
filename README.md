@@ -105,3 +105,15 @@ Modellierte Steinrippen und Pfeiler in der Großen Halle, Strebepfeiler zwischen
 ## V98 – Torhalle
 
 Drei steinerne Gewölberippen, vier Wandlaternen und eine gepflasterte Durchfahrt mit abgesetzten Randsteinen.
+
+## V99 – Untergeschoss
+
+Hinter dem bisherigen Bunkerraum führt ein drei Blöcke breiter Flur in vier Kellerräume. Fasslager und Vorratskammer liegen näher am Eingang. Dahinter folgen die Zisterne mit Winde und das Archiv. Eisenlaternen hängen an der Steindecke.
+
+## V100 – Feinschliff im Untergeschoss
+
+Der Hauptgang erhält flache Segmentbögen mit gemauerten Auflagern. In den vier Räumen ergänzen ein Ablaufgitter und eine Kurbel, ein Lesepult mit Schriftstücken, Fassauflagen und eisenbeschlagene Vorratstruhen die Einrichtung.
+
+## V101 – Himmel und Tageslicht
+
+Im Spielmenü wechselt „Himmel“ zwischen hellem Tag, goldener Stunde und Sternennacht. Die gewählte Lichtstimmung wird auf dem Gerät gespeichert. Bei Tag hellt Dunst den Horizont auf. Sonne und Mond bleiben beim Bewegen in derselben Himmelsrichtung.

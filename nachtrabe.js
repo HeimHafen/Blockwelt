@@ -163,3 +163,48 @@ export function dressDoorway({frame,door,part,stone,iron,width,height,depth}){
 }
 
 export const towerWindows=[-10,-7,7,10];
+
+export const cellarLamps=[
+  [19.5,-28.5],[19.5,-35.5],[19.5,-43.5],
+  [15,-31],[24,-31],[15,-42],[24,-42],
+];
+
+export function buildLowerCellars({box,deck,solid}){
+  const stone='netherBrick', trim='netherTrim', dark='netherDeep';
+  // Thick foundations and a three-block central corridor behind the old room.
+  box(10,28,-6,-1,-48,-24,stone);
+  box(18,20,-5,-2,-47,-24,null);
+  deck(18,20,-6,-47,-24,'cobble');
+  for(const x of [18,20])deck(x,x,-6,-47,-24,trim);
+  for(const [start,end] of [[-34,-26],[-47,-36]]){
+    const doorway=start+Math.floor((end-start)/2);
+    box(11,16,-5,-2,start,end,null);
+    box(22,27,-5,-2,start,end,null);
+    for(const x of [17,21]){
+      box(x,x,-5,-3,doorway,doorway+1,null);
+      box(x,x,-2,-2,doorway-1,doorway+2,trim);
+      for(const z of [doorway-1,doorway+2])box(x,x,-5,-3,z,z,trim);
+      deck(x,x,-6,doorway,doorway+1,trim);
+    }
+    for(const x of [11,27])deck(x,x,-6,start,end,dark);
+    for(const z of [start,end]){
+      deck(11,16,-6,z,z,trim);
+      deck(22,27,-6,z,z,trim);
+      deck(11,16,-1,z,z,trim);
+      deck(22,27,-1,z,z,trim);
+    }
+  }
+  for(const z of [-26,-34,-36,-44,-47]){
+    deck(18,20,-1,z,z,trim);
+    for(const x of [17,21])box(x,x,-5,-2,z,z,trim);
+  }
+  // Recessed cistern basin with a solid rim and circulation on all sides.
+  deck(12,14,-6,-45,-41,'cobble');
+  for(const z of [-45,-41])deck(12,14,-5,z,z,trim);
+  for(const x of [12,14])deck(x,x,-5,-44,-42,trim);
+  deck(13,13,-5,-44,-42,'water');
+  // Raised stone platforms keep stored goods clear of cellar damp.
+  deck(25,27,-6,-32,-28,trim);
+  deck(26,27,-6,-46,-40,trim);
+  solid(19,-4,-48,trim);
+}

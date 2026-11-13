@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=98';
-// BLOCKWELT V98 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=101';
+// BLOCKWELT V101 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -80,10 +80,8 @@ function makeNetherPlan(){
     if(step>=4)deck(17,21,4,-z,-z,'grass');
     solid(19,y,-z,'lavaGlow');
   }
-  for(const z of [-13,-18,-22]){
-    box(14,24,-1,-1,z,z,'wood');
-
-  }
+  for(const z of [-13,-18,-22])deck(14,24,-1,z,z,'wood');
+  buildLowerCellars({box,deck,solid});
 
   // A half-height tread bridges each pair of consecutive full-block steps.
   for(let x=18;x<=20;x++)
@@ -128,7 +126,12 @@ const generatedChunks = new Set();
 let lastStreamCenter = '';
 const chunksPerSide = HALF / CHUNK;
 const showCreatures = false;
-let lightMode = 0; // 0: Morgensonne, 1: Goldene Stunde, 2: Nacht
+const LIGHT_MODE_KEY='blockwelt-lichtstimmung-v101';
+let lightMode=0;
+try{
+  const saved=Number(localStorage.getItem(LIGHT_MODE_KEY));
+  if(Number.isInteger(saved)&&saved>=0&&saved<3)lightMode=saved;
+}catch{}
 let selectedType = 'grass';
 let gameRunning = false;
 let toastTimer = null;
@@ -2491,33 +2494,56 @@ function traceVoxel(origin,direction,maxDistance=5.6){
   return null;
 }
 
-// Procedural three-tone sky: a single inexpensive sphere, no remote image assets.
-function skyGradient(high,mid,low,clouded=false){
-  const c=document.createElement('canvas');c.width=clouded?512:16;c.height=256;
-  const ctx=c.getContext('2d'),g=ctx.createLinearGradient(0,0,0,256);
-  g.addColorStop(0,high);g.addColorStop(.56,mid);g.addColorStop(1,low);
-  ctx.fillStyle=g;ctx.fillRect(0,0,c.width,256);
-  if(clouded){
-    for(let y=29;y<155;y++)for(let x=0;x<c.width;x++){
-      const a=x*Math.PI*2/c.width;
-      const band=Math.sin(y*.18+Math.sin(a*3)*1.9)+.5*Math.cos(y*.42+a*7);
-      const shape=Math.sin(a*9+y*.039)*.44+Math.cos(a*19-y*.025)*.22+band*.58;
-      const opacity=Math.max(0,shape-.39)*Math.sin((y-29)*Math.PI/126)*.53;
-      if(opacity>.02){ctx.fillStyle='rgba(20,28,54,'+opacity+')';ctx.fillRect(x,y,1,1);}
-    }
+// Generate a seamless sky once per lighting preset, outside the frame loop.
+function skyGradient(zenith,horizon,ground,cloudColor,cloudStrength){
+  const canvas=document.createElement('canvas');
+  canvas.width=1024;
+  canvas.height=512;
+  const ctx=canvas.getContext('2d');
+  const gradient=ctx.createLinearGradient(0,0,0,canvas.height);
+  gradient.addColorStop(0,zenith);
+  gradient.addColorStop(.50,horizon);
+  gradient.addColorStop(.67,ground);
+  gradient.addColorStop(1,ground);
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
+  function noise(u,v,frequency){
+    const x=u*frequency,y=v*frequency;
+    const ix=Math.floor(x),iy=Math.floor(y);
+    const fx=x-ix,fy=y-iy;
+    const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
+    const at=(dx,dy)=>pixelHash((ix+dx)%frequency,iy+dy,67);
+    const lo=at(0,0)*(1-sx)+at(1,0)*sx;
+    const hi=at(0,1)*(1-sx)+at(1,1)*sx;
+    return lo*(1-sy)+hi*sy;
   }
-  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
-  tex.magFilter=THREE.LinearFilter;return tex;
+  for(let y=28;y<249;y++)for(let x=0;x<canvas.width;x++){
+    const u=x/canvas.width,v=y/canvas.height;
+    const density=(a,b)=>.59*noise(a,b,12)+.26*noise(a,b,28)
+      +.10*noise(a,b,56)+.05*noise(a,b,112);
+    const cloud=density(u,v);
+    const alpha=Math.min(1,Math.max(0,(cloud-.49)*6))
+      *Math.sin((y-28)*Math.PI/221)**.65*cloudStrength;
+    const shade=(cloud-density(u,v-.007))*230;
+    const k=(y*canvas.width+x)*4;
+    for(let channel=0;channel<3;channel++)
+      pixels.data[k+channel]=pixels.data[k+channel]*(1-alpha)+(cloudColor[channel]+shade)*alpha;
+  }
+  ctx.putImageData(pixels,0,0);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.RepeatWrapping;
+  return texture;
 }
-const moonlitSky=skyGradient('#141f40','#53688c','#bba0a2',true);
 const skyTextures=[
-  skyGradient('#65aff0','#b6ddf5','#e5f5e6',true),
-  skyGradient('#627bad','#f3bd96','#ffe0ab',true),
-  skyGradient('#091e42','#344a6a','#65758d',true)
+  skyGradient('#326eac','#d4e8ee','#becfd2',[249,250,246],.94),
+  skyGradient('#354964','#f4b284','#b99384',[235,177,156],.76),
+  skyGradient('#081326','#394c65','#536471',[66,80,103],.57)
 ];
 const skyDome=new THREE.Mesh(
   new THREE.SphereGeometry(80,24,12),
-  new THREE.MeshBasicMaterial({map:skyTextures[0],side:THREE.BackSide,depthWrite:false,fog:false})
+  new THREE.MeshBasicMaterial({map:skyTextures[0],side:THREE.BackSide,depthWrite:false,fog:false,toneMapped:false})
 );
 skyDome.frustumCulled=false;skyDome.renderOrder=-1000;scene.add(skyDome);
 
@@ -2526,13 +2552,14 @@ function skyDisk(day){
   const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
   const c=canvas.getContext('2d');const g=c.createRadialGradient(64,64,8,64,64,64);
   g.addColorStop(0,day?'#fff9cd':'#f6f9ff');
-  g.addColorStop(.25,day?'#ffe6a0':'#d4e2ff');
+  g.addColorStop(.20,day?'#fffcdf':'#d4e2ff');
+  g.addColorStop(.24,day?'#ffeab080':'#a3b6e388');
   g.addColorStop(.54,day?'#ffdb8b88':'#a3b6e355');
   g.addColorStop(1,'#ffffff00');
   c.fillStyle=g;c.fillRect(0,0,128,128);
   const t=new THREE.CanvasTexture(canvas);
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,depthTest:true,transparent:true,fog:false}));
-  sprite.scale.set(day?19:12,day?19:12,1);sprite.renderOrder=-4;scene.add(sprite);return sprite;
+  sprite.scale.set(day?9:7,day?9:7,1);sprite.renderOrder=-4;scene.add(sprite);return sprite;
 }
 const sunSprite=skyDisk(true),moonSprite=skyDisk(false);
 moonSprite.visible=false;
@@ -3985,6 +4012,22 @@ const bunkerRoomLights=[
   bunkerFurnishings.add(light);
   return {light,power};
 });
+// Every cellar light hangs from the structural ceiling.
+const cellarLightGeometry=new THREE.CylinderGeometry(.15,.19,.31,6);
+for(const [x,z] of cellarLamps){
+  bunkerProp(doorIron,x,-1.62,z,.045,1.24,.045);
+  bunkerProp(doorIron,x,-2.24,z,.37,.085,.37);
+  const glass=new THREE.Mesh(cellarLightGeometry,materialByType.lantern[0]);
+  glass.position.set(x,-2.43,z);
+  bunkerFurnishings.add(glass);
+  bunkerProp(doorIron,x,-2.60,z,.32,.085,.32);
+  for(const dx of [-.125,.125])for(const dz of [-.125,.125])
+    bunkerProp(doorIron,x+dx,-2.43,z+dz,.025,.31,.025);
+  const light=new THREE.PointLight('#ffbd80',0,8,2);
+  light.position.set(x,-2.74,z);
+  bunkerFurnishings.add(light);
+  bunkerRoomLights.push({light,power:25,cellar:true});
+}
 const torchFlame=new THREE.MeshBasicMaterial({color:'#ff832f'});
 const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
 const flameGeometry=new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.069,.04),new THREE.Vector2(.087,.105),new THREE.Vector2(.049,.18),new THREE.Vector2(0,.28)],12);
@@ -4099,6 +4142,81 @@ bunkerProp(materialByType.lantern[0],19.66,-3.77,lampZ,.13,.19,.13);
 for(const dx of [-.082,.082])for(const dz of [-.082,.082])
   bunkerProp(doorIron,19.66+dx,-3.77,lampZ+dz,.019,.22,.019);
 bunkerProp(doorIron,19.66,-3.65,lampZ,.21,.046,.21);
+// Barrel hoops, sackcloth and a masonry winch give each room its own silhouette.
+const sackMaterial=new THREE.MeshStandardMaterial({color:'#9a8260',roughness:1});
+const sackShape=new THREE.SphereGeometry(.42,10,8);
+for(const z of [-28,-29.1,-30.2,-31.3,-32.4,-33.5]){
+  const barrel=new THREE.Mesh(barrelBody,oakDoor);
+  barrel.position.set(12.8,-4.63,z);
+  bunkerFurnishings.add(barrel);
+  for(const y of [-4.82,-4.42]){
+    const hoop=new THREE.Mesh(barrelHoop,doorIron);
+    hoop.position.set(12.8,y,z);
+    bunkerFurnishings.add(hoop);
+  }
+}
+for(const x of [26.4,27.45])for(const z of [-28.6,-29.65,-30.7]){
+  const sack=new THREE.Mesh(sackShape,sackMaterial);
+  sack.scale.set(.92,.83,1.14);
+  sack.position.set(x,-4.65,z);
+  bunkerFurnishings.add(sack);
+  bunkerProp(oakDoor,x,-4.30,z,.16,.07,.16);
+}
+for(const z of [-42.5,-44.1])bunkerProp(oakDoor,13.5,-3.93,z,.18,2.14,.18);
+const spindle=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,1.9,12),oakDoor);
+spindle.rotation.x=Math.PI/2;
+spindle.position.set(13.5,-3.13,-43.3);
+bunkerFurnishings.add(spindle);
+bunkerProp(doorIron,13.5,-3.78,-43.3,.045,1.12,.045);
+for(const z of [-40.5,-43.5,-46.5]){
+  bunkerProp(oakDoor,27.8,-3.58,z,.43,.19,1.8);
+  for(let j=0;j<6;j++){
+    bunkerProp(j%2?bookCover:bunkerCloth,27.75,-3.28,z-.71+j*.28,.27,.41,.17);
+  }
+}
+// Segmental arches spring from the masonry on both sides of the corridor.
+const cellarStone=materialByType.netherTrim[0];
+const cellarIron=doorIron;
+for(const z of [-24.82,-26.5,-34.5,-36.5,-44.5,-47.5]){
+  for(const x of [18.07,20.93]){
+    bunkerProp(cellarStone,x,-3.48,z,.15,3.04,.52);
+    bunkerProp(cellarStone,x,-2.02,z,.21,.15,.61);
+  }
+  for(let segment=0;segment<11;segment++){
+    const t=Math.PI*(segment+.5)/11;
+    const rib=bunkerProp(cellarStone,19.5+1.44*Math.cos(t),-2.02+.94*Math.sin(t),z,
+      .44,.24,.47);
+    rib.rotation.z=Math.atan2(.94*Math.cos(t),-1.44*Math.sin(t));
+  }
+}
+
+// Stone drainage grate inset at the foot of the cistern rim.
+bunkerProp(cellarIron,14.83,-4.984,-43.2,.43,.029,.56);
+for(let bar=0;bar<5;bar++)
+  bunkerProp(gateStone,14.83,-4.963,-43.42+bar*.11,.36,.012,.023);
+bunkerProp(oakDoor,13.5,-3.13,-42.28,.11,.48,.09).rotation.z=.65;
+bunkerProp(cellarIron,13.5,-4.27,-43.3,.22,.12,.22);
+
+// Archive shelves have visible wall supports and a low reading desk.
+for(const z of [-41.25,-39.75,-44.25,-42.75,-47.25,-45.75])
+  bunkerProp(oakDoor,27.83,-3.77,z,.31,.41,.08);
+bunkerProp(oakDoor,26.1,-4.04,-46,1.18,.15,.73);
+for(const x of [25.64,26.56])for(const z of [-46.27,-45.73])
+  bunkerProp(oakDoor,x,-4.55,z,.12,.9,.12);
+bunkerProp(bunkerLinen,26.06,-3.95,-46.03,.53,.022,.42);
+bunkerProp(bookCover,26.43,-3.91,-46.19,.23,.09,.22);
+
+// Raised racks and iron-strapped grain chests sit against the back walls.
+for(const z of [-32.5,-31.35,-30.2,-29.05,-27.9])
+  bunkerProp(oakDoor,12.8,-4.95,z,1.02,.1,.10);
+for(const x of [25.6,26.95]){
+  bunkerProp(oakDoor,x,-4.68,-33.25,1.08,.63,.69);
+  bunkerProp(oakDoor,x,-4.34,-33.25,1.14,.12,.75);
+  for(const dx of [-.32,.32]){
+    bunkerProp(cellarIron,x+dx,-4.63,-32.895,.052,.56,.037);
+    bunkerProp(cellarIron,x+dx,-4.271,-33.25,.052,.022,.75);
+  }
+}
 scene.add(bunkerFurnishings);
 
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
@@ -4263,7 +4381,11 @@ function updateCastleLighting(){
     light.intensity=meadow&&netherBlockAt(x,y,z)===type?power:0;
     if(torch)torch.visible=light.intensity>0;
   }
-  for(const {light,power} of bunkerRoomLights)light.intensity=meadow?power:0;
+  for(const {light,power,cellar} of bunkerRoomLights){
+    const nearby=!cellar||(player.y<.5&&Math.hypot(player.x-light.position.x,player.z-light.position.z)<13);
+    light.intensity=meadow&&nearby?power:0;
+    light.visible=!cellar||light.intensity>0;
+  }
 
   const nearbyEdits=meadow?[...edits.values()]
     .filter(([x,y,z,type])=>(type==='lantern'||type==='lavaGlow')&&!fixedLanternKeys.has(key(x,y,z)))
@@ -4539,15 +4661,17 @@ function visitVillage(){
   teleportTo(v.x+13,v.z,'Willkommen im Sonnen-Dorf!',v.x-3,v.z);
 }
 $('villageBtn')?.addEventListener('click',visitVillage);
-function castleMoonlight(){return isMeadow()&&lightMode===0;}
+function castleMoonlight(){return isMeadow()&&lightMode===2;}
 function applyLighting(){
   const options=[
-    {sky:'#8cc9f0',sun:'#fff2cb',power:1.80,hemi:1.46,exposure:1.02,label:'☀ Morgensonne'},
+    {sky:'#d4e8ee',sun:'#fff5e1',power:2.25,hemi:1.55,exposure:1.07,label:'☀ Tag · Hell'},
     {sky:'#dfae8c',sun:'#ffd09a',power:1.78,hemi:1.24,exposure:1.02,label:'🌅 Goldene Stunde'},
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
   const moonlit=castleMoonlight();
-  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:.93,hemi:.97,exposure:1.07,label:'☾ Blaue Stunde'}:options[lightMode];
+  const p=options[lightMode];
+  const direction=[[-44,68,-28],[-73,21,-18],[38,53,-48]][lightMode];
+  sunlight.position.set(...direction);
   scene.background.set(p.sky);
   netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
@@ -4560,11 +4684,11 @@ function applyLighting(){
   ambientSky.color.set(moonlit?'#c7d8ff':lightMode===2?'#b0c7ef':'#fff2e7');
   ambientSky.groundColor.set(moonlit||lightMode===2?'#545a58':'#556c50');
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
-  skyDome.material.map=moonlit?moonlitSky:skyTextures[lightMode];
+  skyDome.material.map=skyTextures[lightMode];
   skyDome.material.needsUpdate=true;
   sunSprite.visible=!moonlit&&lightMode!==2;moonSprite.visible=moonlit||lightMode===2;
   $('nightStars').classList.toggle('visible',lightMode===2);
-  $('dayBtn').textContent=p.label;
+  $('dayBtn').textContent='Himmel: '+p.label;
   applyView();
 }
 function applyView(){
@@ -4601,7 +4725,9 @@ $('viewBtn').addEventListener('click',()=>{
   toast(farView?'Große Fernsicht aktiviert!':'Kürzere Sichtweite spart Leistung.');
 });
 $('dayBtn').addEventListener('click',()=>{
-  lightMode=(lightMode+1)%3;applyLighting();
+  lightMode=(lightMode+1)%3;
+  try{localStorage.setItem(LIGHT_MODE_KEY,String(lightMode));}catch{}
+  applyLighting();
   toast(lightMode===2?'Die Sterne funkeln!':lightMode===1?'Die Sonne geht langsam unter!':'Ein neuer Tag beginnt!');
 });
 $('lookoutBtn')?.addEventListener('click',()=>{
@@ -4833,7 +4959,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V98';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V101';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -4958,8 +5084,8 @@ function animate(now){
   updateLeverDoors(dt);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
-  sunSprite.position.set(player.x-39,player.y+51,player.z-55);
-  moonSprite.position.set(player.x+38,player.y+53,player.z-48);
+  const skyDiskPosition=lightMode===2?moonSprite.position:sunSprite.position;
+  skyDiskPosition.copy(sunlight.position).setLength(75).add(camera.position);
   let near=0;if(!isMeadow())for(const v of VILLAGES)if(Math.hypot(player.x-v.x,player.z-v.z)<18){near=v;break;}
   const shadowRange=Math.hypot(player.x-RUIN.x,player.z-RUIN.z);
   const mystery=isMeadow()?0:Math.max(0,Math.min(1,(34-shadowRange)/22));
