@@ -1,4 +1,4 @@
-// BLOCKWELT V37 — Netherfestung mit freien Aufgängen.
+// BLOCKWELT V38 — Netherfestung mit freien Aufgängen.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3037,21 +3037,31 @@ function jump(){if(!gameRunning||flying)return;const inWater=get(Math.floor(play
 let thirdPerson=true;
 try{thirdPerson=localStorage.getItem('blockwelt-kamera')!=='ego';}catch(_){}
 const eye=new THREE.Vector3(),cameraOffset=new THREE.Vector3(),viewDirection=new THREE.Vector3();
+const cameraProbe=new THREE.Vector3(),probeOffset=new THREE.Vector3();
+const cameraCorners=[[0,0],[-.15,-.12],[-.15,.12],[.15,-.12],[.15,.12]];
 let cameraDistance=0;
-function updateCamera(){
+function updateCamera(dt=0){
   eye.set(player.x,player.y+1.55,player.z);
   camera.rotation.set(pitch,yaw,0);
   camera.position.copy(eye);
-  cameraDistance=0;
   if(thirdPerson){
-    cameraOffset.set(.78,.24,3.25).applyQuaternion(camera.quaternion);
+    const portrait=camera.aspect<.85;
+    cameraOffset.set(portrait?.32:.62,.12,portrait?4.15:3.75).applyQuaternion(camera.quaternion);
     const length=cameraOffset.length();
     cameraOffset.multiplyScalar(1/length);
-    const obstruction=traceVoxel(eye,cameraOffset,length);
-    cameraDistance=obstruction?Math.max(0,obstruction.distance-.21):length;
+    let clearDistance=length;
+    for(const [x,y] of cameraCorners){
+      cameraProbe.copy(eye).add(probeOffset.set(x,y,0).applyQuaternion(camera.quaternion));
+      const obstruction=traceVoxel(cameraProbe,cameraOffset,length);
+      if(obstruction)clearDistance=Math.min(clearDistance,Math.max(0,obstruction.distance-.22));
+    }
+    // Pull in immediately; ease back only once there is room.
+    cameraDistance=dt
+      ? Math.min(clearDistance,cameraDistance+(clearDistance-cameraDistance)*(1-Math.exp(-9*dt)))
+      : clearDistance;
     camera.position.addScaledVector(cameraOffset,cameraDistance);
-  }
-  guardian.visible=thirdPerson&&cameraDistance>1.03;
+  }else cameraDistance=0;
+  guardian.visible=thirdPerson&&cameraDistance>1.18;
 }
 
 const highlight=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.015,1.015,1.015)),new THREE.LineBasicMaterial({color:'#fffce2',depthTest:false,transparent:true,opacity:.96}));
@@ -3082,6 +3092,7 @@ function intersectsPlayer(x,y,z){
 }
 function modifyWorld(place,quiet=false){
   if(!gameRunning)return;
+  updateTarget();
   if(!pointed){toast('Schau zuerst einen Block an');return;}
   let {x,y,z}=pointed;
   if(place){x+=Math.round(pointed.face.x);y+=Math.round(pointed.face.y);z+=Math.round(pointed.face.z);}
@@ -3253,7 +3264,14 @@ part(guardian,.27,.15,.04,g.skin,0,1.47,-.18);
 part(guardian,.25,.045,.05,g.dark,0,1.50,-.205);
 part(guardian,.28,.31,.12,g.dark,0,1.10,.19);
 part(guardian,.09,.11,.035,g.glow,0,1.19,.267);
-const mantle=part(guardian,.38,.49,.06,g.cloth,0,.86,.21);
+const mantle=part(guardian,.41,.55,.06,g.cloth,0,.87,.23);
+part(mantle,.085,.10,.025,g.glow,0,.06,.036);
+for(const side of [-1,1]){
+  part(mantle,.09,.04,.025,g.gold,side*.09,.11,.036);
+  part(mantle,.05,.055,.025,g.gold,side*.14,.17,.036);
+  part(mantle,.055,.19,.025,g.gold,side*.17,-.09,.036);
+  part(guardian,.045,.075,.08,g.edge,side*.18,1.65,.13);
+}
 part(mantle,.35,.06,.02,g.gold,0,-.20,.035);
 const guardianLimbs=[];
 for(const side of [-1,1]){
@@ -4241,10 +4259,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V37 – Drachenwächter':'Legendenwelt · V37';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V38 – Drachenwächter':'Legendenwelt · V38';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V37 · Drachenkrone':'Blockwelt V37 · Legendenwelt';
+  document.title=meadow?'Blockwelt V38 · Drachenkrone':'Blockwelt V38 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4339,7 +4357,7 @@ zoomRecovery.addEventListener('click',reloadStandardView);
 const viewport=window.visualViewport;
 function positionZoomRecovery(){
   if(!viewport)return;
-  zoomRecovery.hidden=viewport.scale<=1.04;
+  zoomRecovery.hidden=viewport.scale<=1.015;
   if(!zoomRecovery.hidden){
     zoomRecovery.style.transform=
       `translate(${viewport.offsetLeft+12/viewport.scale}px,${viewport.offsetTop+12/viewport.scale}px) scale(${1/viewport.scale})`;
@@ -4362,7 +4380,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   const oldX=player.x,oldZ=player.z;
-  updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera();updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);

@@ -1,6 +1,6 @@
-# Blockwelt V37 – Drachenwächter
+# Blockwelt V38 – Drachenwächter
 
-Die Schulterkamera ist standardmäßig aktiv. Unter **☰ → Welt & Grafik → Kamera** kannst du auf Ich-Sicht wechseln. In engen Gängen rückt die Kamera vor Hindernisse. Falls der Browserzoom trotzdem einsetzt, erscheint **Normalansicht laden**. Das Neuladen setzt die Spielfigur an den Startpunkt zurück.
+Die Schulterkamera ist standardmäßig aktiv. Im Hochformat sitzt die Figur näher an der Bildmitte. Die Kamera prüft mehrere Punkte gegen die Umgebung und fährt nach Engstellen weich zurück. Der Mantel trägt ein leuchtendes Drachenwappen. Unter **☰ → Welt & Grafik → Kamera** kannst du auf Ich-Sicht wechseln. In engen Gängen rückt die Kamera vor Hindernisse. Falls der Browserzoom trotzdem einsetzt, erscheint **Normalansicht laden**. Das Neuladen setzt die Spielfigur an den Startpunkt zurück.
 
 Zwei steinerne Drachenwächter flankieren den Gluthof. Im oberen Bergfried führen gestufte Fensterbuchten an die Aussicht, und auf dem höchsten Dach wartet ein leuchtender Schrein. Der Weg dorthin führt über die bestehende Treppe.
 
@@ -16,7 +16,7 @@ V35 löscht beim Update keine lokalen Spielstände. Bereits gesetzte oder abgeba
 
 1. Den bisherigen Stand in GitHub oder Working Copy sichern.
 2. Das ZIP entpacken. Im bestehenden Blockwelt-Repository `index.html`, `styles.css`, `game.js` und `README.md` durch die neuen Dateien ersetzen.
-3. Committen und auf den GitHub-Pages-Branch pushen. Nach dem Deployment die Seite neu laden. Oben steht dann **V37 – Drachenwächter**.
+3. Committen und auf den GitHub-Pages-Branch pushen. Nach dem Deployment die Seite neu laden. Oben steht dann **V38 – Drachenwächter**.
 4. Über **☰ → Welten auswählen → Große Wiese → Zur Netherfestung Deluxe reisen** zur Festung gehen.
 
 ## Prüfung
