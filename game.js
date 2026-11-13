@@ -1,4 +1,4 @@
-// BLOCKWELT V48 — Schloss Nachtrabe bei Mondschein.
+// BLOCKWELT V49 — Schloss Nachtrabe – Stein und Stahl.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -2620,19 +2620,6 @@ function traceVoxel(origin,direction,maxDistance=5.6){
   return null;
 }
 
-// Background clouds (not buildable, not included in raycasting).
-const cloudMat=new THREE.MeshBasicMaterial({color:'#f9fff7',transparent:true,opacity:.84,depthWrite:false});
-const cloudGeo=new THREE.BoxGeometry(1,1,1);
-const clouds=new THREE.Group();scene.add(clouds);
-for(let i=0;i<12;i++){
-  const group=new THREE.Group();group.position.set(-52+i*10.5,60+(i%3)*5,-40-(i%2)*9);
-  for(let j=0;j<3;j++){
-    const p=new THREE.Mesh(cloudGeo,cloudMat);p.position.set((j-1)*2.2,j===1?.6:0,0);
-    p.scale.set(j===1?4.7:3.4,1.6,2.5);group.add(p);
-  }
-  clouds.add(group);
-}
-
 // Procedural three-tone sky: a single inexpensive sphere, no remote image assets.
 function skyGradient(high,mid,low,clouded=false){
   const c=document.createElement('canvas');c.width=clouded?512:16;c.height=256;
@@ -2653,9 +2640,9 @@ function skyGradient(high,mid,low,clouded=false){
 }
 const moonlitSky=skyGradient('#141f40','#53688c','#bba0a2',true);
 const skyTextures=[
-  skyGradient('#65aff0','#b6ddf5','#e5f5e6'),
-  skyGradient('#627bad','#f3bd96','#ffe0ab'),
-  skyGradient('#091e42','#344a6a','#65758d')
+  skyGradient('#65aff0','#b6ddf5','#e5f5e6',true),
+  skyGradient('#627bad','#f3bd96','#ffe0ab',true),
+  skyGradient('#091e42','#344a6a','#65758d',true)
 ];
 const skyDome=new THREE.Mesh(
   new THREE.SphereGeometry(80,24,12),
@@ -2853,6 +2840,7 @@ function syncUndo(){
   button.disabled=undoStack.length===0;
 }
 function undo(){
+  castleLightCell=null;
   if(!undoStack.length){toast('Noch nichts zum Rückgängigmachen');return;}
   const {x,y,z,oldType,oldEdit}=undoStack.pop();
   const k=key(x,y,z);
@@ -2983,45 +2971,57 @@ function part(parent,w,h,d,material,x,y,z){
   const mesh=new THREE.Mesh(geometry,material);
   mesh.position.set(x,y,z);parent.add(mesh);return mesh;
 }
-// Original block-built dragon keeper, facing local -Z.
+// The rider is rendered independently of the building grid.
 const guardian=new THREE.Group();
 scene.add(guardian);
-const guardianMat=Object.fromEntries(Object.entries({
-  iron:'#344457',edge:'#738ba3',gold:'#d6a051',cloth:'#603469',
-  dark:'#252636',skin:'#b78162',glow:'#e398ff'
-}).map(([key,color])=>[key,new THREE.MeshLambertMaterial({
-  color,emissive:key==='glow'?color:'#1c1823',emissiveIntensity:key==='glow'?.65:.32
-})]));
-const g=guardianMat;
-part(guardian,.48,.54,.28,g.iron,0,1.03,0);
-part(guardian,.50,.09,.31,g.gold,0,.78,0);
-part(guardian,.39,.37,.36,g.edge,0,1.49,0);
-part(guardian,.41,.12,.38,g.iron,0,1.64,0);
-part(guardian,.27,.15,.04,g.skin,0,1.47,-.18);
-part(guardian,.25,.045,.05,g.dark,0,1.50,-.205);
-part(guardian,.28,.31,.12,g.dark,0,1.10,.19);
-part(guardian,.09,.11,.035,g.glow,0,1.19,.267);
-const mantle=part(guardian,.41,.55,.06,g.cloth,0,.87,.23);
-part(mantle,.085,.10,.025,g.glow,0,.06,.036);
-for(const side of [-1,1]){
-  part(mantle,.09,.04,.025,g.gold,side*.09,.11,.036);
-  part(mantle,.05,.055,.025,g.gold,side*.14,.17,.036);
-  part(mantle,.055,.19,.025,g.gold,side*.17,-.09,.036);
-  part(guardian,.045,.075,.08,g.edge,side*.18,1.65,.13);
+const armor=new THREE.MeshStandardMaterial({color:'#647183',metalness:.43,roughness:.44});
+const leather=new THREE.MeshStandardMaterial({color:'#423029',roughness:.92});
+const cloak=new THREE.MeshStandardMaterial({color:'#492631',roughness:.94,side:THREE.DoubleSide});
+const brass=new THREE.MeshStandardMaterial({color:'#b58951',metalness:.4,roughness:.52});
+const ovalGeometry=new THREE.SphereGeometry(1,16,10);
+function oval(parent,material,x,y,z,width,height,depth){
+  const mesh=new THREE.Mesh(ovalGeometry,material);
+  mesh.position.set(x,y,z);
+  mesh.scale.set(width,height,depth);
+  parent.add(mesh);
+  return mesh;
 }
-part(mantle,.35,.06,.02,g.gold,0,-.20,.035);
+oval(guardian,armor,0,1.08,0,.245,.31,.155);
+oval(guardian,leather,0,.79,0,.18,.15,.13);
+oval(guardian,armor,0,1.51,0,.158,.207,.155);
+oval(guardian,leather,0,1.49,-.128,.12,.048,.034);
+oval(guardian,brass,0,1.57,0,.027,.153,.157);
+const mantle=new THREE.Group();
+mantle.position.set(0,1.28,.13);
+guardian.add(mantle);
+const clothVertices=[],clothIndices=[];
+for(let row=0;row<=12;row++)for(let col=0;col<=16;col++){
+  const t=row/12,u=col/8-1;
+  clothVertices.push(u*(.18+.095*t),-t*(.84-.1*Math.abs(u)),.075+.105*t-.078*u*u+Math.cos(u*15)*(.012+t*.025));
+  const i=row*17+col;
+  if(row&&col)clothIndices.push(i-18,i-17,i,i-18,i,i-1);
+}
+const clothGeometry=new THREE.BufferGeometry();
+clothGeometry.setAttribute('position',new THREE.Float32BufferAttribute(clothVertices,3));
+clothGeometry.setIndex(clothIndices);
+clothGeometry.computeVertexNormals();
+mantle.add(new THREE.Mesh(clothGeometry,cloak));
+const clasp=oval(mantle,brass,0,-.16,.126,.067,.077,.019);
+clasp.rotation.z=.3;
 const guardianLimbs=[];
 for(const side of [-1,1]){
-  part(guardian,.08,.13,.10,g.gold,side*.19,1.68,.05);
-  part(guardian,.13,.07,.13,g.edge,side*.29,1.26,0);
   const arm=new THREE.Group(),leg=new THREE.Group();
-  arm.position.set(side*.29,1.22,0);
-  leg.position.set(side*.13,.76,0);
+  arm.position.set(side*.23,1.22,0);
+  leg.position.set(side*.111,.77,0);
   guardian.add(arm,leg);
-  part(arm,.13,.36,.15,g.iron,0,-.20,0);
-  part(arm,.15,.09,.17,g.gold,0,-.36,0);
-  part(leg,.18,.56,.19,g.dark,0,-.28,0);
-  part(leg,.20,.18,.27,g.edge,0,-.65,-.03);
+  oval(arm,armor,side*.023,0,0,.117,.104,.126);
+  oval(arm,leather,side*.031,-.18,0,.072,.183,.075);
+  oval(arm,armor,side*.045,-.29,0,.073,.12,.077);
+  oval(arm,leather,side*.048,-.411,0,.061,.075,.066);
+  oval(leg,leather,0,-.18,0,.096,.21,.093);
+  oval(leg,armor,0,-.34,-.028,.082,.10,.091);
+  oval(leg,leather,0,-.56,0,.078,.19,.079);
+  oval(leg,armor,0,-.696,-.052,.087,.073,.139);
   guardianLimbs.push({arm,leg,side});
 }
 let stride=0;
@@ -3034,7 +3034,8 @@ function animateGuardian(dt,moved){
     arm.rotation.x=side*swing;
     leg.rotation.x=-side*swing;
   }
-  mantle.rotation.x=.10+Math.abs(swing)*.36;
+  mantle.rotation.x=.06+Math.abs(swing)*.28;
+  mantle.rotation.z=Math.sin(stride)*Math.abs(swing)*.05;
 }
 function makeCreature(kind,x,z,number,homeX=x,homeZ=z){
   const group=new THREE.Group();
@@ -3553,9 +3554,21 @@ for(let i=0;i<valleyTreeCount;i++){
 }
 scene.add(valleyTrees);
 
+const gateMolding=new THREE.Group();
+const gateStone=materialByType.netherTrim[0];
+for(let x=-7;x<=7;x++){
+  const y=18-Math.floor(Math.abs(x)*.75);
+  const slope=-Math.sign(x)*.75;
+  const voussoir=part(gateMolding,Math.hypot(1,slope)+.025,.31,.32,gateStone,x+.5,y+.65,-34);
+  voussoir.rotation.z=Math.atan(slope);
+  voussoir.userData.site=[x,y,-35];
+}
+scene.add(gateMolding);
+
 let castleLightCell='';
 function updateCastleLighting(){
   castleRidges.visible=isMeadow();
+  gateMolding.visible=isMeadow();
   valleyTrees.visible=isMeadow();
   lanternFrames.visible=isMeadow()&&graphicMode==='schoen';
   castleMist.visible=castleMoonlight()&&graphicMode==='schoen';
@@ -3568,6 +3581,8 @@ function updateCastleLighting(){
     const [x,y,z,type]=frame.userData.site;
     frame.visible=netherBlockAt(x,y,z)===type;
   }
+  if(isMeadow())for(const stone of gateMolding.children)
+    stone.visible=netherBlockAt(...stone.userData.site)==='netherTrim';
   const sites=[...castleLampSites];
   if(isMeadow())for(const [x,y,z,type] of edits.values()){
     if(type==='lantern'||type==='lavaGlow')sites.push([x,y,z,type]);
@@ -4146,10 +4161,10 @@ function updateWorldSelector(){
   $('worldMeadowBtn').setAttribute('aria-pressed',String(meadow));
   $('worldAdventureBtn').textContent=meadow?'🏰 Abenteuerwelt':'✓ 🏰 Abenteuerwelt';
   $('worldMeadowBtn').textContent=meadow?'✓ 🌿 Große Wiese':'🌿 Große Wiese';
-  $('worldSubtitle').textContent=meadow?'Große Wiese · V48 – Nachtrabe bei Mondschein':'Legendenwelt · V48';
+  $('worldSubtitle').textContent=meadow?'Große Wiese · V49 – Nachtrabe – Stein und Stahl':'Legendenwelt · V49';
   $('fortressBtn').hidden=!meadow;
   $('startBtn').textContent=meadow?'▶ Große Wiese betreten':'▶ Abenteuerwelt betreten';
-  document.title=meadow?'Blockwelt V48 · Schloss Nachtrabe':'Blockwelt V48 · Legendenwelt';
+  document.title=meadow?'Blockwelt V49 · Schloss Nachtrabe':'Blockwelt V49 · Legendenwelt';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(meadow?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
   regionName='';updateRegion();
   updateSunVillageSignVisibility(false);
@@ -4296,7 +4311,7 @@ function animate(now){
   if(near)villageGlow.position.set(near.x+.5,terrainHeight(near.x,near.z)+3,near.z+.5);
   if(now-lastTarget>35){updateTarget();lastTarget=now;}
   if(now-lastCompass>350){updateCompass();lastCompass=now;}
-  clouds.position.set(player.x*.66+Math.sin(now*.00007)*2,0,player.z*.66);
+
   waterSurfaceMap.offset.x=Math.sin(now*.00015)*.065;
   waterSurfaceMap.offset.y=Math.cos(now*.00011)*.045;
   // Slow, restrained magic glow: 2 shared materials instead of per-object animation.

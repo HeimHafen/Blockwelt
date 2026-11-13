@@ -1,14 +1,7 @@
-# Blockwelt V48 – Nachtrabe bei Mondschein
+# Blockwelt V49 – Stein und Stahl
 
-## Installation
+Ersetze im Blockwelt-Ordner index.html, styles.css und game.js gemeinsam. V49 basiert auf V48 und verwendet dieselben Speicherkennungen. Das Spiel bleibt über die bestehende Seite erreichbar.
 
-Entpacke das ZIP und ersetze `index.html`, `styles.css` und `game.js` im gleichen Ordner deiner Blockwelt. V48 enthält die Änderungen aus V46 und V47 und kann direkt über V45 installiert werden. Öffne anschließend die veröffentlichte Spielseite und lade sie neu. Im Spielkopf sollte V48 stehen. Die vorhandenen Spielstände verwenden dieselben Speicherschlüssel.
+Die Spielerfigur verwendet ein neues 3D-Modell mit gerundetem Helm, Plattenrüstung, Lederstiefeln und einem gefalteten, beim Gehen bewegten Umhang. Am Haupttor ergänzen schräge Keilsteine die abbaubaren Bogenblöcke. Die Keilsteine folgen den Änderungen am jeweiligen Block, auch beim Rückgängigmachen. Der Himmel verwendet Wolkenbänder in allen Lichtstimmungen. Feste Lichtzonen aus V48 bleiben aktiv.
 
-## Grafik und Beleuchtung
-
-- Neue Mondhimmeltextur mit Wolkenbändern, gestaffelte Hügel und ein Nadelwald jenseits des bebaubaren Rasters. Die Große Wiese bleibt im Baugebiet eben.
-- Feinere Stein-, Pflaster-, Holz- und Grasoberflächen. Steinmaterialien zeigen Relief, Risse und vereinzelte Moosspuren. Auch entfernte Teile des Schlosses verwenden Steintexturen.
-- Feste warme Lichtzonen am Torweg, am Tor, in der Großen Halle und im Rabenarchiv. Die Grundbeleuchtung folgt den vorhandenen Lichtblöcken unabhängig vom Standort des Spielers. Vier zusätzliche lokale Lichtquellen ergänzen sie.
-- Grafikmodus „Schön“ zeigt zusätzlich Bodennebel und Laternenfassungen. Die Schlossblöcke bleiben begehbar, abbaubar und setzbar.
-
-JavaScript-Syntax, ZIP-Inhalt und 648 Treppenübergänge geprüft. Ein Test der Darstellung und Bildrate auf einem echten iPhone steht aus.
+Die übrige Schlossgeometrie, das Gelände und die Kreaturen stammen überwiegend aus V48. JavaScript-Syntax und 648 simulierte Treppenübergänge sind geprüft. Darstellung und Leistung auf iPhone-Safari sind offen.
