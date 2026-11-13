@@ -117,3 +117,11 @@ Der Hauptgang erhält flache Segmentbögen mit gemauerten Auflagern. In den vier
 ## V101 – Himmel und Tageslicht
 
 Im Spielmenü wechselt „Himmel“ zwischen hellem Tag, goldener Stunde und Sternennacht. Die gewählte Lichtstimmung wird auf dem Gerät gespeichert. Bei Tag hellt Dunst den Horizont auf. Sonne und Mond bleiben beim Bewegen in derselben Himmelsrichtung.
+
+## V102 – Treppenhäuser
+
+Die beiden Treppenhäuser an der Großen Halle haben offene Zugänge, drei Blöcke breite Läufe und zwei Blöcke tiefe Wendepodeste. Seitliche Mauern und der durchgehende Mittelkern sichern die Läufe. Je vier Wandleuchten beleuchten Einstieg, Podest, oberen Lauf und Austritt.
+
+## V103 – Treppenhäuser
+
+Drei Blöcke breite Läufe treffen auf drei Blöcke tiefe Wendepodeste. Die Läufe liegen auf massivem Mauerwerk. Steinbänder gliedern die geschlossene Decke, und eine versetzte Wandleuchte beleuchtet die hintere Wendefläche.
