@@ -1,4 +1,4 @@
-# Blockwelt V75 – Schloss Nachtrabe
+# Blockwelt V76 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -13,3 +13,7 @@ Wege, Halle, Seitenflügel und Bunkertreppe haben feste Lichtquellen. Die Lichtw
 ## V75 – Laternenpositionen
 
 Neun Innenlaternen sitzen mit eisernen Haltern am Mauerwerk, abseits von Fenstern und Türen. Die zehn Weglaternen stehen auf Bodensockeln. Die Bunkerleuchten hängen direkt an Querbalken.
+
+## V76 – Schlossfassade
+
+Nur die Spielfigur ist sichtbar. Die Schlosspforte erhält einen steinernen Portalrahmen. Geneigte Dachflächen auf den Torkammern ergänzen die vorhandene Blockgeometrie.

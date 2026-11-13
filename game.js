@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=75';
-// BLOCKWELT V75 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=76';
+// BLOCKWELT V76 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -127,7 +127,7 @@ const decorativeMeshes = new Map();
 const generatedChunks = new Set();
 let lastStreamCenter = '';
 const chunksPerSide = HALF / CHUNK;
-let showCreatures = true;
+const showCreatures = false;
 let lightMode = 0; // 0: Morgensonne, 1: Goldene Stunde, 2: Nacht
 let selectedType = 'grass';
 let gameRunning = false;
@@ -3456,26 +3456,47 @@ scene.add(valleyTrees);
 
 const gateStone=materialByType.netherTrim[0];
 const gateMolding=new THREE.Group();
-// The exposed stonework follows a smooth pointed curve just outside the wall.
-const archProfile=x=>18.83-.50*Math.abs(x)-.033*x*x;
-for(let x=-7;x<=7;x++){
-  const y=18-Math.floor(Math.abs(x)*.75);
-  const shape=new THREE.Shape();
-  const left=archProfile(x-.47),right=archProfile(x+.47);
-  shape.moveTo(x+.03,left);
-  shape.lineTo(x+.97,right);
-  shape.lineTo(x+.97,right+.58);
-  shape.lineTo(x+.03,left+.58);
-  shape.closePath();
-  const geometry=new THREE.ExtrudeGeometry(shape,{
-    depth:.21,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.035,bevelThickness:.035
-  });
-  const voussoir=new THREE.Mesh(geometry,gateStone);
-  voussoir.position.z=-34.02;
-  voussoir.userData.site=[x,y,-35];
-  gateMolding.add(voussoir);
+const roofStone=materialByType.netherDeep[0];
+function facadePart(site,type,w,h,d,material,x,y,z){
+  const mesh=part(gateMolding,w,h,d,material,x,y,z);
+  mesh.userData.site=site;
+  mesh.userData.type=type;
+  return mesh;
 }
 
+// The portal moulding frames the existing clear passage and lever mounts.
+for(const side of [-1,1]){
+  const x=side<0?-4:4;
+  for(let y=5;y<11;y++){
+    facadePart([x,y,-34],'netherBrick',.68,.96,.36,gateStone,x+.5,y+.5,-33.87);
+  }
+  for(let i=0;i<6;i++){
+    const angle=(i+.5)*Math.PI/12;
+    const px=.5+side*3.46*Math.cos(angle);
+    const py=11.02+1.54*Math.sin(angle);
+    const block=facadePart([Math.floor(px),11,-35],'netherBrick',
+      .63,.43,.43,gateStone,px,py,-33.82);
+    block.rotation.z=side*Math.atan2(1.54*Math.cos(angle),-3.46*Math.sin(angle));
+  }
+}
+
+facadePart([0,12,-35],"netherBrick",.46,.62,.53,gateStone,.5,12.62,-34.02);
+
+// Each roof strip follows the slope above the matching editable roof course.
+for(const [a,b] of [[-12,-4],[4,12]]){
+  const center=(a+b+1)/2;
+  for(let inset=0;inset<4;inset++){
+    for(const side of [-1,1]){
+      const x=center+side*(4-inset);
+      const anchorX=side<0?a+inset:b-inset;
+      const roof=facadePart([anchorX,16+inset,-38],'netherDeep',
+        Math.SQRT2+.05,.16,9.32,roofStone,x,17.55+inset,-37.5);
+      roof.rotation.z=-side*Math.PI/4;
+    }
+  }
+  facadePart([Math.floor(center),20,-38],'netherDeep',1.12,.26,9.4,roofStone,center,21.17,-37.5);
+}
+scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
 const castleDoors=new THREE.Group();
@@ -3957,7 +3978,7 @@ function updateCastleLighting(){
     if(wall)for(const bracket of frame.children.slice(-2))bracket.visible=!!netherBlockAt(...wall);
   }
   if(isMeadow())for(const stone of gateMolding.children)
-    stone.visible=netherBlockAt(...stone.userData.site)==='netherTrim';
+    stone.visible=netherBlockAt(...stone.userData.site)===stone.userData.type;
   for(const stone of towerDressings.children)
     stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
   const meadow=isMeadow();
@@ -4240,11 +4261,6 @@ function visitVillage(){
   teleportTo(v.x+13,v.z,'Willkommen im Sonnen-Dorf!',v.x-3,v.z);
 }
 $('villageBtn')?.addEventListener('click',visitVillage);
-$('mobsBtn').addEventListener('click',()=>{
-  showCreatures=!showCreatures;
-  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+(isMeadow()?'Festungswesen: ':'Tiere und Bewohner: ')+(showCreatures?'an':'aus');
-  toast(showCreatures?'Die Welt ist lebendig!':'Die Figuren machen eine Pause.');
-});
 function castleMoonlight(){return isMeadow()&&lightMode===0;}
 function applyLighting(){
   const options=[
@@ -4536,8 +4552,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V75';
-  $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V76';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
