@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=85';
-// BLOCKWELT V85 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=86';
+// BLOCKWELT V86 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3733,28 +3733,37 @@ function interactWithHatch(clientX,clientY){
   const hit=hatchRay.intersectObject(hatchAssembly,true)[0];
   const obstacle=traceVoxel(hatchRay.ray.origin,hatchRay.ray.direction,
     hit?Math.max(0,hit.distance-.025):20);
-  if(bunkerHatchOpen&&player.y>=3.5&&(!hit||obstacle)&&obstacle&&
-    obstacle.x>=18&&obstacle.x<=20&&obstacle.z>=-9&&obstacle.z<=0&&
-    obstacle.y===3+obstacle.z){
-    // An explicit tap on a visible step offers entry from either lip of the hatch.
-    const landing={x:19.5,y:-4.98,z:-10.5};
-    if(!blocked(landing.x,landing.y,landing.z)&&groundedAt(landing.x,landing.y,landing.z)){
-      if(flying)setFlying(false);
-      Object.assign(player,landing,{vy:0,grounded:true});
-      updateWorldStream();
-      return true;
-    }
-  }
   if(!hit||obstacle)return false;
   if(bunkerHatchOpen&&overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45){
     toast('Tritt zum Schließen aus der Luke.');
     return true;
   }
   bunkerHatchOpen=!bunkerHatchOpen;
-  if(bunkerHatchOpen)toast('Von der oberen Stufe hinuntergehen oder auf eine sichtbare Stufe tippen.');
+  
   return true;
 }
+const bunkerEntryBtn=$('bunkerEntryBtn');
+function canEnterBunker(){
+  return gameRunning&&isMeadow()&&bunkerHatchOpen&&player.y>=3.5&&player.y<=6&&
+    Math.hypot(player.x-19.5,player.z+1)<4;
+}
+bunkerEntryBtn.addEventListener('click',()=>{
+  if(!canEnterBunker())return;
+  for(const z of [-10.5,-11.5,-12.5])for(const x of [19.5,18.5,20.5]){
+    const y=-4.98;
+    if(blocked(x,y,z)||!groundedAt(x,y,z))continue;
+    if(flying)setFlying(false);
+    Object.assign(player,{x,y,z,vy:0,grounded:true});
+    yaw=0;
+    pitch=-.12;
+    updateWorldStream();
+    bunkerEntryBtn.hidden=true;
+    return;
+  }
+  toast('Das untere Podest ist durch Blöcke versperrt.');
+});
 function updateBunkerHatch(dt){
+  bunkerEntryBtn.hidden=!canEnterBunker();
   const playerInOpening=overBunkerHatch(player.x,player.z)&&player.y<5&&player.y+PLAYER_H>4.45;
   const target=bunkerHatchOpen||playerInOpening?1.76:0;
   hatchAssembly.rotation.z=THREE.MathUtils.damp(hatchAssembly.rotation.z,target,13,dt);
@@ -4611,7 +4620,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V85';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V86';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

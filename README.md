@@ -1,4 +1,4 @@
-# Blockwelt V85 – Schloss Nachtrabe
+# Blockwelt V86 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -53,3 +53,7 @@ Beim Hinuntergehen folgt die Spielfigur den Trittstufen direkt.
 ## V85 – Bunkerzugang
 
 Falltür antippen und bei geöffneter Tür auf eine sichtbare volle Stufe tippen, um direkt auf dem unteren Podest anzukommen.
+
+## V86 – Einstieg
+
+Falltür öffnen. In ihrer Nähe erscheint „Bunker betreten“. Die Schaltfläche führt auf einen freien Platz am unteren Treppenabsatz.
