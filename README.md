@@ -1,4 +1,4 @@
-# Blockwelt V78 – Schloss Nachtrabe
+# Blockwelt V79 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -25,3 +25,7 @@ Vom unteren Podest aus sitzt in jeder zweiten Trittstufe der dreispurigen Bunker
 ## V78 – Bunkertreppe
 
 Die mittige Glutsteinfolge reicht bis zur untersten vollen Stufe. Beim ersten Laden werden gespeicherte Lücken in der mittleren Spur dieser Treppe geschlossen.
+
+## V79 – Kamera
+
+Die Außenkamera hält festen Abstand. Bei blockierter Sicht wechselt sie direkt zur Egoansicht und kehrt bei freier Sicht nach kurzer Verzögerung zurück.

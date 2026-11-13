@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=78';
-// BLOCKWELT V78 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=79';
+// BLOCKWELT V79 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -2652,6 +2652,7 @@ const cameraProbe=new THREE.Vector3(),probeOffset=new THREE.Vector3();
 const orbitRotation=new THREE.Euler(0,0,0,'YXZ');
 const cameraCorners=[[0,0],[-.15,-.12],[-.15,.12],[.15,-.12],[.15,.12]];
 let cameraDistance=0;
+let clearCameraTime=0;
 function updateCamera(dt=0){
   eye.set(player.x,player.y+1.55,player.z);
   camera.rotation.set(pitch,yaw,0);
@@ -2669,16 +2670,19 @@ function updateCamera(dt=0){
       const obstruction=traceVoxel(cameraProbe,cameraOffset,length);
       if(obstruction)clearDistance=Math.min(clearDistance,Math.max(0,obstruction.distance-.22));
     }
-    // Pull in immediately; ease back only once there is room.
-    cameraDistance=dt
-      ? Math.min(clearDistance,cameraDistance+(clearDistance-cameraDistance)*(1-Math.exp(-9*dt)))
-      : clearDistance;
+    // Keep the full orbit distance. Use the eye position when that view is blocked.
+    clearCameraTime=clearDistance===length?clearCameraTime+dt:0;
+    cameraDistance=clearDistance===length&&(cameraDistance>0||!dt||clearCameraTime>=.22)?length:0;
+    if(!cameraDistance){
+      guardian.visible=false;
+      return;
+    }
     camera.position.addScaledVector(cameraOffset,cameraDistance);
     // Keep the crosshair aligned with the same aim point as in first person.
     viewDirection.set(0,0,-1).applyQuaternion(camera.quaternion);
     cameraProbe.copy(eye).addScaledVector(viewDirection,12);
     camera.lookAt(cameraProbe);
-  }else cameraDistance=0;
+  }else{cameraDistance=0;clearCameraTime=0;}
   guardian.visible=thirdPerson&&cameraDistance>1.18;
 }
 
@@ -4562,7 +4566,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V78';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V79';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
