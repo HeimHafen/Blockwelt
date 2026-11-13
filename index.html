@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#98cde8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Blockwelt V71 mit dem begehbaren Schloss Nachtrabe und einer frei bebaubaren Umgebung.">
-  <title>Blockwelt V71 · Große Wiese · Labor</title>
-  <link rel="stylesheet" href="styles.css?v=71">
+  <meta name="description" content="Blockwelt V72 mit dem begehbaren Schloss Nachtrabe und einer frei bebaubaren Umgebung.">
+  <title>Blockwelt V72 · Große Wiese · Labor</title>
+  <link rel="stylesheet" href="styles.css?v=72">
   <script>
     // Register before the WebGL module loads. Block native pinch before
     // movement begins, including a second finger landing on a HUD control.
@@ -32,13 +32,14 @@
   </script>
 </head>
 <body>
+  <button id="castleLeverBtn" type="button" hidden>Hebel · Tür öffnen</button>
   <button id="bunkerLeverBtn" type="button" hidden>Hebel · Luke öffnen</button>
   <button id="zoomRecovery" type="button" hidden>Normalansicht laden</button>
   <div id="game" aria-label="3D-Spielwelt"></div>
   <div id="loading" class="loading">Die Blockwelt wird vorbereitet …</div>
 
   <header class="topbar">
-    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Schloss Nachtrabe · V71</small></div></div>
+    <div class="identity"><span class="logo" aria-hidden="true">▦</span><div><strong>BLOCKWELT</strong><small id="worldSubtitle">Schloss Nachtrabe · V72</small></div></div>
     <button class="round top-btn" id="menuBtn" type="button" aria-label="Menü öffnen">☰</button>
   </header>
 
@@ -144,6 +145,6 @@
     </div>
   </section>
 
-  <script type="module" src="game.js?v=71"></script>
+  <script type="module" src="game.js?v=72"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-import {buildCastleArchitecture} from './nachtrabe.js?v=71';
-// BLOCKWELT V71 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture} from './nachtrabe.js?v=72';
+// BLOCKWELT V72 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -40,6 +40,7 @@ const MEADOW_HEIGHT = 5; // Grass top y=4, feet y=5: a flat, stable building fie
 // Der Bauplan besteht nur aus echten Minecraft-ähnlichen Voxeln. Keine
 // gerenderten Kulissen, keine Eingriffe in die unveränderte Abenteuerwelt.
 const NETHER_BOUNDS={minX:-56,maxX:56,minZ:-86,maxZ:-11};
+const doorSites=[];
 const stairTreads=new Map();
 let netherChunkPlan=null;
 let netherPlanVoxels=null;
@@ -62,7 +63,7 @@ function makeNetherPlan(){
     solid(x,y-1,z,D);solid(x,y,z,'lantern');
   };
   const routes=[];
-  buildCastleArchitecture({box,solid,deck,empty,routes});
+  buildCastleArchitecture({box,solid,deck,empty,routes,doors:doorSites});
   for(const path of routes)for(const [x,y,z] of path)solid(x,y,z,T);
   for(const path of routes)for(const [x,y,z] of path)
     for(let dy=1;dy<=3;dy++)empty(x,y+dy,z);
@@ -2561,6 +2562,7 @@ function treadIsSupported(tread){
     get(x+dx,y,z+dz)===upper&&!get(x,y,z);
 }
 function blocked(x,y,z){
+  if(leverDoors.some(d=>!d.open&&insideDoor(d,x,y,z)))return true;
   if(!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
   const minX=Math.floor(x-PLAYER_R+.005),maxX=Math.floor(x+PLAYER_R-.005);
   const minZ=Math.floor(z-PLAYER_R+.005),maxZ=Math.floor(z+PLAYER_R-.005);
@@ -3596,6 +3598,52 @@ for(const [x,y,z] of [[21.28,5.37,.53],[20.75,-2.6,-8.5]]){
   bunkerFurnishings.add(handle);
   bunkerLevers.push(handle);
 }
+makeNetherPlan();
+const leverDoors=doorSites.map(([xa,xb,ya,yb,za,zb])=>{
+  const alongX=xb-xa>=zb-za;
+  const x=(xa+xb+1)/2,z=(za+zb+1)/2,h=yb-ya+1;
+  const width=alongX?xb-xa+1:zb-za+1;
+  const door=new THREE.Group();
+  door.position.set(x,ya,z);
+  door.rotation.y=alongX?0:Math.PI/2;
+  for(let i=0;i<width*3;i++)
+    part(door,.326,h,.22,oakDoor,(i+.5)/3-width/2,h/2,0);
+  for(const level of [.22,.73])
+    part(door,width,.16,.28,doorIron,0,h*level,0);
+  scene.add(door);
+  const levers=new THREE.Group();
+  for(const side of [-1,1]){
+    const handle=part(levers,.13,.48,.14,doorIron,
+      x+(alongX?width/2+.24:side*.67),ya+1.1,z+(alongX?side*.67:width/2+.24));
+    handle.rotation.z=.32;
+  }
+  scene.add(levers);
+  return {door,x,z,ya,h,width,alongX,open:false};
+});
+function insideDoor(d,x,y,z){
+  return Math.abs(x-d.x)<(d.alongX?d.width/2:.18)+PLAYER_R&&
+    Math.abs(z-d.z)<(d.alongX?.18:d.width/2)+PLAYER_R&&y<d.ya+d.h&&y+PLAYER_H>d.ya;
+}
+const castleLeverBtn=$('castleLeverBtn');
+let nearestLeverDoor=null;
+castleLeverBtn.addEventListener('click',()=>{
+  const d=nearestLeverDoor;
+  if(!gameRunning||!d)return;
+  if(d.open&&insideDoor(d,player.x,player.y,player.z))return;
+  d.open=!d.open;
+});
+function updateLeverDoors(dt){
+  nearestLeverDoor=null;
+  let distance=2.6;
+  for(const d of leverDoors){
+    d.door.position.y=THREE.MathUtils.damp(d.door.position.y,d.ya+(d.open?d.h:0),10,dt);
+    const near=Math.hypot(Math.max(0,Math.abs(player.x-d.x)-(d.alongX?d.width/2:0)),
+      Math.max(0,Math.abs(player.z-d.z)-(d.alongX?0:d.width/2)),player.y-d.ya);
+    if(near<distance){distance=near;nearestLeverDoor=d;}
+  }
+  castleLeverBtn.hidden=!gameRunning||!nearestLeverDoor;
+  if(nearestLeverDoor)castleLeverBtn.textContent=nearestLeverDoor.open?'Hebel · Tür schließen':'Hebel · Tür öffnen';
+}
 const bunkerLeverButton=$('bunkerLeverBtn');
 function bunkerLeverNearby(){
   return gameRunning&&bunkerLevers.some(({position:p})=>
@@ -4436,7 +4484,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V71';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V72';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
@@ -4551,6 +4599,7 @@ function animate(now){
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   updateBunkerHatch(dt);
+  updateLeverDoors(dt);
   if(gameRunning&&Math.floor(now/350)!==Math.floor((now-dt*1000)/350))updateDiscoveries();
   skyDome.position.set(camera.position.x,camera.position.y,camera.position.z);
   sunSprite.position.set(player.x-39,player.y+51,player.z-55);
