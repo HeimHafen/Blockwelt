@@ -193,3 +193,7 @@ Zwei Türme mit beleuchteten Treppenläufen, Wendepodesten und begehbaren Zinnen
 ## V123 – Aussichtstürme
 
 Die Treppenläufe erhalten einen gemauerten Unterbau. Gesims, durchgehende Brüstung und erhöhte Eckzinnen schließen beide Aussichtsplattformen ab.
+
+## V124 – Regenbogenportal
+
+Das Portal steht 100 Felder vor dem Burgtor auf der Mittelachse. Es führt in eine getrennt liegende Landschaft mit dunklen Terrassen und leuchtenden Kristallen. Das zweite Portal führt zurück.

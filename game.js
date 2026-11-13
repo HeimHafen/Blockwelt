@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=123';
-// BLOCKWELT V123 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=124';
+// BLOCKWELT V124 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -11,7 +11,10 @@ const $ = (id) => document.getElementById(id);
 const gameEl = $('game');
 const BLOCK_TYPES = ['grass','dirt','stone','wood','leaves','sand','planks','bricks','cobble','glass','gold','water','path','snow','blossom','lantern','netherBrick','netherDeep','netherTrim','netherGold','lavaGlow'];
 const LABELS = {grass:'Gras',dirt:'Erde',stone:'Stein',wood:'Holz',leaves:'Blätter',sand:'Sand',planks:'Bretter',bricks:'Ziegel',cobble:'Pflaster',glass:'Glas',gold:'Gold',water:'Wasser',path:'Weg',snow:'Schnee',blossom:'Blüten',lantern:'Laterne',netherBrick:'Netherziegel',netherDeep:'Dunkelstein',netherTrim:'Nether-Kante',netherGold:'Netherwappen',lavaGlow:'Glutstein'};
-const HALF = 96; // 192 × 192 Felder; Chunk-Streaming hält den iPhone-Speicher klein.
+const HALF = 320;
+const castlePortal={x:.5,z:65};
+const futurePortal={x:240.5,z:65};
+const inFuture=x=>x>=160;
 const LEGACY_HALF = 32; // Der komplette alte V3-Weltausschnitt bleibt erhalten.
 const MOBILE = matchMedia('(pointer: coarse)').matches || innerWidth < 740;
 const STORAGE_VIEW = 'blockwelt-view-v7';
@@ -1631,6 +1634,21 @@ function decorateChunkTree(ax,az,xmin,xmax,zmin,zmax){
   }
 }
 function isLegacyChunk(cx,cz){return !isMeadow()&&cx>=-2&&cx<=1&&cz>=-2&&cz<=1;}
+function buildFutureColumn(x,z){
+  const dx=x-240,dz=z-65;
+  if(Math.abs(dx)<=3||Math.abs(dz)<=3){
+    put(x,4,z,Math.abs(dx)===3||Math.abs(dz)===3?'netherTrim':'cobble');
+    if(Math.abs(dx)===3&&Math.abs(dz)>5&&z%12===0)put(x,4,z,'lantern');
+    return;
+  }
+  const basin=Math.sin(dx*.087)+Math.cos(dz*.078)+Math.sin((dx+dz)*.061);
+  const height=Math.max(0,Math.floor((basin-.65)*5));
+  for(let y=5;y<5+height;y++)put(x,y,z,y===4+height?'stone':'netherDeep');
+  if(height>=4&&pixelHash(x,z,124)>.984){
+    for(let y=5+height;y<8+height;y++)put(x,y,z,'glass');
+    put(x,8+height,z,'lantern');
+  }
+}
 function generateChunkData(cx,cz){
   if(isLegacyChunk(cx,cz)||generatedChunks.has(chunkKey(cx,cz)))return;
   if(isMeadow()){
@@ -1638,7 +1656,8 @@ function generateChunkData(cx,cz){
     // Chunks contain only grass / dirt / bedrock-like stone; saved builds win.
     for(let x=cx*CHUNK;x<(cx+1)*CHUNK;x++)for(let z=cz*CHUNK;z<(cz+1)*CHUNK;z++){
       for(let y=0;y<MEADOW_HEIGHT;y++)
-        put(x,y,z,y===MEADOW_HEIGHT-1?'grass':y>=MEADOW_HEIGHT-3?'dirt':'stone');
+        put(x,y,z,y===MEADOW_HEIGHT-1?(inFuture(x)?'netherDeep':'grass'):y>=MEADOW_HEIGHT-3?'dirt':'stone');
+      if(inFuture(x))buildFutureColumn(x,z);
     }
     // Erzeugte Festungsblöcke zuerst, persönliche Änderungen zuletzt.
     addNetherChunk(cx,cz);
@@ -5147,6 +5166,36 @@ function teleportTo(x,z,label,targetX=x,targetZ=z){
   faceTowards(targetX,targetZ);updateWorldStream(true);updateCamera();updateCompass();
   toast(label);
 }
+const rainbowColors=['#ff5148','#ff9b40','#ffe277','#75ea9b','#59deff','#7387ff','#c078ff'];
+for(const portal of [castlePortal,futurePortal]){
+  const arch=new THREE.Group();
+  arch.position.set(portal.x,5,portal.z);
+  for(let index=0;index<rainbowColors.length;index++){
+    const radius=2.24+index*.13;
+    const band=new THREE.Mesh(new THREE.TorusGeometry(radius,.07,6,48,Math.PI),
+      new THREE.MeshBasicMaterial({color:rainbowColors[index]}));
+    band.position.y=2.3;
+    arch.add(band);
+    for(const side of [-1,1]){
+      const pillar=new THREE.Mesh(new THREE.BoxGeometry(.136,2.3,.19),band.material);
+      pillar.position.set(side*radius,1.15,0);
+      arch.add(pillar);
+    }
+  }
+  scene.add(arch);
+}
+function crossRainbowPortal(oldZ){
+  if(!gameRunning||player.y<4.8||player.y>8.2)return;
+  const future=inFuture(player.x);
+  const source=future?futurePortal:castlePortal;
+  if(Math.abs(player.x-source.x)>1.95)return;
+  if((oldZ<source.z)===(player.z<source.z))return;
+  const destination=future?castlePortal:futurePortal;
+  const offset=player.z>oldZ?3:-3;
+  teleportTo(Math.floor(destination.x),destination.z+offset,
+    future?'Zurück bei Schloss Nachtrabe':'Hightech-Welt',
+    destination.x,destination.z+offset*3);
+}
 function visitVillage(){
   const v=VILLAGES[0];
   // V19: Ankunft auf der OST-WEST-Straße. Von dort stehen die vier
@@ -5453,7 +5502,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V123';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V124';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5483,7 +5532,7 @@ let regionName='';
 function updateRegion(){
   if(isMeadow()){
     const inside=player.z<NETHER_BOUNDS.maxZ+5&&player.z>NETHER_BOUNDS.minZ-6&&Math.abs(player.x)<79;
-    let name=inside?'🏰 Schloss Nachtrabe':'🌿 Große Wiese';
+    let name=inFuture(player.x)?'◇ Hightech-Welt':inside?'🏰 Schloss Nachtrabe':'🌿 Große Wiese';
     if(player.y<4.45&&player.x>=13&&player.x<26&&player.z>=-24&&player.z<1)name="🕯️ Bunker";
     if(player.x>=-39&&player.x<-16&&player.z>=-77&&player.z<=-61&&player.y<13){
       name='📜 Rabenarchiv';
@@ -5555,7 +5604,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
