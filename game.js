@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=106';
-// BLOCKWELT V106 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=108';
+// BLOCKWELT V108 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -2630,6 +2630,8 @@ function treadIsSupported(tread){
     get(x+dx,y,z+dz)===upper&&!get(x,y,z);
 }
 function blocked(x,y,z){
+  if(Math.abs(x-29.12)<PLAYER_R+.055&&Math.abs(z+62)<1+PLAYER_R&&
+     y+PLAYER_H>5+wardrobeBack.position.y&&y<8+wardrobeBack.position.y)return true;
   if(leverDoors.some(d=>isMeadow()&&(!d.open||d.door.position.y<y+PLAYER_H)&&insideDoor(d,x,y,z)))return true;
   if(isMeadow()&&!bunkerHatchOpen&&overBunkerHatch(x,z)&&y+.04<5&&y+PLAYER_H-.04>4.65)return true;
   const minX=Math.floor(x-PLAYER_R+.005),maxX=Math.floor(x+PLAYER_R-.005);
@@ -3915,6 +3917,26 @@ const bunkerCloth=new THREE.MeshStandardMaterial({color:'#713324',roughness:1});
 const bunkerLinen=new THREE.MeshStandardMaterial({color:'#d5c6a7',roughness:1});
 const bunkerAmber=new THREE.MeshStandardMaterial({color:'#aa7137',roughness:.36});
 const bunkerProp=(material,x,y,z,w,h,d)=>part(bunkerFurnishings,w,h,d,material,x,y,z);
+// The wardrobe looks like a shallow cupboard until its false back lifts.
+const wardrobe=new THREE.Group();
+for(const z of [-63.94,-60.98]){
+  part(wardrobe,.16,4,.18,oakDoor,27.02,7,z);
+  for(const y of [6,7.65])part(wardrobe,.08,.22,.12,doorIron,26.92,y,z);
+}
+part(wardrobe,.23,.25,3.15,oakDoor,27.01,8.60,-62);
+const wardrobeBack=new THREE.Group();
+wardrobe.add(wardrobeBack);
+for(let plank=0;plank<7;plank++)
+  part(wardrobeBack,.11,3,.283,oakDoor,29.12,6.5,-62+(plank-3)*.285);
+for(const y of [5.48,7.53])
+  part(wardrobeBack,.075,.13,1.96,doorIron,29.05,y,-62);
+scene.add(wardrobe);
+function updateWardrobe(dt){
+  const near=player.y>=4.7&&player.y<8&&player.x>27&&player.x<31.4
+    &&Math.abs(player.z+62)<1.01;
+  wardrobeBack.position.y=THREE.MathUtils.damp(wardrobeBack.position.y,near?3.05:0,18,dt);
+}
+
 // Side hinge keeps the open lid entirely outside the stair lane.
 const hatchAssembly=new THREE.Group();
 let bunkerHatchOpen=false;
@@ -4064,6 +4086,66 @@ for(const [x,z] of cellarLamps){
 const torchFlame=new THREE.MeshBasicMaterial({color:'#ff832f'});
 const torchCore=new THREE.MeshBasicMaterial({color:'#ffe9a2'});
 const flameGeometry=new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.069,.04),new THREE.Vector2(.087,.105),new THREE.Vector2(.049,.18),new THREE.Vector2(0,.28)],12);
+// The hearth and furniture sit beyond the wardrobe's clear walking lane.
+const hearthRoom=new THREE.Group();
+const hearthStone=materialByType.netherTrim[0];
+const hearthBrick=materialByType.netherBrick[0];
+const hearthPart=(w,h,d,material,x,y,z)=>part(hearthRoom,w,h,d,material,x,y,z);
+hearthPart(3.16,.13,1.34,hearthStone,32,5.065,-56.86);
+for(const x of [30.94,33.06]){
+  hearthPart(.54,1.55,.85,hearthStone,x,5.87,-56.53);
+  hearthPart(.66,.18,.99,hearthStone,x,6.64,-56.53);
+}
+hearthPart(2.82,.22,1.02,hearthStone,32,6.82,-56.55);
+hearthPart(2.27,2.12,.47,hearthBrick,32,7.99,-56.25);
+hearthPart(1.58,1.42,.14,materialByType.netherDeep[0],32,5.84,-56.10);
+for(const x of [31.43,32.57])
+  hearthPart(.08,.24,.60,doorIron,x,5.25,-56.67);
+for(const z of [-56.87,-56.60,-56.33])
+  hearthPart(1.35,.08,.08,doorIron,32,5.28,z);
+for(const [x,z,angle] of [[31.93,-56.74,.18],[32.06,-56.47,-.25]])
+  hearthPart(1.19,.15,.17,oakDoor,x,5.43,z).rotation.y=angle;
+hearthPart(1.16,.06,.53,materialByType.lavaGlow[0],32,5.36,-56.64);
+const hearthFlames=[];
+for(const [x,z,height] of [[31.62,-56.62,1.65],[31.92,-56.77,2.75],[32.18,-56.53,2.3],[32.46,-56.68,1.5]]){
+  const flame=new THREE.Mesh(flameGeometry,torchFlame);
+  const core=new THREE.Mesh(flameGeometry,torchCore);
+  core.scale.set(.52,.68,.52);
+  flame.add(core);
+  flame.position.set(x,5.42,z);
+  hearthRoom.add(flame);
+  hearthFlames.push({flame,height});
+}
+hearthPart(3.22,.027,2.14,bunkerCloth,32,5.014,-59.12);
+for(const z of [-60.13,-58.11])hearthPart(3.12,.014,.045,bunkerAmber,32,5.034,z);
+for(const x of [30.47,33.53])hearthPart(.045,.014,2.03,bunkerAmber,x,5.034,-59.12);
+for(const z of [-59.82,-58.45]){
+  hearthPart(.73,.12,.72,oakDoor,30.55,5.48,z);
+  hearthPart(.69,.13,.67,bunkerCloth,30.55,5.60,z);
+  hearthPart(.14,.88,.75,oakDoor,30.23,5.86,z);
+  for(const x of [30.29,30.81])for(const dz of [-.26,.26])
+    hearthPart(.10,.48,.10,oakDoor,x,5.24,z+dz);
+}
+hearthPart(.69,.14,.94,oakDoor,33.42,5.64,-59.62);
+for(const x of [33.17,33.67])for(const z of [-59.97,-59.27])
+  hearthPart(.09,.58,.09,oakDoor,x,5.29,z);
+hearthPart(.29,.055,.38,bunkerLinen,33.35,5.74,-59.68);
+hearthPart(.34,.03,.42,oakDoor,33.35,5.71,-59.68);
+hearthPart(.11,.15,.11,bunkerAmber,33.62,5.79,-59.36);
+const hearthLight=new THREE.PointLight('#ff9d56',0,7,2);
+hearthLight.position.set(32,5.96,-57.06);
+hearthRoom.add(hearthLight);
+scene.add(hearthRoom);
+function updateHearth(now){
+  hearthRoom.visible=player.x>24&&player.x<38&&player.z>-68&&player.z<-51&&player.y>=4&&player.y<13;
+  if(!hearthRoom.visible)return;
+  hearthLight.intensity=23+Math.sin(now*.008)*2+Math.sin(now*.019)*1.2;
+  for(const {flame,height} of hearthFlames){
+    const phase=now*.010+flame.position.x*9;
+    flame.scale.set(1.18,height*(1+.15*Math.sin(phase)),1);
+    flame.rotation.z=.12*Math.cos(phase*.83);
+  }
+}
 const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
   const side=x===17?1:-1;
   const site=[x,5-step,-step,'netherBrick'];
@@ -5088,7 +5170,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V106';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V108';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -5201,6 +5283,8 @@ function animate(now){
   const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000));lastTime=now;
   const oldX=player.x,oldZ=player.z;
   updateBunkerHatch(dt);
+  updateWardrobe(dt);
+  updateHearth(now);
   updateMovement(dt);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){

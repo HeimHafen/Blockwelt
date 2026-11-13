@@ -137,3 +137,11 @@ Die Mondnacht zeigt keine Sternpunkte. Auf Mobilgeräten sinkt der Renderaufwand
 ## V106 – Weniger Renderaufwand bei schöner Grafik
 
 Weltabschnitte zeichnen nur freiliegende Blockflächen. Diese werden je Material in einer Geometrie zusammengefasst. Texturen, Blockschattierung und die Einstellung „Schön“ bleiben erhalten.
+
+## V107 – Geheimer Raum
+
+Vom Innenhof aus führt die mittlere Tür im Ostflügel in das Zimmer mit dem Schrank. Geh in den Schrank hinein. Seine Rückwand hebt sich automatisch und gibt den direkten Weg in die beleuchtete Kammer frei. Zurück funktioniert der Durchgang genauso.
+
+## V108 – Geheimes Kaminzimmer
+
+Hinter dem Schrank warten ein gemauerter Kamin mit Glutbett und flackerndem Feuer, zwei gepolsterte Holzstühle, ein eingefasster Teppich und ein Beistelltisch mit Buch und Becher.

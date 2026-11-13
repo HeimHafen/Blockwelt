@@ -88,6 +88,15 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
     deck(a+7,b-7,21,front,back,slate);
   }
 
+  // A false partition conceals a chamber in the east wing.
+  box(29,29,5,12,-64,-56,stone);
+  opening(29,29,5,7,-63,-62);
+  box(34,34,8,10,-61,-60,stone);
+  box(27,28,5,7,-64,-64,'planks');
+  box(27,28,5,7,-61,-61,'planks');
+  deck(27,28,8,-63,-62,'planks');
+  deck(27,33,4,-63,-62,trim);
+
   // Great hall and four rooms above it, with two mirrored return stairs.
   for(const x of [-17,17])box(x,x,5,18,-80,-64,stone);
   for(const z of [-80,-64])box(-17,17,5,18,z,z,stone);
@@ -155,6 +164,7 @@ const stairwellLamps=stairwellBounds.flatMap(([left,right])=>[
 ]);
 
 export const interiorLampSites=[
+  [33,6,-58,'lantern',1,0],
   ...stairwellLamps,
   ...[-3,3].flatMap(x=>[-41,-38].map(z=>[x,8,z,'lantern',Math.sign(x),0])),
   ...[-34,33].flatMap(x=>[-67,-57,-47].map(z=>[x,7,z,'lantern',x<0?-1:1,0])),
