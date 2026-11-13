@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=79';
-// BLOCKWELT V79 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=80';
+// BLOCKWELT V80 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -78,10 +78,7 @@ function makeNetherPlan(){
     box(18,20,y+1,y+3,-z,-z,null);
     if(y<3)box(18,20,y+4,4,-z,-z,null);
     if(step>=4)box(17,21,4,4,-z,-z,'grass');
-    if(step%3===1)solid(17,y+2,-z,'lantern');
-    // The lowest full tread carries the same center stone as the rest of the flight.
-    // The uppermost full block sits beneath the hatch, outside the stair run.
-    if(step>0)solid(19,y,-z,'lavaGlow');
+    solid(19,y,-z,'lavaGlow');
   }
   for(const z of [-13,-18,-22]){
     box(14,24,-1,-1,z,z,'wood');
@@ -1989,13 +1986,13 @@ function loadEdits(){
       if(![x,y,z].every(Number.isInteger)||x< -HALF||x>=HALF||z< -HALF||z>=HALF||y<BUNKER_FLOOR||y>MAX_Y)continue;
       if(type!==null&&!BLOCK_TYPES.includes(type))continue;
       // Restore missing center treads in saves made before the stair repair.
-      if(isMeadow()&&type===null&&x===19&&z>=-9&&z<=-1&&y===3+z&&
-        localStorage.getItem('blockwelt-bunkertreppe-v78')!=='1')continue;
+      if(isMeadow()&&type===null&&x===19&&z>=-9&&z<=0&&y===3+z&&
+        localStorage.getItem('blockwelt-bunkertreppe-v80')!=='1')continue;
       if(!isMeadow()&&inLegacy(x,z))put(x,y,z,type);edits.set(key(x,y,z),item);
     }
-    if(isMeadow()&&localStorage.getItem('blockwelt-bunkertreppe-v78')!=='1'){
+    if(isMeadow()&&localStorage.getItem('blockwelt-bunkertreppe-v80')!=='1'){
       localStorage.setItem(currentSaveKey(),JSON.stringify([...edits.values()]));
-      localStorage.setItem('blockwelt-bunkertreppe-v78','1');
+      localStorage.setItem('blockwelt-bunkertreppe-v80','1');
     }
   }catch(e){console.warn('Spielstand konnte nicht geladen werden',e);}
 }
@@ -3780,13 +3777,25 @@ const bunkerRoomLights=[
   bunkerFurnishings.add(light);
   return {light,power};
 });
-const bunkerStairLights=[1,4,7].map(step=>{
-  const site=[17,5-step,-step,'lantern'];
-  const light=new THREE.PointLight('#ffd0a0',0,7,2);
-  light.position.set(18.22,site[1]+.46,site[2]+.5);
+const torchFlame=new THREE.MeshBasicMaterial({color:'#ffc376'});
+const bunkerStairLights=[1,4,7].flatMap(step=>[17,21].map(x=>{
+  const side=x===17?1:-1;
+  const site=[x,5-step,-step,'netherBrick'];
+  const torch=new THREE.Group();
+  torch.position.set(x+.5+side*.5,site[1]+.22,site[2]+.5);
+  part(torch,.11,.34,.26,doorIron,side*.02,0,0);
+  const handle=part(torch,.075,.34,.075,oakDoor,side*.14,.12,0);
+  handle.rotation.z=-side*.45;
+  const flame=new THREE.Mesh(new THREE.SphereGeometry(.085,8,8),torchFlame);
+  flame.scale.y=1.65;
+  flame.position.set(side*.21,.35,0);
+  torch.add(flame);
+  scene.add(torch);
+  const light=new THREE.PointLight('#ffc085',0,6,2);
+  light.position.copy(torch.position).add(new THREE.Vector3(side*.26,.36,0));
   scene.add(light);
-  return {site,light,power:20};
-});
+  return {site,light,power:11,torch};
+}));
 // Ribbed stone ceiling below the turf, above player height.
 for(const z of [-12.5,-15.5,-18.5,-21.5]){
   for(let i=0;i<13;i++){
@@ -3996,8 +4005,9 @@ function updateCastleLighting(){
   for(const stone of towerDressings.children)
     stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
   const meadow=isMeadow();
-  for(const {site:[x,y,z,type],light,power} of [...fixedLanterns,...bunkerStairLights]){
+  for(const {site:[x,y,z,type],light,power,torch} of [...fixedLanterns,...bunkerStairLights]){
     light.intensity=meadow&&netherBlockAt(x,y,z)===type?power:0;
+    if(torch)torch.visible=light.intensity>0;
   }
   for(const {light,power} of bunkerRoomLights)light.intensity=meadow?power:0;
 
@@ -4566,7 +4576,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V79';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V80';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

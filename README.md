@@ -1,4 +1,4 @@
-# Blockwelt V79 – Schloss Nachtrabe
+# Blockwelt V80 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -29,3 +29,7 @@ Die mittige Glutsteinfolge reicht bis zur untersten vollen Stufe. Beim ersten La
 ## V79 – Kamera
 
 Die Außenkamera hält festen Abstand. Bei blockierter Sicht wechselt sie direkt zur Egoansicht und kehrt bei freier Sicht nach kurzer Verzögerung zurück.
+
+## V80 – Bunkertreppe
+
+Die mittigen Glutsteine reichen bis zur Luke. Drei Fackelpaare sitzen jeweils auf gleicher Höhe an den beiden Wänden.
