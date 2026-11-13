@@ -1,4 +1,4 @@
-# Blockwelt V89 – Schloss Nachtrabe
+# Blockwelt V90 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -69,3 +69,7 @@ Neben der Falltür erscheint „Bunker betreten“ auch bei geschlossener Luke. 
 ## V89 – Automatische Falltür
 
 Von der Wiese aus zur oberen Treppenkante laufen. Die Falltür öffnet sich bei Annäherung von oben und unten und schließt nach Verlassen des Durchgangs. Die Treppe wird zu Fuß benutzt.
+
+## V90 – Schlossanlage
+
+Beim ersten Laden entfernt V90 die gespeicherten Spieleränderungen der Schlosswelt. Danach werden neue Änderungen wieder regulär gespeichert. Ringmauer, Dächer und Innenhof sind überarbeitet.

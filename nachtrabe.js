@@ -25,6 +25,21 @@ export function buildCastleArchitecture({box,solid,deck,empty,routes,doors}){
       deck(18,19,4,z,z+1,trim);
     }else deck(-19,19,4,z,z+1,trim);
   }
+  // Battered buttresses reinforce the curtain wall outside the approach.
+  for(const x of [-33,-26,-19,19,26,33]){
+    box(x-1,x+1,5,7,-34,-32,stone);
+    box(x-1,x+1,8,10,-34,-33,stone);
+    deck(x-1,x+1,11,-34,-34,trim);
+  }
+  // A paved border frames the courtyard while keeping every approach clear.
+  for(const x of [-17,16])deck(x,x+1,4,-63,-43,trim);
+  for(const z of [-63,-44])deck(-17,17,4,z,z,trim);
+  for(const x of [-12,12])for(const z of [-58,-47]){
+    deck(x-1,x+1,4,z-1,z+1,trim);
+    solid(x,5,z,stone);
+    solid(x,6,z,trim);
+  }
+
   // Two gate chambers and an open central passage.
   for(const [a,b] of [[-12,-4],[4,12]]){
     box(a,b,5,15,-42,-34,stone);

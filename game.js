@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=89';
-// BLOCKWELT V89 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=90';
+// BLOCKWELT V90 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -1978,6 +1978,10 @@ function baseWorld(){
 }
 function loadEdits(){
   try{
+    if(isMeadow()&&localStorage.getItem('blockwelt-schlosswelt-v90')!=='1'){
+      localStorage.removeItem(MEADOW_KEY);
+      localStorage.setItem('blockwelt-schlosswelt-v90','1');
+    }
     const arr=JSON.parse(localStorage.getItem(currentSaveKey())||'[]');
     if(!Array.isArray(arr))return;
     const repairBunker=isMeadow()&&localStorage.getItem('blockwelt-bunker-passage-v87')!=='1';
@@ -3522,6 +3526,20 @@ for(const [a,b] of [[-12,-4],[4,12]]){
   }
   facadePart([Math.floor(center),20,-38],'netherDeep',1.12,.26,9.4,roofStone,center,21.17,-37.5);
 }
+// Continuous slate strips cover the stepped roofs of both wings and the hall.
+for(const [left,right,zMin,zMax,base,count] of [
+  [-35,-19,-75,-44,14,7], [19,34,-75,-44,14,7], [-17,17,-81,-63,19,13]
+]){
+  for(let course=0;course<count;course++)for(const side of [-1,1]){
+    const x=side<0?left+course:right-course;
+    for(let z=zMin;z<=zMax;z+=4){
+      const length=Math.min(4,zMax-z+1);
+      const strip=facadePart([x,base+course,z],'netherDeep',
+        Math.SQRT2+.016,.12,length,roofStone,x+.5,base+course+1.54,z+length/2);
+      strip.rotation.z=-side*Math.PI/4;
+    }
+  }
+}
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4579,7 +4597,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V89';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V90';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
