@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=73';
-// BLOCKWELT V73 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows} from './nachtrabe.js?v=74';
+// BLOCKWELT V74 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -373,8 +373,8 @@ function reliefMaterial(type,face){
   const wet=type==='cobble';
   const material=new THREE.MeshPhysicalMaterial({
     map,bumpMap,bumpScale:face==='bottom'?.021:.035,
-    roughness:wet?.36:wood?.83:.91,metalness:0,
-    clearcoat:wet?.38:0,clearcoatRoughness:.26,
+    roughness:wet?.57:wood?.83:.91,metalness:0,
+    clearcoat:wet?.19:0,clearcoatRoughness:.42,
     emissive:wood?'#352519':'#383340',emissiveIntensity:.31
   });
   return grass||type.startsWith('nether')||type==='cobble'?addSurfacePatina(material,!grass):material;
@@ -3317,25 +3317,21 @@ for(const x of [-8,8]){
 }
 fortressAccentGroup.visible=false;
 
-const hallGlow=new THREE.PointLight('#ba8dff',0,19,2);
-hallGlow.position.set(0,9,-75);scene.add(hallGlow);
-
 const castleLampSites=[...interiorLampSites];
 for(const x of [-8,8])for(const z of [-60,-51,-32,-24,-16])
   castleLampSites.push([x,6,z,'lantern']);
 
-const castleLightZones=[
-  [-5,7,-12,15], [5,7,-12,15], [-5,7,-27,17], [5,7,-27,17], [0,15,-33,19],
-  [-10,8,-65,17], [10,8,-75,17], [0,10,-81,18],
-  [-28,8,-69,16], ...interiorLampSites.map(([x,y,z])=>[x+.5,y+.48,z+.5,8])
-].map(([x,y,z,range])=>{
-  const light=new THREE.PointLight('#ffab65',0,range,2);
-  light.position.set(x,y,z);
+const fixedLanterns=castleLampSites.map((site,index)=>{
+  const [x,y,z]=site;
+  const inside=index<interiorLampSites.length;
+  const light=new THREE.PointLight(inside?'#ffd1a0':'#ffc284',0,inside?10:13,2);
+  light.position.set(x+.5,y+.52,z+.5);
   scene.add(light);
-  return light;
+  return {site,light,power:inside?36:52};
 });
-const castleLamps=Array.from({length:4},()=>new THREE.PointLight('#ffb36b',0,13,2));
-scene.add(...castleLamps);
+const fixedLanternKeys=new Set(castleLampSites.map(([x,y,z])=>key(x,y,z)));
+const editLanterns=Array.from({length:3},()=>new THREE.PointLight('#ffc284',0,10,2));
+scene.add(...editLanterns);
 const mistMaterial=new THREE.ShaderMaterial({
   transparent:true,depthWrite:false,side:THREE.DoubleSide,
   vertexShader:`varying vec2 p;
@@ -3736,10 +3732,21 @@ for(const z of [-18.18,-15.82]){
 bunkerProp(gateStone,24,-4.55,-14,.94,.83,1.02);
 bunkerProp(materialByType.lavaGlow[0],23.52,-4.5,-14,.035,.32,.45);
 bunkerProp(oakDoor,20.86,-3.56,-10.48,.13,2.88,1.26);
-for(const [x,y,z] of [[19,-2.4,-17],[15,-2.7,-13],[23,-2.7,-21],[18,2,-3]]){
-  const light=new THREE.PointLight('#ffad62',32,11,2);
-  light.position.set(x,y,z);bunkerFurnishings.add(light);
-}
+const bunkerRoomLights=[
+  [22.7,-2.59,-13.5,20,7], [22.7,-2.59,-20.5,20,7], [23.1,-4.1,-14,13,5]
+].map(([x,y,z,power,range])=>{
+  const light=new THREE.PointLight('#ffc18c',0,range,2);
+  light.position.set(x,y,z);
+  bunkerFurnishings.add(light);
+  return {light,power};
+});
+const bunkerStairLights=[1,4,7].map(step=>{
+  const site=[17,5-step,-step,'lantern'];
+  const light=new THREE.PointLight('#ffd0a0',0,7,2);
+  light.position.set(18.22,site[1]+.46,site[2]+.5);
+  scene.add(light);
+  return {site,light,power:20};
+});
 // Ribbed stone ceiling below the turf, above player height.
 for(const z of [-12.5,-15.5,-18.5,-21.5]){
   for(let i=0;i<13;i++){
@@ -3946,25 +3953,23 @@ function updateCastleLighting(){
     stone.visible=netherBlockAt(...stone.userData.site)==='netherTrim';
   for(const stone of towerDressings.children)
     stone.visible=Boolean(stone.userData.type)&&netherBlockAt(...stone.userData.site)===stone.userData.type;
-  const sites=[...castleLampSites];
-  if(isMeadow())for(const [x,y,z,type] of edits.values()){
-    if(type==='lantern'||type==='lavaGlow')sites.push([x,y,z,type]);
+  const meadow=isMeadow();
+  for(const {site:[x,y,z,type],light,power} of [...fixedLanterns,...bunkerStairLights]){
+    light.intensity=meadow&&netherBlockAt(x,y,z)===type?power:0;
   }
-  const activeSites=isMeadow()?sites.filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type):[];
-  for(const light of castleLightZones){
-    const {x,y,z}=light.position;
-    const sources=activeSites.filter(([sx,sy,sz])=>Math.hypot(sx+.5-x,sy+.5-y,sz+.5-z)<light.distance*.72);
-    light.intensity=Math.min(125,sources.length*37);
-  }
-  const uniqueSites=new Map(sites.map(site=>[key(site[0],site[1],site[2]),site]));
-  const nearest=isMeadow()?[...uniqueSites.values()]
-    .filter(([x,y,z,type])=>netherBlockAt(x,y,z)===type)
-    .map(([x,y,z])=>({x,y,z,distance:Math.hypot(x+.5-player.x,y+.5-player.y,z+.5-player.z)}))
-    .filter(site=>site.distance<27).sort((a,b)=>a.distance-b.distance):[];
-  castleLamps.forEach((lamp,i)=>{
-    const site=nearest[i];
-    lamp.intensity=site?42:0;
-    if(site)lamp.position.set(site.x+.5,site.y+.48,site.z+.5);
+  for(const {light,power} of bunkerRoomLights)light.intensity=meadow?power:0;
+
+  const nearbyEdits=meadow?[...edits.values()]
+    .filter(([x,y,z,type])=>(type==='lantern'||type==='lavaGlow')&&!fixedLanternKeys.has(key(x,y,z)))
+    .map(([x,y,z,type])=>({x,y,z,type,distance:Math.hypot(x+.5-player.x,y+.5-player.y,z+.5-player.z)}))
+    .filter(({distance})=>distance<28).sort((a,b)=>a.distance-b.distance):[];
+  editLanterns.forEach((light,i)=>{
+    const source=nearbyEdits[i];
+    light.intensity=source?30:0;
+    if(source){
+      light.position.set(source.x+.5,source.y+.52,source.z+.5);
+      light.color.set(source.type==='lavaGlow'?'#ff943f':'#ffc284');
+    }
   });
 }
 
@@ -3977,7 +3982,6 @@ function updateNetherCreatures(dt,now){
     banner.visible=netherBlockAt(x,12,-34)==='netherBrick';
   }
   updateCastleLighting();
-  hallGlow.intensity=isMeadow()?15:0;
   netherDragon.visible=active&&closeToFort;
   if(netherDragon.visible){
     const t=now*.001, a=t*.115;
@@ -4242,7 +4246,7 @@ function applyLighting(){
     {sky:'#1d3551',sun:'#9bb7df',power:.43,hemi:.85,exposure:1.02,label:'☾ Sternennacht'}
   ];
   const moonlit=castleMoonlight();
-  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:1.42,hemi:1.28,exposure:1.12,label:'☾ Blaue Stunde'}:options[lightMode];
+  const p=moonlit?{sky:'#606b92',sun:'#aab9ff',power:.93,hemi:.97,exposure:1.07,label:'☾ Blaue Stunde'}:options[lightMode];
   scene.background.set(p.sky);
   netherFarMaterial.color.set(['#ffffff','#ffe2c7','#9bacc8'][lightMode]);
   scene.fog.color.set(lightMode===2?'#344e6a':lightMode===1?'#ddbba1':'#c1e0e6');
@@ -4252,6 +4256,8 @@ function applyLighting(){
   sunWindowGlowMaterial.emissiveIntensity=[.08,.39,.85][lightMode];
   sunLampMaterial.emissiveIntensity=[.38,.85,1.15][lightMode];
   sunlight.color.set(p.sun);sunlight.intensity=p.power;
+  ambientSky.color.set(moonlit?'#c7d8ff':lightMode===2?'#b0c7ef':'#fff2e7');
+  ambientSky.groundColor.set(moonlit||lightMode===2?'#545a58':'#556c50');
   ambientSky.intensity=p.hemi;renderer.toneMappingExposure=p.exposure;
   skyDome.material.map=moonlit?moonlitSky:skyTextures[lightMode];
   skyDome.material.needsUpdate=true;
@@ -4523,7 +4529,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V73';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V74';
   $('mobsBtn').textContent=(showCreatures?'✓ ':'○ ')+'Festungswesen: '+(showCreatures?'an':'aus');
   regionName='';updateRegion();
 }
