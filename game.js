@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=103';
-// BLOCKWELT V103 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=104';
+// BLOCKWELT V104 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -4217,6 +4217,74 @@ for(const x of [25.6,26.95]){
     bunkerProp(cellarIron,x+dx,-4.271,-33.25,.052,.022,.75);
   }
 }
+// Carved signs face the corridor at the four open room entrances.
+for(const [x,z,name] of [
+  [18,-29,'Fasslager'],[21,-29,'Vorratskammer'],
+  [18,-41,'Zisterne'],[21,-41,'Archiv'],
+]){
+  const face=x===18?1:-1;
+  const sign=new THREE.Group();
+  sign.position.set(x+face*.04,-1.79,z);
+  sign.rotation.y=face*Math.PI/2;
+  part(sign,1.65,.33,.09,oakDoor,0,0,0);
+  const canvas=document.createElement('canvas');
+  canvas.width=384;
+  canvas.height=80;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#eed6a6';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.font='bold 46px Georgia, serif';
+  ctx.fillText(name,192,40,346);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  sign.add(new THREE.Mesh(new THREE.PlaneGeometry(1.59,.33),
+    new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false})));
+  sign.children[1].position.z=.047;
+  for(const edge of [-.75,.75])part(sign,.055,.055,.028,doorIron,edge,0,.05);
+  bunkerFurnishings.add(sign);
+}
+
+// Stone ribs tie each chamber's ceiling to the walls.
+for(const x of [14,25])for(const z of [-33.3,-27.4,-46.7,-37.1]){
+  for(let segment=0;segment<15;segment++){
+    const angle=Math.PI*(segment+.5)/15;
+    const rib=bunkerProp(gateStone,x+2.96*Math.cos(angle),
+      -2.35+1.29*Math.sin(angle),z,.66,.23,.32);
+    rib.rotation.z=Math.atan2(1.29*Math.cos(angle),-2.96*Math.sin(angle));
+  }
+  for(const side of [-1,1])
+    bunkerProp(cellarStone,x+side*2.88,-2.34,z,.24,.22,.42);
+}
+
+// The supply chamber has a raised rack with glazed earthenware.
+for(const y of [-4.28,-3.64]){
+  bunkerProp(oakDoor,26.5,y,-27.05,2.4,.12,.57);
+  for(const x of [25.48,27.52])bunkerProp(oakDoor,x,y-.16,-26.99,.08,.25,.43);
+  for(let jar=0;jar<5;jar++){
+    const radius=.11+(jar%3)*.026;
+    const pot=new THREE.Mesh(new THREE.LatheGeometry([
+      new THREE.Vector2(0,0),new THREE.Vector2(radius*.8,0),
+      new THREE.Vector2(radius,.11),new THREE.Vector2(radius*.82,.21),
+      new THREE.Vector2(radius*.54,.25),new THREE.Vector2(radius*.65,.28),
+    ],10),bunkerAmber);
+    pot.position.set(25.64+jar*.42,y+.06,-27.06);
+    bunkerFurnishings.add(pot);
+  }
+}
+// Barrel heads show plank seams and wooden bungs.
+for(const z of [-28,-29.1,-30.2,-31.3,-32.4,-33.5]){
+  for(const offset of [-.16,.16])
+    bunkerProp(bookCover,12.8+offset,-4.264,z,.014,.009,.48);
+  bunkerProp(oakDoor,12.8,-4.247,z,.10,.04,.10);
+}
+// Iron anchor and feed pipe above the cistern.
+bunkerProp(doorIron,11.08,-2.67,-44.25,.16,.36,.37);
+bunkerProp(doorIron,12.3,-2.66,-44.25,2.45,.13,.13);
+bunkerProp(doorIron,13.48,-2.81,-44.25,.14,.40,.14);
+for(const [x,z] of [[26.02,-45.93],[26.17,-46.04],[26.04,-46.15]])
+  bunkerProp(bookCover,x,-3.933,z,.23,.006,.018);
+
 scene.add(bunkerFurnishings);
 
 const towerProfiles=[[-29,-38,6,32],[29,-38,6,32],[-42,-68,6,36],
@@ -4959,7 +5027,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V103';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V104';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{

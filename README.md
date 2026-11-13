@@ -125,3 +125,7 @@ Die beiden Treppenhäuser an der Großen Halle haben offene Zugänge, drei Blöc
 ## V103 – Treppenhäuser
 
 Drei Blöcke breite Läufe treffen auf drei Blöcke tiefe Wendepodeste. Die Läufe liegen auf massivem Mauerwerk. Steinbänder gliedern die geschlossene Decke, und eine versetzte Wandleuchte beleuchtet die hintere Wendefläche.
+
+## V104 – Burgkeller
+
+Holzschilder markieren die vier Kellerräume. Flache gemauerte Rippen gliedern ihre Decken. Die Vorratskammer erhält Keramikgefäße auf einem Wandregal, das Fasslager Fassdeckel mit Spund, die Zisterne einen Zulauf und das Archiv beschriftete Schriftstücke.
