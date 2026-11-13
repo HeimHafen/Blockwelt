@@ -157,3 +157,7 @@ Die gerahmten Schrankflügel schließen den Eingang und öffnen sich bei Annähe
 ## V111 – Geheimschrank und Kaminzimmer
 
 Eine durchgehende Kranzleiste, ein niedriger Sockel und sichtbare Scharniere vervollständigen den Schrank. Eichenvertäfelung, ein Wollbehang und Kaminbesteck ergänzen das Zimmer. Die verbliebene Wandlaterne im Ostflügelzimmer wurde aus dem Bauplan entfernt.
+
+## V113 – Arbeitszimmer vor dem Geheimschrank
+
+Schreibtisch mit aufgeschlagenem Buch, Feder und Kerze, Bücherregal, Wandbehang und eisenbeschlagene Truhe. Der Arbeitsbereich liegt seitlich des Wegs zum Geheimschrank.

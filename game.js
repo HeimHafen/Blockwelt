@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=112';
-// BLOCKWELT V112 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=113';
+// BLOCKWELT V113 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3969,7 +3969,70 @@ for(let plank=0;plank<7;plank++)
 for(const y of [5.48,7.53])
   part(wardrobeBack,.075,.13,1.96,doorIron,29.05,y,-62);
 scene.add(wardrobe);
+// The study occupies the alcoves on either side of the wardrobe approach.
+const study=new THREE.Group();
+study.position.set(24,5,-60);
+const studyBox=(w,h,d,mat,x,y,z)=>part(study,w,h,d,mat,x,y,z);
+const studyLeather=new THREE.MeshStandardMaterial({color:'#4b3024',roughness:.83});
+const studyGreen=new THREE.MeshStandardMaterial({color:'#38473e',roughness:1});
+const studyBrass=new THREE.MeshStandardMaterial({color:'#987346',roughness:.51,metalness:.48});
+studyBox(2.44,.16,.88,oakDoor,0,.88,3.62);
+for(const x of [-1.06,1.06])for(const z of [3.31,3.94])
+  studyBox(.14,.80,.14,oakDoor,x,.40,z);
+studyBox(2.31,.25,.68,oakDoor,0,.68,3.65);
+for(const x of [-.58,.58]){
+  studyBox(1.02,.18,.057,studyLeather,x,.68,3.29);
+  studyBox(.16,.053,.086,studyBrass,x,.68,3.24);
+}
+studyBox(1.05,.013,.57,studyLeather,-.19,.97,3.60);
+for(const x of [-.41,.03])
+  studyBox(.43,.028,.38,bunkerLinen,x,.994,3.60).rotation.z=x<0?.036:-.036;
+for(let line=0;line<7;line++)for(const x of [-.41,.03])
+  studyBox(.29,.003,.009,studyLeather,x,1.010,3.45+line*.043);
+studyBox(.10,.11,.10,doorIron,.71,1.015,3.76);
+studyBox(.014,.30,.026,bunkerLinen,.71,1.17,3.76).rotation.z=-.38;
+studyBox(.64,.11,.62,oakDoor,0,.48,2.58);
+studyBox(.60,.085,.57,studyGreen,0,.575,2.58);
+for(const x of [-.25,.25]){
+  for(const z of [2.34,2.82])studyBox(.09,.44,.09,oakDoor,x,.22,z);
+  studyBox(.09,.55,.09,oakDoor,x,.82,2.30);
+}
+studyBox(.59,.18,.09,oakDoor,0,1.05,2.30);
+
+// Bookcase against the north wall, with inset back, framed shelves and book spines.
+studyBox(2.41,2.28,.09,oakDoor,-1.22,1.14,-3.94);
+for(const x of [-2.43,-.01])
+  studyBox(.14,2.35,.44,oakDoor,x,1.175,-3.75);
+for(const y of [.12,.68,1.22,1.76,2.32])
+  studyBox(2.56,.10,.48,oakDoor,-1.22,y,-3.74);
+const spineMaterials=[studyGreen,studyLeather,bunkerCloth,oakDoor];
+for(let row=0;row<3;row++)for(let book=0;book<10;book++){
+  const height=.24+pixelHash(book,row,161)*.20;
+  const x=-2.28+book*.21;
+  const y=.73+row*.54+height/2;
+  studyBox(.15,height,.24,spineMaterials[(book+row)%4],x,y,-3.68);
+  studyBox(.107,.027,.006,studyBrass,x,y+height*.25,-3.558);
+}
+// Wall hanging and a low chest frame the room without obstructing either doorway.
+studyBox(.10,1.11,1.28,studyGreen,4.93,2.24,1.65);
+studyBox(.16,.09,1.49,oakDoor,4.88,2.82,1.65);
+for(const z of [1.07,2.23])studyBox(.016,1.02,.047,studyBrass,4.871,2.24,z);
+studyBox(.021,.36,.36,studyBrass,4.869,2.24,1.65).rotation.x=Math.PI/4;
+studyBox(1.32,.54,.63,oakDoor,3.78,.27,3.56);
+studyBox(1.40,.13,.68,oakDoor,3.78,.60,3.56);
+for(const x of [3.35,4.21])studyBox(.074,.5,.031,doorIron,x,.29,3.23);
+studyBox(.18,.17,.038,doorIron,3.78,.49,3.218);
+
+const studyLight=new THREE.PointLight('#ffcf9a',0,7,2);
+studyLight.position.set(.10,1.32,3.47);
+study.add(studyLight);
+studyBox(.14,.037,.14,studyBrass,.10,.985,3.47);
+studyBox(.055,.21,.055,bunkerLinen,.10,1.10,3.47);
+studyBox(.032,.085,.032,materialByType.lantern[0],.10,1.24,3.47);
+scene.add(study);
 function updateWardrobe(dt){
+  study.visible=player.x>15&&player.x<32&&player.z>-69&&player.z<-51&&player.y<13;
+  studyLight.intensity=study.visible?8:0;
   const aligned=player.y>=4.7&&player.y<8&&Math.abs(player.z+62)<1.28;
   const near=aligned&&player.x>25.25&&player.x<32;
   for(const {hinge,side} of wardrobeLeaves)
@@ -5314,7 +5377,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V112';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V113';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
