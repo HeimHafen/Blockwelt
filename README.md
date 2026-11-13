@@ -1,4 +1,4 @@
-# Blockwelt V96 – Schloss Nachtrabe
+# Blockwelt V97 – Schloss Nachtrabe
 
 Alle vier Spieldateien gemeinsam auf den Webserver laden. Die Seite nutzt Three.js vom bestehenden CDN.
 
@@ -97,3 +97,7 @@ Fässer mit Eisenreifen, eine eingefasste Feuerstelle und eine Tischlaterne mit 
 ## V96 – Große Halle
 
 Fensterrose mit acht steinernen Ringen am Hallengiebel, profilierte Wandpfeiler zur Hofseite und Schiefertürmchen an den rückwärtigen Ecken.
+
+## V97 – Burgdetails
+
+Modellierte Steinrippen und Pfeiler in der Großen Halle, Strebepfeiler zwischen den Fenstern der Seitenflügel und Firstziegel auf den drei Hauptdächern.

@@ -1,5 +1,5 @@
-import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=96';
-// BLOCKWELT V96 — Schloss Nachtrabe – Wildnis.
+import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows} from './nachtrabe.js?v=97';
+// BLOCKWELT V97 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -3677,6 +3677,42 @@ for(const x of [-14,14]){
   for(const y of [5.26,16.78])
     facadePart([x,Math.floor(y),-64],'netherBrick',1.26,.40,.65,gateStone,x+.5,y,-62.84);
 }
+// Stone ribs follow the ceiling of the central nave.
+for(const z of [-77,-73,-69]){
+  for(let i=0;i<15;i++){
+    const angle=(i+.5)*Math.PI/15;
+    const x=.5+9.4*Math.cos(angle);
+    const y=11.7+3.97*Math.sin(angle);
+    const rib=facadePart([Math.floor(x),16,z],'netherTrim',
+      1.98,.34,.47,gateStone,x,y,z+.5);
+    rib.rotation.z=Math.atan2(3.97*Math.cos(angle),-9.4*Math.sin(angle));
+  }
+  for(const x of [-9,9]){
+    facadePart([x,4,z],'cobble',.84,7.15,.86,gateStone,x+.5,8.575,z+.5);
+    for(const y of [5.23,12.04])
+      facadePart([x,4,z],'cobble',1.16,.34,1.12,gateStone,x+.5,y,z+.5);
+  }
+}
+
+// External buttresses divide the wing walls into window bays.
+for(const x of [-35,34])for(const z of [-74,-65,-55,-44]){
+  const outward=x<0?-1:1;
+  for(const [height,y,depth] of [[3.6,6.8,.92],[3.1,10.09,.63]]){
+    facadePart([x,Math.floor(y),z],'netherBrick',
+      depth,height,.83,gateStone,x+.5+outward*.73,y,z+.5);
+  }
+  const cap=facadePart([x,12,z],'netherBrick',.79,.23,1.02,gateStone,
+    x+.5+outward*.71,11.78,z+.5);
+  cap.rotation.z=-outward*.22;
+}
+
+// Ridge tiles finish the three main roofs.
+for(const [x,minZ,maxZ,y] of [[-27,-75,-44,22],[26,-75,-44,22],[0,-81,-63,33]]){
+  for(let z=minZ;z<=maxZ;z++){
+    const ridge=facadePart([x,y-1,z],'netherDeep',.70,.23,.99,roofStone,x+.5,y+.10,z+.5);
+    ridge.rotation.z=Math.PI/4;
+  }
+}
 scene.add(gateMolding);
 
 // Oak leaves stand open against the reveals. Each leaf is attached to its hinge block.
@@ -4771,7 +4807,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V96';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V97';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
