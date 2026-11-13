@@ -1,5 +1,5 @@
 import {buildCastleArchitecture,dressDoorway,interiorLampSites,wingWindows,towerWindows,buildLowerCellars,cellarLamps} from './nachtrabe.js?v=128';
-// BLOCKWELT V132 — Schloss Nachtrabe – Wildnis.
+// BLOCKWELT V133 — Schloss Nachtrabe – Wildnis.
 // V24 ist die feste Grundlage. Keine Änderungen an Terrain-, Speicher- oder Werkstatt-IDs.
 // Südliche Werkstätten öffnen sich jetzt zum Dorfplatz, mit sicheren
 // Wegen, individuell schaltbaren Fassadenzeichen und freiem Brunnenblick.
@@ -5295,6 +5295,89 @@ const pawReturn=pawPortal.clone();
 pawReturn.position.set(-252,MEADOW_HEIGHT,174);
 pawReturn.rotation.y=0;
 scene.add(pawPortal,pawReturn);
+const pawHQ=new THREE.Group();
+pawHQ.position.set(-251.5,5,190.5);
+scene.add(pawHQ);
+const hqWhite=new THREE.MeshStandardMaterial({color:0xe8f1fa,roughness:.45});
+const hqRed=new THREE.MeshStandardMaterial({color:0xdb2841,roughness:.38});
+const hqBlue=new THREE.MeshStandardMaterial({color:0x163e77,roughness:.43});
+const hqGlow=new THREE.MeshBasicMaterial({color:0x84e0ff});
+function hqMesh(geometry,material,x,y,z){
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.position.set(x,y,z);
+  pawHQ.add(mesh);
+  return mesh;
+}
+function hqBox(material,x,y,z,w,h,d){
+  return hqMesh(new THREE.BoxGeometry(w,h,d),material,x,y,z);
+}
+// Circular trim conceals the stepped edges of the structural floors.
+for(const [top,bottom,height,y,material] of [
+  [6.8,6.8,.40,5.85,hqBlue],[3.65,6.7,.88,6.45,hqWhite],
+  [8.75,4.05,1.26,17.55,hqBlue],[8.84,8.84,.52,18.65,hqRed],
+  [8.86,8.86,.56,23.52,hqRed],[7.90,8.86,.74,24.14,hqWhite],
+  [5.3,7.90,.7,24.86,hqBlue],[3.35,5.3,.62,25.45,hqRed]
+]){
+  hqMesh(new THREE.CylinderGeometry(top,bottom,height,64),material,0,y,0);
+}
+for(let pane=0;pane<16;pane++){
+  const angle=pane*Math.PI/8;
+  const mullion=hqBox(hqWhite,Math.sin(angle)*8.66,21,Math.cos(angle)*8.66,.15,4.25,.25);
+  mullion.rotation.y=angle;
+}
+for(const side of [-1,1]){
+  hqBox(hqRed,side*1.65,2.45,-6.6,.31,4.85,.46);
+  hqBox(hqGlow,side*1.49,2.35,-6.86,.10,3.88,.07);
+}
+hqBox(hqBlue,0,4.65,-6.85,4.4,.49,1.5);
+const frontBadge=hqMesh(new THREE.PlaneGeometry(2.7,1.69),badgeMaterial,0,5.05,-7.64);
+frontBadge.rotation.y=Math.PI;
+hqBox(hqBlue,14,5.85,-8.6,13.4,.61,.66);
+hqBox(hqRed,14,5.48,-8.56,13.4,.16,.66);
+for(const x of [11,17])hqBox(hqGlow,x,4.75,-8.75,3.1,.14,.13);
+for(const x of [-3.25,3.25]){
+  hqBox(hqBlue,x,.03,-10,1.25,.06,1.25);
+  hqBox(hqGlow,x,.07,-10,.60,.07,.60);
+}
+// Mission consoles sit clear of the central aisle.
+for(const x of [-3.5,0,3.5]){
+  hqBox(hqBlue,x,19.43,3.85,2.3,.86,.8);
+  hqBox(hqWhite,x,19.9,3.85,2.55,.12,.94);
+  hqBox(hqGlow,x,20.35,4.05,1.74,.72,.12).rotation.x=-.16;
+}
+const liftLabel=document.createElement('canvas');
+liftLabel.width=256;
+liftLabel.height=64;
+const liftInk=liftLabel.getContext('2d');
+liftInk.fillStyle='#163e77';
+liftInk.fillRect(0,0,256,64);
+liftInk.fillStyle='white';
+liftInk.font='bold 27px system-ui';
+liftInk.textAlign='center';
+liftInk.fillText('AUFZUG',128,42);
+const liftTexture=new THREE.CanvasTexture(liftLabel);
+liftTexture.colorSpace=THREE.SRGBColorSpace;
+const liftSign=new THREE.MeshBasicMaterial({map:liftTexture,side:THREE.DoubleSide});
+for(const y of [0,19]){
+  hqBox(hqBlue,-3,y+.025,0,1.9,.05,1.9);
+  hqBox(hqGlow,-3,y+.06,0,1.62,.035,.12);
+  hqMesh(new THREE.PlaneGeometry(1.65,.42),liftSign,-3,y+1.55,.99);
+}
+let onPawLift=false;
+function updatePawLift(){
+  pawHQ.visible=isMeadow()&&Math.hypot(player.x+251.5,player.z-190.5)<105;
+  const near=pawHQ.visible&&Math.abs(player.x+254.5)<.72&&Math.abs(player.z-190.5)<.72;
+  if(!near){onPawLift=false;return;}
+  if(onPawLift||!gameRunning||!player.grounded)return;
+  if(Math.abs(player.y-5)<.25||Math.abs(player.y-24)<.25){
+    onPawLift=true;
+    const upstairs=player.y>10;
+    player.y=upstairs?5.05:24.05;
+    player.vy=0;
+    player.grounded=false;
+    toast(upstairs?'Erdgeschoss':'Paw Patrol · Leitstelle');
+  }
+}
 function crossPawPortal(oldX,oldZ){
   if(!gameRunning||!isMeadow()||player.y<4.9||player.y>9)return;
   if((oldX<-138)!==(player.x<-138)){
@@ -6017,7 +6100,7 @@ function selectBlock(type){
 document.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>selectBlock(el.dataset.block)));
 function refreshNachtrabeMenu(){
   document.body.classList.add('meadow-mode');
-  $('worldSubtitle').textContent='Schloss Nachtrabe · V132';
+  $('worldSubtitle').textContent='Schloss Nachtrabe · V133';
   regionName='';updateRegion();
 }
 $('fortressBtn').addEventListener('click',()=>{
@@ -6120,7 +6203,7 @@ function animate(now){
   updateWardrobe(dt);
   if(study.visible)studyLight.intensity=7.4+Math.sin(now*.006)*.28+Math.sin(now*.017)*.15;
   updateHearth(now);
-  updateMovement(dt);crossRainbowPortal(oldZ);crossPawPortal(oldX,oldZ);updatePawPortal(now);updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
+  updateMovement(dt);crossRainbowPortal(oldZ);crossPawPortal(oldX,oldZ);updatePawPortal(now);updatePawLift();updateBattle(dt);updateCastlePokemon(dt);updateCharizard(now);animateGuardian(dt,Math.hypot(player.x-oldX,player.z-oldZ));updateCamera(dt);updateRegion();updateCreatures(dt);updateNetherCreatures(dt,now);
   animateWorkshopSparkles(now);
   for(const {flame,light,torch,power,site} of bunkerStairLights){
     if(!torch.visible||!light.visible)continue;
